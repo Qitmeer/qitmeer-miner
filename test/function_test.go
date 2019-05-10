@@ -2,8 +2,8 @@ package test
 
 import (
 	"testing"
-	"github.com/noxproject/nox/params"
-	"github.com/noxproject/nox/core/address"
+	"qitmeer/params"
+	"qitmeer/core/address"
 	"log"
 )
 

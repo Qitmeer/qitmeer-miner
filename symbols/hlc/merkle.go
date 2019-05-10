@@ -6,7 +6,7 @@ package hlc
 
 import (
 	"math"
-	"github.com/noxproject/nox/common/hash"
+	"qitmeer/common/hash"
 )
 
 func nextPowerOfTwo(n int) int {

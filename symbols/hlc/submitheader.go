@@ -5,8 +5,8 @@ import (
 	"encoding/hex"
 	"hlc-miner/common"
 	"fmt"
-	"github.com/noxproject/nox/common/hash"
-	"github.com/noxproject/nox/core/blockchain"
+	"qitmeer/common/hash"
+	"qitmeer/core/blockchain"
 )
 
 type MinerBlockData struct {

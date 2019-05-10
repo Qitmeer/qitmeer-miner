@@ -1,14 +1,14 @@
 package test
 
 import (
-	"github.com/noxproject/nox/crypto/seed"
+	"qitmeer/crypto/seed"
 	"fmt"
 	"log"
-	"github.com/noxproject/nox/crypto/bip32"
+	"qitmeer/crypto/bip32"
 	"encoding/hex"
-	"github.com/noxproject/nox/crypto/ecc"
-	"github.com/noxproject/nox/common/hash"
-	"github.com/noxproject/nox/common/encode/base58"
+	"qitmeer/crypto/ecc"
+	"qitmeer/common/hash"
+	"qitmeer/common/encode/base58"
 )
 //generate seed
 func newEntropy(size uint) string{

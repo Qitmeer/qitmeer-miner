@@ -5,14 +5,14 @@
 package hlc
 
 import (
-	"github.com/noxproject/nox/core/types"
+	"qitmeer/core/types"
 	"encoding/hex"
 	"encoding/binary"
-	"github.com/noxproject/nox/params"
-	"github.com/noxproject/nox/core/address"
-	"github.com/noxproject/nox/engine/txscript"
-	"github.com/noxproject/nox/common/hash"
-	s "github.com/noxproject/nox/core/serialization"
+	"qitmeer/params"
+	"qitmeer/core/address"
+	"qitmeer/engine/txscript"
+	"qitmeer/common/hash"
+	s "qitmeer/core/serialization"
 	"log"
 	"hlc-miner/common"
 )

@@ -1,6 +1,6 @@
 package hlc
 
-import "github.com/noxproject/nox/common/hash"
+import "qitmeer/common/hash"
 
 const (
 	//128

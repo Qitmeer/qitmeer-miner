@@ -11,13 +11,14 @@ import (
 	"encoding/hex"
 	"math/big"
 	"math"
-	nox "github.com/noxproject/nox/common/hash"
+	nox "qitmeer/common/hash"
 	"strings"
 	"unicode"
 	"os/user"
 	"os"
 	"path/filepath"
 	"runtime"
+	"log"
 )
 
 func SliceContains(s []uint64, e uint64) bool {
@@ -267,4 +268,12 @@ func HexMustDecode(hexStr string) []byte {
 		panic(err)
 	}
 	return b
+}
+
+func GetCurrentDir() string {
+	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))  //返回绝对路径  filepath.Dir(os.Args[0])去除最后一个元素的路径
+	if err != nil {
+		log.Fatal(err)
+	}
+	return strings.Replace(dir, "\\", "/", -1) //将\替换成/
 }
