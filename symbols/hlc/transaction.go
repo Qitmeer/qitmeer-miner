@@ -1,6 +1,6 @@
 package hlc
 
-import "github.com/noxproject/nox/common/hash"
+import "qitmeer/common/hash"
 
 type ParentItems struct {
 	Hash hash.Hash `json:"hash"`

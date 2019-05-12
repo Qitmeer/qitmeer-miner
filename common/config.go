@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"github.com/noxproject/nox/params"
+	"qitmeer/params"
 	"log"
 	"hlc-miner/common/go-flags"
 )
@@ -27,7 +27,7 @@ const (
 )
 
 var (
-	minerHomeDir          = AppDataDir("halalchainminer", false)
+	minerHomeDir          = GetCurrentDir()
 	noxHomeDir           = AppDataDir("nox", false)
 	defaultConfigFile     = filepath.Join(minerHomeDir, defaultConfigFilename)
 	defaultRPCServer      = "127.0.0.1"

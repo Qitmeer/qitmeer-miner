@@ -3,12 +3,12 @@
     The miner of Halalchain
 
 ## Enviroment
-    go get github.com/robvanmieghem/go-opencl
 
-    mkdir -p $GOPATH/github.com/noxproject
-    cd $GOPATH/github.com/noxproject
-    git clone git@github.com:HalalChain/qitmeer.git nox
-    
+    go version >= 1.11
+    go mod
+    replace
+        qitmeer v0.0.0-20190510071513-7cff93db4878 => github.com/HalalChain/qitmeer
+        or git clone git@github.com:HalalChain/qitmeer.git in current directory
 ## Compile
 
 * Ubuntu ENV
