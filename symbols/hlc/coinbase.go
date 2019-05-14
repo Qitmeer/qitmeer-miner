@@ -15,6 +15,7 @@ import (
 	s "qitmeer/core/serialization"
 	"log"
 	"hlc-miner/common"
+	"sort"
 )
 
 func standardCoinbaseOpReturn(height uint32, extraNonce uint64) ([]byte, error) {
@@ -176,12 +177,22 @@ func (h *BlockHeader) CalcCoinBase(coinbaseStr string,payAddress string) error{
 		return err
 	}
 	if !h.HasCoinbasePack {
-		transactions := make([]Transactions,0)
-		transactions = append(transactions,Transactions{coinbaseTx.Tx.TxHashFull(),hex.EncodeToString(txBuf),h.Coinbasevalue})
+
+		transactions := make(Transactionses,0)
 		for i:=0;i<len(h.Transactions);i++{
 			transactions = append(transactions,h.Transactions[i])
 		}
-		h.Transactions = transactions
+		sort.Sort(transactions)
+		if len(transactions) > 999{
+			//max has 1000 trx
+			transactions = transactions[:999]
+		}
+		newtransactions := make(Transactionses,0)
+		newtransactions = append(newtransactions,Transactions{coinbaseTx.Tx.TxHashFull(),hex.EncodeToString(txBuf),h.Coinbasevalue})
+		for i:=0;i<len(transactions);i++{
+			newtransactions = append(newtransactions,transactions[i])
+		}
+		h.Transactions = newtransactions
 		h.HasCoinbasePack = true
 	} else {
 		h.Transactions[0] = Transactions{coinbaseTx.Tx.TxHashFull(),hex.EncodeToString(txBuf),h.Coinbasevalue}

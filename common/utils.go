@@ -281,10 +281,15 @@ func GetCurrentDir() string {
 // fileName:文件名字(带全路径)
 // content: 写入的内容
 func AppendToFile(fileName string, content string) error {
+	file,er:=os.Open(fileName)
+	defer func(){file.Close()}()
+	if er!=nil && os.IsNotExist(er){
+		os.Create(fileName)
+	}
 	// 以只写的模式，打开文件
 	f, err := os.OpenFile(fileName, os.O_WRONLY, 0644)
 	if err != nil {
-		fmt.Println("cacheFileList.yml file create failed. err: " + err.Error())
+		fmt.Println(fileName+" file create failed. err: " + err.Error())
 	} else {
 		// 查找文件末尾的偏移量
 		n, _ := f.Seek(0, os.SEEK_END)
