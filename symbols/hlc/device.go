@@ -15,7 +15,6 @@ import (
 	"hlc-miner/common"
 	"hlc-miner/core"
 	"sync/atomic"
-	"time"
 )
 
 type HLCDevice struct {
@@ -182,8 +181,6 @@ func (this *HLCDevice) Mine() {
 							}
 						}
 						subm += common.Int2varinthex(int64(len(header.Transactions)))
-						logContent += fmt.Sprintf(" Including %d transactions; Received Total transactions = %d",
-							len(header.Transactions))
 						for j := 0; j < len(header.Transactions); j++ {
 							subm += header.Transactions[j].Data
 						}
