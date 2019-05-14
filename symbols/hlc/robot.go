@@ -12,6 +12,9 @@ import (
 	"math"
 	"fmt"
 	"sync/atomic"
+	"strings"
+	"strconv"
+	"hlc-miner/common"
 )
 
 type HLCRobot struct {
@@ -19,6 +22,7 @@ type HLCRobot struct {
 	Work HLCWork
 	Devices 	  []*HLCDevice
 	Stratu      *HLCStratum
+	AllTransactionsCount     int64
 }
 
 func (this *HLCRobot)InitDevice()  {
@@ -141,10 +145,14 @@ func (this *HLCRobot)SubmitWork() {
 					continue
 				}
 				var err error
+				var height ,txCount string
 				if this.Pool {
 					err = this.Work.PoolSubmit(str)
 				} else {
-					err = this.Work.Submit(str)
+					arr := strings.Split(str,"-")
+					txCount = arr[1]
+					height = arr[2]
+					err = this.Work.Submit(arr[0])
 				}
 				if err != nil{
 					if err != ErrSameWork{
@@ -158,9 +166,11 @@ func (this *HLCRobot)SubmitWork() {
 					}
 				} else {
 					atomic.AddUint64(&this.ValidShares, 1)
-					//for _,dev := range this.Devices{
-					//	dev.HasNewWork = true
-					//}
+					count ,_ := strconv.Atoi(txCount)
+					this.AllTransactionsCount += int64(count)
+					logContent := fmt.Sprintf("%s,receive block, block height = %d,Including %d transactions; Received Total transactions = %d",
+						time.Now().Format("2006-01-02 03:04:05 PM"),height,txCount,this.AllTransactionsCount)
+					common.AppendToFile("/tmp/miner.log",logContent)
 				}
 			}
 		}
