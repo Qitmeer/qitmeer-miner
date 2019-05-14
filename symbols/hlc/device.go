@@ -180,11 +180,14 @@ func (this *HLCDevice) Mine() {
 								subm += header.Parents[j].Data
 							}
 						}
-						subm += common.Int2varinthex(int64(len(header.Transactions)))
-						for j := 0; j < len(header.Transactions); j++ {
+						txCount := len(header.Transactions) //real transaction count except coinbase
+						subm += common.Int2varinthex(int64(txCount))
+
+						for j := 0; j < txCount; j++ {
 							subm += header.Transactions[j].Data
 						}
-						subm += "-" + fmt.Sprintf("%d",len(header.Transactions)) + "-" + fmt.Sprintf("%d",this.Work.Block.Height)
+						txCount -= 1
+						subm += "-" + fmt.Sprintf("%d",txCount) + "-" + fmt.Sprintf("%d",this.Work.Block.Height)
 					} else {
 						subm += "-" + header.JobID + "-" + this.Work.PoolWork.ExtraNonce2
 					}

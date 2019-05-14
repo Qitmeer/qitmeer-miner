@@ -149,8 +149,10 @@ func (this *HLCRobot)SubmitWork() {
 				if this.Pool {
 					err = this.Work.PoolSubmit(str)
 				} else {
+					//solo miner
 					arr := strings.Split(str,"-")
 					txCount = arr[1]
+
 					height = arr[2]
 					err = this.Work.Submit(arr[0])
 				}
@@ -168,7 +170,7 @@ func (this *HLCRobot)SubmitWork() {
 					atomic.AddUint64(&this.ValidShares, 1)
 					count ,_ := strconv.Atoi(txCount)
 					this.AllTransactionsCount += int64(count)
-					logContent := fmt.Sprintf("%s,receive block, block height = %d,Including %d transactions; Received Total transactions = %d",
+					logContent := fmt.Sprintf("%s,receive block, block height = %s,Including %s transactions; Received Total transactions = %d\n",
 						time.Now().Format("2006-01-02 03:04:05 PM"),height,txCount,this.AllTransactionsCount)
 					common.AppendToFile("/tmp/miner.log",logContent)
 				}
