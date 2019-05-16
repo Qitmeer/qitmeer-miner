@@ -243,6 +243,7 @@ func (s *HLCStratum) handleNotifyRes(resp interface{}) {
 	log.Println(fmt.Sprintf("[Pool Base nbits]:%s\n[Pool diffculty]:%f\n[Pool target]:%064x",s.PoolWork.Nbits,s.Diff,s.Target))
 	s.PoolWork.Ntime = nResp.Ntime
 	s.PoolWork.NtimeDelta = parsedNtime - time.Now().Unix()
+	log.Println("Notify Clean:",nResp.CleanJobs)
 	s.PoolWork.Clean = nResp.CleanJobs
 }
 

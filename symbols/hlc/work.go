@@ -97,9 +97,10 @@ func (this *HLCWork) PoolGet () bool {
 		return false
 	}
 
-	if this.PoolWork.JobID == this.stra.PoolWork.JobID {
+	if !this.stra.PoolWork.Clean || this.PoolWork.JobID == this.stra.PoolWork.JobID{
 		return false
 	}
+
 	this.PoolWork = this.stra.PoolWork
 	return true
 }
