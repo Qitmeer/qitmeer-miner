@@ -172,7 +172,7 @@ func (this *HLCRobot)SubmitWork() {
 					this.AllTransactionsCount += int64(count)
 					logContent := fmt.Sprintf("%s,receive block, block height = %s,Including %s transactions; Received Total transactions = %d\n",
 						time.Now().Format("2006-01-02 03:04:05 PM"),height,txCount,this.AllTransactionsCount)
-					common.AppendToFile("/tmp/miner.log",logContent)
+					common.AppendToFile(this.Cfg.MinerLogFile,logContent)
 				}
 			}
 		}
