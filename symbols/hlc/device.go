@@ -192,6 +192,10 @@ func (this *HLCDevice) Mine() {
 						subm += "-" + header.JobID + "-" + this.Work.PoolWork.ExtraNonce2
 					}
 					this.SubmitData <- subm
+					if !this.Pool{
+						//solo wait new task
+						break
+					}
 				}
 			}
 			this.NonceOut = make([]byte, 8, 8)

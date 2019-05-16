@@ -44,7 +44,7 @@
 
 
     pool
-        ./hlc-miner -o stratum+tcp://42.51.64.58:3177 -m RmN4SADy42FKmN8ARKieX9iHh9icptdgYNn --symbol HLC --notls -i 24 -W 256
+        ./hlc-miner -o stratum+tcp://127.0.0.1:3177 -m RmN4SADy42FKmN8ARKieX9iHh9icptdgYNn --symbol HLC --notls -i 24 -W 256
         
         -i Intensities (the work size is 2^intensity) per device
         -W The explicitly declared sizes of the work to do per device (overrides intensity)

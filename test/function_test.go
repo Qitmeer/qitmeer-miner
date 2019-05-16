@@ -10,7 +10,7 @@ import (
 func TestCreateNoxAddr(t *testing.T) {
 	seed := newEntropy(32)
 	log.Println("【rand seed】",seed)
-	privateKey := ecNew("secp256k1",seed)
+	privateKey := ecNew("ed25519",seed)
 	log.Println("【private key】",privateKey)
 	publicKey := ecPrivateKeyToEcPublicKey(false,privateKey)
 	log.Println("【public key】",publicKey)

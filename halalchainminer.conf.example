@@ -1,0 +1,43 @@
+# the miner config file
+
+#node is dag
+dag=true
+
+#coin
+symbol=HLC
+
+#not tls
+notls=true
+
+#miner address
+mineraddress=RmN4SADy42FKmN8ARKieX9iHh9icptdgYNn
+
+#network simnet | testnet | mainnet
+testnet=true
+
+# Intensities (the work size is 2^intensity) up to device
+intensity=24
+
+# The explicitly declared sizes of the work to do up to device (overrides intensity)
+worksize=256
+
+########################## solo config ####################
+# node rpc server
+rpcserver=127.0.0.1:1234
+
+# node rpc user
+rpcuser=test
+
+# node rpc password
+rpcpass=test
+
+########################## pool config if config this pool , it will use pool mining ########################
+
+#node is dag
+#pool=stratum+tcp://127.0.0.1:3177
+#pooluser=RmN4SADy42FKmN8ARKieX9iHh9icptdgYNn
+#poolpass=
+
+
+
+

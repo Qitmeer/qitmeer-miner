@@ -26,10 +26,16 @@ func ecNew(curve string, entropyStr string) string{
 		log.Fatalln("【error】",entropyStr,err)
 		return ""
 	}
+	masterKey := &bip32.Key{}
 	switch curve {
 	case "secp256k1":
-		fmt.Println(len(entropy))
-		masterKey,err := bip32.NewMasterKey(entropy)
+		masterKey,err = bip32.NewMasterKey(entropy)
+		if err!=nil {
+			log.Fatalln(err)
+			return ""
+		}
+	case "ed25519":
+		masterKey,err = bip32.NewMasterKey(entropy)
 		if err!=nil {
 			log.Fatalln(err)
 			return ""
