@@ -33,25 +33,30 @@
         go build 
     
 ## Run
-    solo
 
-        Network:
-            simnet
-            testnet
-            mainnet
-
-        ./hlc-miner -s 127.0.0.1:1234 -u test -P test --symbol HLC --notls -i 24 -W 256 --mineraddress RmN4SADy42FKmN8ARKieX9iHh9icptdgYNn --simnet
-
-
-    pool
-        ./hlc-miner -o stratum+tcp://127.0.0.1:3177 -m RmN4SADy42FKmN8ARKieX9iHh9icptdgYNn --symbol HLC --notls -i 24 -W 256
-        
-        -i Intensities (the work size is 2^intensity) per device
-        -W The explicitly declared sizes of the work to do per device (overrides intensity)
+    cp halalchainminer.conf.example halalchainminer.conf
+    ./hlc-miner
     
-    dag miner 
-        add tag
-        --dag
+    command params mode:
+        solo
+
+            Network:
+                simnet
+                testnet
+                mainnet
+
+            ./hlc-miner -s 127.0.0.1:1234 -u test -P test --symbol HLC --notls -i 24 -W 256 --mineraddress RmN4SADy42FKmN8ARKieX9iHh9icptdgYNn --simnet
+
+
+         pool
+            ./hlc-miner -o stratum+tcp://127.0.0.1:3177 -m RmN4SADy42FKmN8ARKieX9iHh9icptdgYNn --symbol HLC --notls -i 24 -W 256
+            
+            -i Intensities (the work size is 2^intensity) per device
+            -W The explicitly declared sizes of the work to do per device (overrides intensity)
+    
+        dag miner 
+            add tag
+            --dag
 ## Supported coin 
         
         HLC
