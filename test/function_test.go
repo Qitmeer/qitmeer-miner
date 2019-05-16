@@ -5,6 +5,7 @@ import (
 	"qitmeer/params"
 	"qitmeer/core/address"
 	"log"
+	"hlc-miner/common"
 )
 
 func TestCreateNoxAddr(t *testing.T) {
@@ -24,4 +25,10 @@ func TestCreateNoxAddr(t *testing.T) {
 		return
 	}
 	log.Println("【base58 address】",addres)
+}
+
+func TestRand(t *testing.T)  {
+	a := common.GenerateRand(32)
+
+	log.Println(a)
 }

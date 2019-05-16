@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"log"
+	"crypto/rand"
 )
 
 func SliceContains(s []uint64, e uint64) bool {
@@ -298,4 +299,13 @@ func AppendToFile(fileName string, content string) error {
 	}
 	defer f.Close()
 	return err
+}
+
+func GenerateRand(length int) uint32 {
+	// Per [BIP32], the seed must be in range [MinSeedBytes, MaxSeedBytes].
+
+	buf := make([]byte, length)
+	rand.Read(buf)
+	t1 := binary.LittleEndian.Uint32(buf)
+	return t1
 }

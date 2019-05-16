@@ -43,7 +43,7 @@ func (this *Device)Mine()  {
 }
 
 func (this *Device)Update()  {
-	this.CurrentWorkID++
+	this.CurrentWorkID = common.GenerateRand(32)
 }
 
 func (this *Device)InitDevice()  {
