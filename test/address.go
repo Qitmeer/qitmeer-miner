@@ -1,14 +1,14 @@
 package test
 
 import (
-	"qitmeer/crypto/seed"
 	"fmt"
+	"hlc-miner/common/qitmeer/base58"
+	"hlc-miner/common/qitmeer/bip32"
+	"hlc-miner/common/qitmeer/ecc"
+	"hlc-miner/common/qitmeer/hash"
+	"hlc-miner/common/qitmeer/seed"
 	"log"
-	"qitmeer/crypto/bip32"
 	"encoding/hex"
-	"qitmeer/crypto/ecc"
-	"qitmeer/common/hash"
-	"qitmeer/common/encode/base58"
 )
 //generate seed
 func newEntropy(size uint) string{
@@ -26,10 +26,16 @@ func ecNew(curve string, entropyStr string) string{
 		log.Fatalln("【error】",entropyStr,err)
 		return ""
 	}
+	masterKey := &bip32.Key{}
 	switch curve {
 	case "secp256k1":
-		fmt.Println(len(entropy))
-		masterKey,err := bip32.NewMasterKey(entropy)
+		masterKey,err = bip32.NewMasterKey(entropy)
+		if err!=nil {
+			log.Fatalln(err)
+			return ""
+		}
+	case "ed25519":
+		masterKey,err = bip32.NewMasterKey(entropy)
 		if err!=nil {
 			log.Fatalln(err)
 			return ""

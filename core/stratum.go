@@ -72,7 +72,14 @@ func (this *Stratum)Listen(handle func(data string))  {
 	log.Println("Starting Stratum Listener")
 	for {
 		//s.Conn.SetReadDeadline(time.Now().Add(time.Second * 10))
-		data, err := this.Reader.ReadString('\n')
+		var data string
+		var err error
+		if this.Reader != nil{
+			data, err = this.Reader.ReadString('\n')
+		} else{
+			err = errors.New("network wrong!")
+		}
+
 		if err != nil {
 			for{
 				log.Println("【Connection lost!  Reconnecting...】")

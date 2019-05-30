@@ -8,12 +8,12 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"qitmeer/common/hash"
-	"qitmeer/core/blockchain"
 	"github.com/robvanmieghem/go-opencl/cl"
-	"log"
 	"hlc-miner/common"
+	"hlc-miner/common/qitmeer/blockchain"
+	"hlc-miner/common/qitmeer/hash"
 	"hlc-miner/core"
+	"log"
 	"sync/atomic"
 )
 
@@ -180,15 +180,23 @@ func (this *HLCDevice) Mine() {
 								subm += header.Parents[j].Data
 							}
 						}
-						subm += common.Int2varinthex(int64(len(header.Transactions)))
 
-						for j := 0; j < len(header.Transactions); j++ {
+						txCount := len(header.Transactions) //real transaction count except coinbase
+						subm += common.Int2varinthex(int64(txCount))
+
+						for j := 0; j < txCount; j++ {
 							subm += header.Transactions[j].Data
 						}
+						txCount -= 1
+						subm += "-" + fmt.Sprintf("%d",txCount) + "-" + fmt.Sprintf("%d",this.Work.Block.Height)
 					} else {
 						subm += "-" + header.JobID + "-" + this.Work.PoolWork.ExtraNonce2
 					}
 					this.SubmitData <- subm
+					if !this.Pool{
+						//solo wait new task
+						break
+					}
 				}
 			}
 			this.NonceOut = make([]byte, 8, 8)

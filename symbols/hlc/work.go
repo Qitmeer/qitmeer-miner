@@ -5,16 +5,16 @@
 package hlc
 
 import (
-	"hlc-miner/core"
-	"strconv"
 	"encoding/binary"
-	"time"
-	"encoding/json"
-	"log"
-	"fmt"
-	"strings"
-	"errors"
 	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"hlc-miner/core"
+	"log"
+	"strconv"
+	"strings"
+	"time"
 )
 type getResponseJson struct {
 	Result BlockHeader
@@ -97,9 +97,10 @@ func (this *HLCWork) PoolGet () bool {
 		return false
 	}
 
-	if this.PoolWork.JobID == this.stra.PoolWork.JobID {
+	if (this.stra.PoolWork.JobID != "" && !this.stra.PoolWork.Clean) || this.PoolWork.JobID == this.stra.PoolWork.JobID{
 		return false
 	}
+
 	this.PoolWork = this.stra.PoolWork
 	return true
 }

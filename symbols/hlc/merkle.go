@@ -5,8 +5,8 @@
 package hlc
 
 import (
+	"hlc-miner/common/qitmeer/hash"
 	"math"
-	"qitmeer/common/hash"
 )
 
 func nextPowerOfTwo(n int) int {
@@ -35,7 +35,7 @@ func (h *BlockHeader)BuildMerkleTreeStore() []*hash.Hash {
 	// only.
 	transactions := make([]hash.Hash,0)
 	for i:=0;i<len(h.Transactions);i++{
-		transactions = append(transactions,h.Transactions[i].Hash)
+		transactions = append(transactions,hash.Hash(h.Transactions[i].Hash))
 	}
 	if len(transactions) == 0 {
 		merkles := make([]*hash.Hash, 1)

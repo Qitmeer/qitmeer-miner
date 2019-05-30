@@ -7,15 +7,15 @@ package common
 
 import (
 	"fmt"
+	"hlc-miner/common/go-flags"
+	"hlc-miner/common/qitmeer/params"
+	"log"
 	"net"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
-	"qitmeer/params"
-	"log"
-	"hlc-miner/common/go-flags"
 )
 
 const (
@@ -24,6 +24,7 @@ const (
 	defaultLogDirname     = "logs"
 	defaultLogFilename    = "halalchainminer.log"
 	defaultClKernel       = "crypto/blake256/kernel.cl"
+
 )
 
 var (
@@ -61,6 +62,7 @@ type Config struct {
 	Profile    string `long:"profile" description:"Enable HTTP profiling on given port -- NOTE port must be between 1024 and 65536"`
 	CPUProfile string `long:"cpuprofile" description:"Write CPU profile to the specified file"`
 	MemProfile string `long:"memprofile" description:"Write mem profile to the specified file"`
+	MinerLogFile string `long:"minerlog" description:"Write miner log file"`
 
 	// Status API options
 	APIListeners []string `long:"apilisten" description:"Add an interface/port to expose miner status API"`
@@ -267,6 +269,10 @@ func LoadConfig() (*Config, []string, error) {
 		// Apply default
 	} else {
 		cfg.AutocalibrateInts = []int{defaultAutocalibrate}
+	}
+
+	if cfg.MinerLogFile == ""{
+		cfg.MinerLogFile = GetCurrentDir() + "/miner.log"
 	}
 
 	// Check the devices if the user is setting that.
