@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"hlc-miner/common"
 	"math/big"
-	nox "qitmeer/common/hash"
+	nox "hlc-miner/common/qitmeer/hash"
 	"log"
 	"time"
 	"sync/atomic"

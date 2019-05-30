@@ -5,16 +5,16 @@
 package hlc
 
 import (
-	"hlc-miner/core"
-	"strconv"
 	"encoding/binary"
-	"time"
-	"encoding/json"
-	"log"
-	"fmt"
-	"strings"
-	"errors"
 	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"hlc-miner/core"
+	"log"
+	"strconv"
+	"strings"
+	"time"
 )
 type getResponseJson struct {
 	Result BlockHeader

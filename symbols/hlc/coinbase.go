@@ -5,14 +5,14 @@
 package hlc
 
 import (
-	"qitmeer/core/types"
+	"hlc-miner/common/qitmeer/address"
+	"hlc-miner/common/qitmeer/hash"
+	"hlc-miner/common/qitmeer/params"
+	"hlc-miner/common/qitmeer/txscript"
+	"hlc-miner/common/qitmeer/types"
 	"encoding/hex"
 	"encoding/binary"
-	"qitmeer/params"
-	"qitmeer/core/address"
-	"qitmeer/engine/txscript"
-	"qitmeer/common/hash"
-	s "qitmeer/core/serialization"
+	s "hlc-miner/common/qitmeer/serialization"
 	"log"
 	"hlc-miner/common"
 	"sort"

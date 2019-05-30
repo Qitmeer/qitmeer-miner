@@ -7,15 +7,15 @@ package common
 
 import (
 	"fmt"
+	"hlc-miner/common/go-flags"
+	"hlc-miner/common/qitmeer/params"
+	"log"
 	"net"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
-	"qitmeer/params"
-	"log"
-	"hlc-miner/common/go-flags"
 )
 
 const (
@@ -24,6 +24,7 @@ const (
 	defaultLogDirname     = "logs"
 	defaultLogFilename    = "halalchainminer.log"
 	defaultClKernel       = "crypto/blake256/kernel.cl"
+
 )
 
 var (

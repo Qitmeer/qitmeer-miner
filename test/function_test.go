@@ -1,9 +1,9 @@
 package test
 
 import (
+	"hlc-miner/common/qitmeer/address"
+	"hlc-miner/common/qitmeer/params"
 	"testing"
-	"qitmeer/params"
-	"qitmeer/core/address"
 	"log"
 	"hlc-miner/common"
 )

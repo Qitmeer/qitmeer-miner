@@ -1,12 +1,12 @@
 package hlc
 
 import (
-	"math/big"
 	"encoding/hex"
-	"hlc-miner/common"
 	"fmt"
-	"qitmeer/common/hash"
-	"qitmeer/core/blockchain"
+	"hlc-miner/common"
+	"hlc-miner/common/qitmeer/blockchain"
+	"hlc-miner/common/qitmeer/hash"
+	"math/big"
 )
 
 type MinerBlockData struct {

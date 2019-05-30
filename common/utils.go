@@ -11,7 +11,7 @@ import (
 	"encoding/hex"
 	"math/big"
 	"math"
-	nox "qitmeer/common/hash"
+	nox "hlc-miner/common/qitmeer/hash"
 	"strings"
 	"unicode"
 	"os/user"

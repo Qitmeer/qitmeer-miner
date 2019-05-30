@@ -1,14 +1,14 @@
 package test
 
 import (
-	"qitmeer/crypto/seed"
 	"fmt"
+	"hlc-miner/common/qitmeer/base58"
+	"hlc-miner/common/qitmeer/bip32"
+	"hlc-miner/common/qitmeer/ecc"
+	"hlc-miner/common/qitmeer/hash"
+	"hlc-miner/common/qitmeer/seed"
 	"log"
-	"qitmeer/crypto/bip32"
 	"encoding/hex"
-	"qitmeer/crypto/ecc"
-	"qitmeer/common/hash"
-	"qitmeer/common/encode/base58"
 )
 //generate seed
 func newEntropy(size uint) string{

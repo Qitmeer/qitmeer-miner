@@ -18,7 +18,6 @@ module hlc-miner
         golang.org/x/sync v0.0.0-20180314180146-1d60e4601c6f
         golang.org/x/sys v0.0.0-20190222072716-a9d3bda3a223
         golang.org/x/text v0.3.0
-        qitmeer v0.0.0-20190510071513-7cff93db4878
 
         )
 
@@ -29,6 +28,5 @@ module hlc-miner
         golang.org/x/sys v0.0.0-20180909124046-d0be0721c37e => github.com/golang/sys v0.0.0-20180909124046-d0be0721c37e
         golang.org/x/sys v0.0.0-20190222072716-a9d3bda3a223 => github.com/golang/sys v0.0.0-20190222072716-a9d3bda3a223
         golang.org/x/text v0.3.0 => github.com/golang/text v0.3.0
-        qitmeer v0.0.0-20190510071513-7cff93db4878 => github.com/HalalChain/qitmeer v0.0.0-20190510071513-7cff93db4878
 
         )

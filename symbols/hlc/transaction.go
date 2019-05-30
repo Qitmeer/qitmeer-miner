@@ -1,6 +1,6 @@
 package hlc
 
-import "qitmeer/common/hash"
+import "hlc-miner/common/qitmeer/hash"
 
 type ParentItems struct {
 	Hash hash.Hash `json:"hash"`
