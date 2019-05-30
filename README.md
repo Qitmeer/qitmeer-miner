@@ -5,7 +5,7 @@
 ## Enviroment
 
 ```bash
-$ go version >= 1.11
+$ go version >= 1.12
 $ go build
 ```
     
