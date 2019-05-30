@@ -12,6 +12,10 @@ $ go build
     
 ## Compile
 
+```bash
+$ git clone (this repo)
+```
+
 * Ubuntu ENV
 ```bash
 $ sudo apt-get install beignet-dev nvidia-cuda-dev nvidia-cuda-toolkit
@@ -44,24 +48,36 @@ $ go build
 ## Run
 ```bash
 $ cp halalchainminer.conf.example halalchainminer.conf
+```
+- config file 
+    ![config](source/config.png)
+```bash
 $ ./hlc-miner
 ```
-command params mode:
-  - solo
+- solo command line
 
 ```bash
 $ ./hlc-miner -s 127.0.0.1:1234 -u test -P test --symbol HLC --notls -i 24 -W 256 --mineraddress RmN4SADy42FKmN8ARKieX9iHh9icptdgYNn 
 ```
- - pool
+- pool command line
 
 ```bash
 $ ./hlc-miner -o stratum+tcp://127.0.0.1:3177 -m RmN4SADy42FKmN8ARKieX9iHh9icptdgYNn --symbol HLC --notls -i 24 -W 256
 ``` 
-            
-- `-i` Intensities (the work size is 2^intensity) per device
-- `-W` The explicitly declared sizes of the work to do per device (overrides intensity)
-    
-- dag miner  add tag `--dag`
+
+## Param Description 
+          
+- `--dag` the node is dag node
+- `-s` the node rpc listen address
+- `-u` the node rpc username
+- `-P` the node rpc password
+- `--symbol` now just `HLC` is supported
+- `--i` Intensities (the work size is 2^intensity) up to device
+- `--W` The explicitly declared sizes of the work to do up to device (overrides intensity)
+- `--mineraddress` the miner address
+- `-o` the pool address
+- `-m` the pool user account address
+
 ## Supported coin 
         
   - `HLC`

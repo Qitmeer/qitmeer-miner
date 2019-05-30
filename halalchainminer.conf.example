@@ -33,7 +33,6 @@ rpcpass=test
 
 ########################## pool config if config this pool , it will use pool mining ########################
 
-#node is dag
 #pool=stratum+tcp://127.0.0.1:3177
 #pooluser=RmN4SADy42FKmN8ARKieX9iHh9icptdgYNn
 #poolpass=
