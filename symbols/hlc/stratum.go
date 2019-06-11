@@ -509,13 +509,13 @@ func (s *HLCStratum) PrepSubmit(data []byte,jobID string,ExtraNonce2 string) (Su
 	sub.ID = s.ID
 	s.SubmitIDs = append(s.SubmitIDs, s.ID)
 	var timestampStr , nonceStr  string
-	latestWorkTs := atomic.LoadUint64(&s.PoolWork.LatestJobTime)
+	//latestWorkTs := atomic.LoadUint64(&s.PoolWork.LatestJobTime)
 	timeD := data[TIMESTART:TIMEEND]
 	timestampStr = hex.EncodeToString(common.Reverse(timeD[:])[4:8])
-	ts := binary.LittleEndian.Uint64(common.Reverse(data[TIMESTART:TIMEEND]))
-	if ts != latestWorkTs {
-		return sub, ErrStratumStaleWork
-	}
+	//ts := binary.LittleEndian.Uint64(common.Reverse(data[TIMESTART:TIMEEND]))
+	//if ts != latestWorkTs {
+	//	return sub, ErrStratumStaleWork
+	//}
 	nonceStr = hex.EncodeToString(common.Reverse(data[NONCESTART:NONCEEND]))
 	if jobID != s.PoolWork.JobID && s.PoolWork.Clean {
 		return sub, ErrStratumStaleWork
