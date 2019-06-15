@@ -1,6 +1,7 @@
 package cuckoo
 
 import (
+	"sync"
 	"testing"
 	"fmt"
 	"sort"
@@ -10,11 +11,11 @@ import (
 )
 
 const (
-	EdgeBits = 12 //边缘指数
+	EdgeBits = 16 //
 	NEdge = 1 << EdgeBits
 	NNodes = NEdge << 1
 	EdgeMask  = NEdge - 1
-	ProofSize = 8 //环长度 10
+	ProofSize = 42 //
 )
 func u8to64(p [32]byte, i uint) uint {
 	return ((uint)(p[i]) & 0xff) |
@@ -58,7 +59,7 @@ func TestCuckoo(t *testing.T){
 		if IsFind{
 			break
 		}
-		Headerbytes := []byte(fmt.Sprintf("helloworld%d",i))
+		Headerbytes := []byte(fmt.Sprintf("helloweqweworld%d",i))
 		hdrkey := blake2b.Sum256(Headerbytes)
 		//fmt.Printf("hdrkey: %x\n", hdrkey)
 
@@ -71,15 +72,12 @@ func TestCuckoo(t *testing.T){
 		var edges [NEdge][]int64
 		//hash table 2
 		//hashTable2 := []int64{4,5,6}
-		//初始化两个顶点集合
 		for nonce := 0;nonce < NEdge;nonce++{
 			u := Sipnode(uint(nonce), 0)
 			v := EdgeMask+Sipnode(uint(nonce), 1)
 			edges[int64(nonce)] = append(edges[int64(nonce)],int64(u),int64(v))
 		}
 
-		//所有边
-		//allkey每个key对应的所有关系
 		allKey = make(map[int64][]int64,0)
 		for _,edge := range edges{
 			if !inNode(edge[1],allKey[edge[0]]){
@@ -91,13 +89,18 @@ func TestCuckoo(t *testing.T){
 		}
 		//fmt.Println(allKey)
 		allPath = make([][]int64,0)
-		//寻找路线 寻找环
+		wg := sync.WaitGroup{}
 		for k := 0;k < NEdge;k++{
 			if IsFind{
 				break
 			}
-			findCircle([]Edge{},int64(k))
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				findCircle([]Edge{},int64(k))
+			}()
 		}
+		wg.Wait()
 		for _,p := range allPath{
 			if len(p)-1 == ProofSize{
 				fmt.Println("环长度：",len(p)-1,p)
@@ -131,9 +134,7 @@ func findCircle(parents []Edge,k int64) {
 		return
 	}
 	l := len(parents)
-	//是否已经找到 环
 	if l >= 4{
-		//二分图 最小环路 4条边
 		start := parents[0]
 		end := parents[l-1]
 		if start.from == end.to{
@@ -158,7 +159,6 @@ func findCircle(parents []Edge,k int64) {
 			}
 		}
 	}
-	//是否有线路 边要大于1 因为回路
 	if _,ok := allKey[k];ok && len(allKey[k]) > 1{
 		for _,v := range allKey[k]{
 			edge := Edge{}
@@ -174,4 +174,8 @@ func findCircle(parents []Edge,k int64) {
 		}
 	}
 	return
+}
+
+func TestGraph(t *testing.T)  {
+	fmt.Println(123)
 }

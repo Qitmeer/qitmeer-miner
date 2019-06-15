@@ -2,6 +2,7 @@ package cuckoo
 
 import (
 	"fmt"
+	"log"
 	"testing"
 )
 
@@ -181,4 +182,24 @@ func findPath(level int64,parents []int64,po point){
 		findPath(level+1,parents,po.right())
 	}
 	return
+}
+
+func TestCheng(t *testing.T)  {
+	N := 3
+	M := 6
+	P := 2
+	A := [2][3]int{{1,2,3},{4,5,6},}
+	B := [6][2]int{{1,2},{3,4},{5,6},{7,8},{9,10},{11,12},}
+	C := [6][3]int{}
+
+	for i:=0;i<N;i++{
+		for j:=0;j<M;j++{
+			tmp:= [3]int{0,0,0}
+			for k:=0;k<P ;k++  {
+				tmp[k]= A[k][i] * B[k][i]
+			}
+			C[j] = tmp
+		}
+	}
+	log.Println(C)
 }
