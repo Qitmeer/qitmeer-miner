@@ -1,18 +1,21 @@
 package cuckoo
 
 import (
-	"github.com/robvanmieghem/go-opencl/cl"
-	"os"
-	"sync"
-	"log"
 	"encoding/binary"
+	"fmt"
+	"github.com/robvanmieghem/go-opencl/cl"
+	"golang.org/x/crypto/blake2b"
+	"log"
+	"os"
+	"sort"
+	"sync"
+	"time"
+	"unsafe"
 )
-const DUCK_SIZE_A  = 129 // AMD 126 + 3
-const DUCK_SIZE_B  = 83
-const BUFFER_SIZE_A1  = DUCK_SIZE_A * 1024 * (4096 - 128) * 2
-const BUFFER_SIZE_A2 = DUCK_SIZE_A * 1024 * 256 * 2
-const BUFFER_SIZE_B = DUCK_SIZE_B * 1024 * 4096 * 2
-const INDEX_SIZE = 256 * 256 * 4
+const EDGE_INDEX  = 24
+const EDGE_SIZE  = 1 << EDGE_INDEX
+const edgemask  = EDGE_SIZE - 1
+const easiness  = 2 * EDGE_SIZE
 type Device struct{
 	DeviceName string
 	HasNewWork bool
@@ -37,179 +40,167 @@ type Device struct{
 	Quit chan os.Signal //must init
 	sync.Mutex
 	Wg sync.WaitGroup
-	Pool bool //must init
 }
 
 func (this *Device)Mine()  {
 	var err error
-	var k = []uint64{
-		0xf4956dc403730b01,
-		0xe6d45de39c2a5a3e,
-		0xcbf626a8afee35f6,
-		0x4307b94b1a0c9980,
+	this.Context, err = cl.CreateContext([]*cl.Device{this.ClDevice})
+	if err != nil {
+		log.Println("-1", this.MinerId, err)
+		return
+	}
+	this.CommandQueue, err = this.Context.CreateCommandQueue(this.ClDevice, 0)
+	if err != nil {
+		log.Println("-2", this.MinerId,  err)
+	}
+	this.Program, err = this.Context.CreateProgramWithSource([]string{NewKernel})
+	if err != nil {
+		log.Println("-3", this.MinerId, this.DeviceName, err)
+		return
 	}
 
-	//init kernels
+	err = this.Program.BuildProgram([]*cl.Device{this.ClDevice}, "")
+	if err != nil {
+		log.Println("-build", this.MinerId, err)
+		return
+	}
+
 	this.Kernels = make(map[string]*cl.Kernel,0)
-	this.Kernels["seedA"], _ = this.Program.CreateKernel("FluffySeed2A")
-	this.Kernels["seedA"].SetArg(0,k[0])
-	this.Kernels["seedA"].SetArg(1,k[1])
-	this.Kernels["seedA"].SetArg(2,k[2])
-	this.Kernels["seedA"].SetArg(3,k[3])
-	A1, _ := this.Context.CreateEmptyBuffer(cl.MemReadOnly, BUFFER_SIZE_A1)
-	A2, _ := this.Context.CreateEmptyBuffer(cl.MemReadOnly, BUFFER_SIZE_A2)
-	B, _ := this.Context.CreateEmptyBuffer(cl.MemReadOnly, BUFFER_SIZE_B)
-	I1, _ := this.Context.CreateEmptyBuffer(cl.MemReadOnly, INDEX_SIZE)
-	I2, _ := this.Context.CreateEmptyBuffer(cl.MemReadOnly, INDEX_SIZE)
-	//R ,_:= this.Context.CreateEmptyBuffer(cl.MemReadOnly, 42*2);
-	this.Kernels["seedA"].SetArgBuffer(4,B)
-	this.Kernels["seedA"].SetArgBuffer(5,A1)
-	this.Kernels["seedA"].SetArgBuffer(6,I1)
-
-	b := make([]byte,BUFFER_SIZE_B)
-	_,err = this.CommandQueue.EnqueueWriteBufferByte(B,true,0,b,nil)
-	log.Println(err)
-	//a1 := make([]byte,BUFFER_SIZE_A1)
-	//_,err = this.CommandQueue.EnqueueWriteBufferByte(A1,true,0,a1,nil)
-	//log.Println(err)
-	//c1 := make([]byte,INDEX_SIZE)
-	//_,err = this.CommandQueue.EnqueueWriteBufferByte(I1,true,0,c1,nil)
-	//log.Println(err)
-	if _, err = this.CommandQueue.EnqueueNDRangeKernel(this.Kernels["seedA"], []int{0}, []int{2048*128}, []int{128}, nil); err != nil {
-		log.Println("-123", this.MinerId,err)
-		return
-	}
-	log.Println(12344)
-	return
-	edges_left := make([]byte,INDEX_SIZE)
-	//Get output
-	if _, err = this.CommandQueue.EnqueueReadBufferByte(I1, true, 0, edges_left, nil); err != nil {
-		log.Println("- ReadBuffer", this.MinerId,err)
-		return
-	}
-	log.Println("======",edges_left)
-	return
-	this.Kernels["seedB1"], err = this.Program.CreateKernel("FluffySeed2B")
-	this.Kernels["seedB1"].SetArg(0,A1)
-	this.Kernels["seedB1"].SetArg(1,A1)
-	this.Kernels["seedB1"].SetArg(2,A2)
-	this.Kernels["seedB1"].SetArg(3,I1)
-	this.Kernels["seedB1"].SetArg(4,I2)
-	this.Kernels["seedB1"].SetArg(5,uint32(32))
-	this.Kernels["seedB2"], err = this.Program.CreateKernel("FluffySeed2B")
-	this.Kernels["seedB2"].SetArg(0,B)
-	this.Kernels["seedB2"].SetArg(1,A1)
-	this.Kernels["seedB2"].SetArg(2,A2)
-	this.Kernels["seedB2"].SetArg(3,I1)
-	this.Kernels["seedB2"].SetArg(4,I2)
-	this.Kernels["seedB2"].SetArg(5,uint32(0))
-	this.Kernels["round1"], err = this.Program.CreateKernel("FluffyRound1")
-	this.Kernels["round1"].SetArg(0,A1)
-	this.Kernels["round1"].SetArg(1,A2)
-	this.Kernels["round1"].SetArg(2,B)
-	this.Kernels["round1"].SetArg(3,I2)
-	this.Kernels["round1"].SetArg(4,I1)
-	this.Kernels["round1"].SetArg(5,uint32(DUCK_SIZE_A*1024))
-	this.Kernels["round1"].SetArg(6,uint32(DUCK_SIZE_B*1024))
-	this.Kernels["roundN0"], err = this.Program.CreateKernel("FluffyRoundNO1")
-	this.Kernels["roundN0"].SetArg(0,B)
-	this.Kernels["roundN0"].SetArg(1,A1)
-	this.Kernels["roundN0"].SetArg(2,I1)
-	this.Kernels["roundN0"].SetArg(3,I2)
-	this.Kernels["roundNA"], err = this.Program.CreateKernel("FluffyRoundNON")
-	this.Kernels["roundNA"].SetArg(0,B)
-	this.Kernels["roundNA"].SetArg(1,A1)
-	this.Kernels["roundNA"].SetArg(2,I1)
-	this.Kernels["roundNA"].SetArg(3,I2)
-	this.Kernels["roundNB"], err = this.Program.CreateKernel("FluffyRoundNON")
-	this.Kernels["roundNB"].SetArg(0,A1)
-	this.Kernels["roundNB"].SetArg(1,B)
-	this.Kernels["roundNB"].SetArg(2,I2)
-	this.Kernels["roundNB"].SetArg(3,I1)
-	this.Kernels["tail"], err = this.Program.CreateKernel("FluffyTailO")
-	this.Kernels["tail"].SetArg(0,B)
-	this.Kernels["tail"].SetArg(1,A1)
-	this.Kernels["tail"].SetArg(2,I1)
-	this.Kernels["tail"].SetArg(3,I2)
-	//this.Kernels["recovery"], err = this.Program.CreateKernel("kernelRecovery")
-	//this.Kernels["recovery"].SetArg(0,k[0])
-	//this.Kernels["recovery"].SetArg(1,k[1])
-	//this.Kernels["recovery"].SetArg(2,k[2])
-	//this.Kernels["recovery"].SetArg(3,k[3])
-	//this.Kernels["recovery"].SetArg(4,R)
-	//this.Kernels["recovery"].SetArg(4,I2)
+	this.Kernels["seedA"], err = this.Program.CreateKernel("CreateEdges")
 
 
-	//Run the kernel
 
-	this.CommandQueue.EnqueueFillBuffer(I1,nil,0,0,0,nil)
-	this.CommandQueue.EnqueueFillBuffer(I2,nil,0,0,0,nil)
+	B, err := this.Context.CreateEmptyBuffer(cl.MemReadWrite, EDGE_SIZE*2*4)
+	C1, err := this.Context.CreateEmptyBuffer(cl.MemReadWrite, EDGE_SIZE*2*4)
+	D, err := this.Context.CreateEmptyBuffer(cl.MemReadWrite, PROOF_SIZE*4*2)
+	//E, err := this.Context.CreateEmptyBuffer(cl.MemReadWrite, PROOF_SIZE*8*4)
+	I3, err := this.Context.CreateEmptyBuffer(cl.MemReadWrite, EDGE_SIZE*4*2)
+	I4, err := this.Context.CreateEmptyBuffer(cl.MemReadWrite, 8)
+	I5, err := this.Context.CreateEmptyBuffer(cl.MemReadWrite, PROOF_SIZE*4)
 
-	if _, err = this.CommandQueue.EnqueueNDRangeKernel(this.Kernels["seedA"], []int{0}, []int{2048*128}, []int{128}, nil); err != nil {
-		log.Println("-", this.MinerId,err)
-		return
-	}
-	if _, err = this.CommandQueue.EnqueueNDRangeKernel(this.Kernels["seedB1"], []int{0}, []int{1024*128}, []int{128}, nil); err != nil {
-		log.Println("-", this.MinerId,err)
-		return
-	}
-	if _, err = this.CommandQueue.EnqueueNDRangeKernel(this.Kernels["seedB2"], []int{0}, []int{1024*128}, []int{128}, nil); err != nil {
-		log.Println("-", this.MinerId,err)
-		return
-	}
-	this.CommandQueue.EnqueueFillBuffer(I1,nil,0,0,0,nil)
+	//err = this.Kernels["seedA"].SetArgBuffer(6,E)
+	this.Kernels["seedB1"], err = this.Program.CreateKernel("Trimmer01")
 
-	if _, err = this.CommandQueue.EnqueueNDRangeKernel(this.Kernels["round1"], []int{0}, []int{4096*1024}, []int{1024}, nil); err != nil {
-		log.Println("-", this.MinerId,err)
-		return
-	}
-	this.CommandQueue.EnqueueFillBuffer(I2,nil,0,0,0,nil)
-	if _, err = this.CommandQueue.EnqueueNDRangeKernel(this.Kernels["roundN0"], []int{0}, []int{4096*1024}, []int{1024}, nil); err != nil {
-		log.Println("-", this.MinerId,err)
-		return
-	}
-	this.CommandQueue.EnqueueFillBuffer(I1,nil,0,0,0,nil)
-	if _, err = this.CommandQueue.EnqueueNDRangeKernel(this.Kernels["roundNB"], []int{0}, []int{4096*1024}, []int{1024}, nil); err != nil {
-		log.Println("-", this.MinerId,err)
-		return
-	}
-	for i:=0;i<120;i++{
-		this.CommandQueue.EnqueueFillBuffer(I2,nil,0,0,0,nil)
-		if _, err = this.CommandQueue.EnqueueNDRangeKernel(this.Kernels["roundNA"], []int{0}, []int{4096*1024}, []int{1024}, nil); err != nil {
-			log.Println("-", this.MinerId,err)
+	this.Kernels["seedB2"], err = this.Program.CreateKernel("Trimmer02")
+
+	this.Kernels["seedB3"], err = this.Program.CreateKernel("RecoveryNonce")
+	err = this.Kernels["seedA"].SetArgBuffer(4,B)
+	err = this.Kernels["seedA"].SetArgBuffer(5,I3)
+
+
+	err = this.Kernels["seedB1"].SetArgBuffer(0,B)
+	err = this.Kernels["seedB1"].SetArgBuffer(1,I3)
+
+	err = this.Kernels["seedB2"].SetArgBuffer(0,B)
+	err = this.Kernels["seedB2"].SetArgBuffer(1,I3)
+	err = this.Kernels["seedB2"].SetArgBuffer(2,C1)
+	err = this.Kernels["seedB2"].SetArgBuffer(3,I4)
+
+	err = this.Kernels["seedB3"].SetArgBuffer(0,B)
+	err = this.Kernels["seedB3"].SetArgBuffer(1,D)
+	err = this.Kernels["seedB3"].SetArgBuffer(2,I5)
+	defer func() {
+		this.Release()
+		B.Release()
+		D.Release()
+		I3.Release()
+		I4.Release()
+		I5.Release()
+		C1.Release()
+	}()
+	for i:=0;i<2<<32;i++{
+		start := int(time.Now().Unix())
+		str := fmt.Sprintf("xsdsadwqefedhellowoadswerdwef8762565ewg82rldtest%d",i)
+		hdrkey := blake2b.Sum256([]byte(str))
+
+		sip := newsip(hdrkey[:])
+		//init kernels
+		err = this.Kernels["seedA"].SetArg(0,uint64(sip.v[0]))
+
+		err = this.Kernels["seedA"].SetArg(1,uint64(sip.v[1]))
+
+		err = this.Kernels["seedA"].SetArg(2,uint64(sip.v[2]))
+
+		err = this.Kernels["seedA"].SetArg(3,uint64(sip.v[3]))
+
+
+		clear := make([]byte,4)
+		_,err = this.CommandQueue.EnqueueFillBuffer(I3,unsafe.Pointer(&clear[0]),4,0,EDGE_SIZE*8,nil)
+		_,err = this.CommandQueue.EnqueueFillBuffer(B,unsafe.Pointer(&clear[0]),4,0,EDGE_SIZE*8,nil)
+		_,err = this.CommandQueue.EnqueueFillBuffer(C1,unsafe.Pointer(&clear[0]),4,0,EDGE_SIZE*8,nil)
+		_,err = this.CommandQueue.EnqueueFillBuffer(D,unsafe.Pointer(&clear[0]),4,0,EDGE_SIZE*8,nil)
+		//_,err = this.CommandQueue.EnqueueFillBuffer(E,unsafe.Pointer(&clear[0]),4,0,EDGE_SIZE*8*4,nil)
+		_,err = this.CommandQueue.EnqueueFillBuffer(I4,unsafe.Pointer(&clear[0]),4,0,8,nil)
+		_,err = this.CommandQueue.EnqueueFillBuffer(I5,unsafe.Pointer(&clear[0]),4,0,PROOF_SIZE*4,nil)
+
+		if _, err = this.CommandQueue.EnqueueNDRangeKernel(this.Kernels["seedA"], []int{0}, []int{2048*256}, []int{256}, nil); err != nil {
+			log.Println("1058", this.MinerId,err)
 			return
 		}
-		this.CommandQueue.EnqueueFillBuffer(I1,nil,0,0,0,nil)
-		if _, err = this.CommandQueue.EnqueueNDRangeKernel(this.Kernels["roundNB"], []int{0}, []int{4096*1024}, []int{1024}, nil); err != nil {
-			log.Println("-", this.MinerId,err)
+
+		result3 := make([]byte,EDGE_SIZE*8)
+		edges := make([]uint32,0)
+		wg := sync.WaitGroup{}
+		for i:= 0;i<80;i++{
+			wg.Add(1)
+			go func() {
+				if _, err = this.CommandQueue.EnqueueNDRangeKernel(this.Kernels["seedB1"], []int{0}, []int{2048*256}, []int{256}, nil); err != nil {
+					log.Println("1058", this.MinerId,err)
+					return
+				}
+				wg.Done()
+			}()
+		}
+		wg.Wait()
+		_,err = this.CommandQueue.EnqueueFillBuffer(I4,unsafe.Pointer(&clear[0]),4,0,8,nil)
+		if _, err = this.CommandQueue.EnqueueNDRangeKernel(this.Kernels["seedB2"], []int{0}, []int{2048*256}, []int{256}, nil); err != nil {
+			log.Println("1058", this.MinerId,err)
 			return
 		}
-	}
-	this.CommandQueue.EnqueueFillBuffer(I2,nil,0,0,0,nil)
+		result3 = make([]byte,8)
+		_,err = this.CommandQueue.EnqueueReadBufferByte(I4,true,0,result3,nil)
+		count := binary.LittleEndian.Uint32(result3[4:8])
+		log.Println("第",i,"个，数量:",count)
+		end := int(time.Now().Unix())
+		log.Println("spend ",(end-start),"s one time")
+		if count >= PROOF_SIZE*2{
+			result2 := make([]byte,count*4*2)
+			_,err = this.CommandQueue.EnqueueReadBufferByte(C1,true,0,result2,nil)
+			edges = make([]uint32,0)
+			for j:=0;j<len(result2);j+=4{
+				edges = append(edges,binary.LittleEndian.Uint32(result2[j:j+4]))
+			}
+			//log.Println(i,len(edges))
+			cg := CGraph{}
+			cg.SetEdges(edges,len(edges)/2)
+			if cg.FindSolutions(){
+			//if cg.FindCycle(){
+				_,err = this.CommandQueue.EnqueueFillBuffer(I5,unsafe.Pointer(&clear[0]),4,0,PROOF_SIZE*8,nil)
+				_,err = this.CommandQueue.EnqueueWriteBufferByte(D,true,0,cg.GetNonceEdgesBytes(),nil)
+				if _, err = this.CommandQueue.EnqueueNDRangeKernel(this.Kernels["seedB3"], []int{0}, []int{2048*256}, []int{256}, nil); err != nil {
+					log.Println("1058", this.MinerId,err)
+					return
+				}
+				nonces := make([]byte,4*PROOF_SIZE)
+				_,err = this.CommandQueue.EnqueueReadBufferByte(I5,true,0,nonces,nil)
+				FoundNonce := make([]uint32,0)
+				for j := 0;j<PROOF_SIZE*4;j+=4{
+					FoundNonce = append(FoundNonce,binary.LittleEndian.Uint32(nonces[j:j+4]))
+				}
 
-	if _, err = this.CommandQueue.EnqueueNDRangeKernel(this.Kernels["FluffyTailO"], []int{0}, []int{4096*1024}, []int{1024}, nil); err != nil {
-		log.Println("-", this.MinerId,err)
-		return
+				sort.Slice(FoundNonce, func(i, j int) bool {
+					return FoundNonce[i] < FoundNonce[j]
+				})
+				//log.Println(len(FoundNonce),FoundNonce)
+				if err = Verify(hdrkey[:],FoundNonce);err == nil{
+					log.Println("【Success Found Nonce】",FoundNonce)
+				} else{
+					log.Println("result not match:",err)
+				}
+				return
+			}
+		}
 	}
-	edges_count := make([]byte,4)
-	//Get output
-	if _, err = this.CommandQueue.EnqueueReadBufferByte(I2, true, 0, edges_count, nil); err != nil {
-		log.Println("- ReadBuffer", this.MinerId,err)
-		return
-	}
-	edges_count_val := binary.LittleEndian.Uint32(edges_count)
-	if edges_count_val > 1000000{
-		edges_count_val = 1000000
-	}
-	edges_left = make([]byte,edges_count_val*2)
-	//Get output
-	if _, err = this.CommandQueue.EnqueueReadBufferByte(A1, true, 0, edges_count, nil); err != nil {
-		log.Println("- ReadBuffer", this.MinerId,err)
-		return
-	}
-
-	log.Println(edges_left)
-	os.Exit(1)
 }
 
 func (this *Device)Update()  {
@@ -222,8 +213,9 @@ func (this *Device)InitDevice()  {
 
 func (d *Device)Release()  {
 	d.Context.Release()
-	d.BlockObj.Release()
-	d.NonceOutObj.Release()
 	d.Program.Release()
 	d.CommandQueue.Release()
+	for _,v:=range d.Kernels{
+		v.Release()
+	}
 }
