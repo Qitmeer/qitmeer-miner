@@ -108,9 +108,9 @@ func (this *Device)Mine()  {
 		I5.Release()
 		C1.Release()
 	}()
-	for i:=0;i<2<<32;i++{
+	for i:=14;i<2<<32;i++{
 		start := int(time.Now().Unix())
-		str := fmt.Sprintf("xsdsadwqefedhellowoadswerdwef8762565ewg82rldtest%d",i)
+		str := fmt.Sprintf("gyugguguyoadswerdwef8762565ewg82rldtest%d",i)
 		hdrkey := blake2b.Sum256([]byte(str))
 
 		sip := newsip(hdrkey[:])
@@ -197,7 +197,9 @@ func (this *Device)Mine()  {
 				} else{
 					log.Println("result not match:",err)
 				}
-				return
+				if CheckDiff(FoundNonce){
+					return
+				}
 			}
 		}
 	}
