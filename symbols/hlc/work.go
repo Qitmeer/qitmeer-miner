@@ -58,8 +58,9 @@ func (this *HLCWork) Get () bool {
 	diffi := make([]byte,4)
 	binary.LittleEndian.PutUint32(diffi, uint32(diff))
 	blockTemplate.Result.Difficulty = binary.LittleEndian.Uint32(diffi)
+	blockTemplate.Result.Nonces = make([]*uint32,0)
 	blockTemplate.Result.HasCoinbasePack = false
-	blockTemplate.Result.CalcCoinBase(this.Cfg.RandStr,this.Cfg.MinerAddr)
+	_ = blockTemplate.Result.CalcCoinBase(this.Cfg.RandStr,this.Cfg.MinerAddr)
 	this.Block = blockTemplate.Result
 	this.Started = uint32(time.Now().Unix())
 	return true

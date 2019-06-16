@@ -108,32 +108,32 @@ func (this *Device)Mine()  {
 		I5.Release()
 		C1.Release()
 	}()
-	for i:=14;i<2<<32;i++{
+	for i:=725;i<2<<32;i++{
 		start := int(time.Now().Unix())
 		str := fmt.Sprintf("gyugguguyoadswerdwef8762565ewg82rldtest%d",i)
 		hdrkey := blake2b.Sum256([]byte(str))
 
-		sip := newsip(hdrkey[:])
+		sip := Newsip(hdrkey[:])
 		//init kernels
-		err = this.Kernels["seedA"].SetArg(0,uint64(sip.v[0]))
+		err = this.Kernels["seedA"].SetArg(0,uint64(sip.V[0]))
 
-		err = this.Kernels["seedA"].SetArg(1,uint64(sip.v[1]))
+		err = this.Kernels["seedA"].SetArg(1,uint64(sip.V[1]))
 
-		err = this.Kernels["seedA"].SetArg(2,uint64(sip.v[2]))
+		err = this.Kernels["seedA"].SetArg(2,uint64(sip.V[2]))
 
-		err = this.Kernels["seedA"].SetArg(3,uint64(sip.v[3]))
+		err = this.Kernels["seedA"].SetArg(3,uint64(sip.V[3]))
 
 
 		clear := make([]byte,4)
 		_,err = this.CommandQueue.EnqueueFillBuffer(I3,unsafe.Pointer(&clear[0]),4,0,EDGE_SIZE*8,nil)
 		_,err = this.CommandQueue.EnqueueFillBuffer(B,unsafe.Pointer(&clear[0]),4,0,EDGE_SIZE*8,nil)
 		_,err = this.CommandQueue.EnqueueFillBuffer(C1,unsafe.Pointer(&clear[0]),4,0,EDGE_SIZE*8,nil)
-		_,err = this.CommandQueue.EnqueueFillBuffer(D,unsafe.Pointer(&clear[0]),4,0,EDGE_SIZE*8,nil)
+		_,err = this.CommandQueue.EnqueueFillBuffer(D,unsafe.Pointer(&clear[0]),4,0,PROOF_SIZE*8,nil)
 		//_,err = this.CommandQueue.EnqueueFillBuffer(E,unsafe.Pointer(&clear[0]),4,0,EDGE_SIZE*8*4,nil)
 		_,err = this.CommandQueue.EnqueueFillBuffer(I4,unsafe.Pointer(&clear[0]),4,0,8,nil)
 		_,err = this.CommandQueue.EnqueueFillBuffer(I5,unsafe.Pointer(&clear[0]),4,0,PROOF_SIZE*4,nil)
 
-		if _, err = this.CommandQueue.EnqueueNDRangeKernel(this.Kernels["seedA"], []int{0}, []int{2048*256}, []int{256}, nil); err != nil {
+		if _, err = this.CommandQueue.EnqueueNDRangeKernel(this.Kernels["seedA"], []int{0}, []int{2048*256*2}, []int{256}, nil); err != nil {
 			log.Println("1058", this.MinerId,err)
 			return
 		}
@@ -144,7 +144,7 @@ func (this *Device)Mine()  {
 		for i:= 0;i<80;i++{
 			wg.Add(1)
 			go func() {
-				if _, err = this.CommandQueue.EnqueueNDRangeKernel(this.Kernels["seedB1"], []int{0}, []int{2048*256}, []int{256}, nil); err != nil {
+				if _, err = this.CommandQueue.EnqueueNDRangeKernel(this.Kernels["seedB1"], []int{0}, []int{2048*256*2}, []int{256}, nil); err != nil {
 					log.Println("1058", this.MinerId,err)
 					return
 				}
@@ -152,8 +152,7 @@ func (this *Device)Mine()  {
 			}()
 		}
 		wg.Wait()
-		_,err = this.CommandQueue.EnqueueFillBuffer(I4,unsafe.Pointer(&clear[0]),4,0,8,nil)
-		if _, err = this.CommandQueue.EnqueueNDRangeKernel(this.Kernels["seedB2"], []int{0}, []int{2048*256}, []int{256}, nil); err != nil {
+		if _, err = this.CommandQueue.EnqueueNDRangeKernel(this.Kernels["seedB2"], []int{0}, []int{2048*256*2}, []int{256}, nil); err != nil {
 			log.Println("1058", this.MinerId,err)
 			return
 		}
@@ -177,7 +176,7 @@ func (this *Device)Mine()  {
 			//if cg.FindCycle(){
 				_,err = this.CommandQueue.EnqueueFillBuffer(I5,unsafe.Pointer(&clear[0]),4,0,PROOF_SIZE*8,nil)
 				_,err = this.CommandQueue.EnqueueWriteBufferByte(D,true,0,cg.GetNonceEdgesBytes(),nil)
-				if _, err = this.CommandQueue.EnqueueNDRangeKernel(this.Kernels["seedB3"], []int{0}, []int{2048*256}, []int{256}, nil); err != nil {
+				if _, err = this.CommandQueue.EnqueueNDRangeKernel(this.Kernels["seedB3"], []int{0}, []int{2048*256*2}, []int{256}, nil); err != nil {
 					log.Println("1058", this.MinerId,err)
 					return
 				}

@@ -8,23 +8,23 @@ import (
 type sip struct {
 	k0 uint64
 	k1 uint64
-	v  [4]uint64
+	V  [4]uint64
 }
-func newsip(h []byte) *sip {
+func Newsip(h []byte) *sip {
 	s := &sip{
 		k0: binary.LittleEndian.Uint64(h[:]),
 		k1: binary.LittleEndian.Uint64(h[8:]),
 	}
-	s.v[0] = s.k0 ^ 0x736f6d6570736575
-	s.v[1] = s.k1 ^ 0x646f72616e646f6d
-	s.v[2] = s.k0 ^ 0x6c7967656e657261
-	s.v[3] = s.k1 ^ 0x7465646279746573
+	s.V[0] = s.k0 ^ 0x736f6d6570736575
+	s.V[1] = s.k1 ^ 0x646f72616e646f6d
+	s.V[2] = s.k0 ^ 0x6c7967656e657261
+	s.V[3] = s.k1 ^ 0x7465646279746573
 	return s
 }
 
 //Verify verifiex cockoo nonces.
 func Verify(sipkey []byte, nonces []uint32) error {
-	sip := newsip(sipkey)
+	sip := Newsip(sipkey)
 	var uvs [2 * PROOF_SIZE]uint32
 	var xor0, xor1 uint32
 
@@ -40,12 +40,13 @@ func Verify(sipkey []byte, nonces []uint32) error {
 		if n > 0 && nonces[n] <= nonces[n-1] {
 			return errors.New("nonces are not in order")
 		}
-		u00 := siphashPRF(&sip.v, uint64(nonces[n]<<1))
-		v00 := siphashPRF(&sip.v, (uint64(nonces[n])<<1)|1)
+		u00 := siphashPRF(&sip.V, uint64(nonces[n]<<1))
+		v00 := siphashPRF(&sip.V, (uint64(nonces[n])<<1)|1)
 		u0 := uint32(u00&edgemask) << 1
 		xor0 ^= u0
 		uvs[2*n] = u0
-		v0 := (uint32((v00)&edgemask) << 1) | 1
+		//v0 := (uint32((v00)&edgemask) << 1) | 1
+		v0 := (uint32((v00>>32)&edgemask) << 1) | 1
 		xor1 ^= v0
 		uvs[2*n+1] = v0
 	}

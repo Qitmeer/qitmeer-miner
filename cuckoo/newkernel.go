@@ -43,9 +43,9 @@ __kernel  void CreateEdges(const u64 v0i, const u64 v1i, const u64 v2i, const u6
 	u64 v2;
 	u64 v3;
 
-	for (int i = 0; i < 32; i += 1)
+	for (int i = 0; i < 16; i += 1)
 	{
-		u64 blockNonce = gid * 32 + i;
+		u64 blockNonce = gid * 16 + i;
 		u64 nonce1 = (blockNonce << 1);
 		u64 nonce2 = (blockNonce << 1 | 1);
 		//build u
@@ -64,7 +64,7 @@ __kernel  void CreateEdges(const u64 v0i, const u64 v1i, const u64 v2i, const u6
 
 		u00 = (v0 ^ v1) ^ (v2  ^ v3);	
 
-		//build v
+		//build V
 		v0 = v0i;
 		v1 = v1i;
 		v2 = v2i;
@@ -80,19 +80,19 @@ __kernel  void CreateEdges(const u64 v0i, const u64 v1i, const u64 v2i, const u6
 
 		v00 = (v0 ^ v1) ^ (v2  ^ v3);	
 		u32 u = (( u00 & EDGEMASK)<<1);
-		//u32 v = ((( ( v00 >> 32 ) & EDGEMASK)<<1) | 1);
-		u32 v = ((( ( v00 ) & EDGEMASK)<<1) | 1);
-		//u64 index = u+v;
+		u32 V = ((( ( v00 >> 32 ) & EDGEMASK)<<1) | 1);
+		//u32 V = ((( ( v00 ) & EDGEMASK)<<1) | 1);
+		//u64 index = u+V;
 		//int idx = atomic_inc(&existBucket[index]);
 			edges[nonce1] = u;
-			edges[nonce2] = v;
+			edges[nonce2] = V;
 			atomic_inc(&indexes[u]);
-			atomic_inc(&indexes[v]);
+			atomic_inc(&indexes[V]);
 		//if(idx==0){
 		//	edges[nonce1] = u;
-		//	edges[nonce2] = v;
+		//	edges[nonce2] = V;
 		//	atomic_inc(&indexes[u]);
-		//	atomic_inc(&indexes[v]);
+		//	atomic_inc(&indexes[V]);
 		//} else{
 		//	edges[nonce1] = 0;
 		//	edges[nonce2] = 0;
@@ -105,20 +105,20 @@ __attribute__((reqd_work_group_size(256, 1, 1)))
 __kernel  void Trimmer01(__global uint2 * edges,__global u32 *indexes)
 {
 	const int gid = get_global_id(0);
-	for (int i = 0; i < 32; i++)
+	for (int i = 0; i < 16; i++)
 	{
-		u32 blockNonce = gid * 32 + i;
-		u32 v = edges[blockNonce].x;
+		u32 blockNonce = gid * 16 + i;
+		u32 V = edges[blockNonce].x;
 		u32 v1 = edges[blockNonce].y;
-		if(v==0 && v1==0){
+		if(V==0 && v1==0){
 			continue;
 		}
-		if(indexes[v]==1 && indexes[v1]>1){
+		if(indexes[V]==1 && indexes[v1]>1){
 			atomic_dec(&indexes[v1]);
 			edges[blockNonce] = 0;
 		}
-		if(indexes[v1]==1 && indexes[v]>1){	
-			atomic_dec(&indexes[v]);
+		if(indexes[v1]==1 && indexes[V]>1){	
+			atomic_dec(&indexes[V]);
 			edges[blockNonce] = 0;
 		}
 	}
@@ -130,17 +130,17 @@ __kernel  void Trimmer02(__global uint2 * edges,__global u32 *indexes,__global u
 {
 	const int gid = get_global_id(0);
 	barrier(CLK_LOCAL_MEM_FENCE);
-	for (int i = 0; i < 32; i++)
+	for (int i = 0; i < 16; i++)
 	{
-		u64 blockNonce = gid * 32 + i;
-		u32 v = edges[blockNonce].x;
+		u64 blockNonce = gid * 16 + i;
+		u32 V = edges[blockNonce].x;
 		u32 v1 = edges[blockNonce].y;
 		
-		if(v==0 && v1==0){
+		if(V==0 && v1==0){
 			continue;
 		}
 
-		if(indexes[v]>1 && indexes[v1]>1){
+		if(indexes[V]>1 && indexes[v1]>1){
 
 			int idx = atomic_add(&count[0],1);
 			atomic_add(&count[1],1);
@@ -152,24 +152,24 @@ __kernel  void Trimmer02(__global uint2 * edges,__global u32 *indexes,__global u
 }
 
 __attribute__((reqd_work_group_size(256, 1, 1)))
-__kernel  void RecoveryNonce(__global uint2 * edges,__global uint2 *values,__global u32 *nonces)
+__kernel  void RecoveryNonce(__global uint2 * edges,__global uint2 *nodes,__global u32 *nonces)
 {
 	const int gid = get_global_id(0);
 	barrier(CLK_LOCAL_MEM_FENCE);
-	for (int i = 0; i < 32; i++)
+	for (int i = 0; i < 16; i++)
 	{
-		u64 blockNonce = gid * 32 + i;
-		u32 v = edges[blockNonce].x;
+		u64 blockNonce = gid * 16 + i;
+		u32 V = edges[blockNonce].x;
 		u32 v1 = edges[blockNonce].y;
 		
-		if(v==0 && v1==0){
+		if(V==0 && v1==0){
 			continue;
 		}
 
 		for(int k=0;k<42;k++){
-			u32 x = values[k].x;
-			u32 y = values[k].y;
-			if((v==x &&v1==y) || (v==y &&v1==x) ){
+			u32 x = nodes[k].x;
+			u32 y = nodes[k].y;
+			if((V==x &&v1==y) || (V==y &&v1==x) ){
 				nonces[k] = blockNonce;
 			}
 		}

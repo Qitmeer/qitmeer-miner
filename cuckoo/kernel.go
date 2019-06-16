@@ -506,10 +506,10 @@ __kernel   void FluffyRecovery(const u64 v0i, const u64 v1i, const u64 v2i, cons
 		{
 			u64 lookup = s == EDGE_BLOCK_MASK ? last : sipblock[s] ^ last;
 			u64 u = lookup & EDGEMASK;
-			u64 v = (lookup >> 32) & EDGEMASK;
+			u64 V = (lookup >> 32) & EDGEMASK;
 
-			u64 a = u | (v << 32);
-			u64 b = v | (u << 32);
+			u64 a = u | (V << 32);
+			u64 b = V | (u << 32);
 
 			for (int i = 0; i < 42; i++)
 			{

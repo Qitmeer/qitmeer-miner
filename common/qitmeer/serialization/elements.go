@@ -2,10 +2,10 @@
 package serialization
 
 import (
+	"encoding/binary"
 	"hlc-miner/common/qitmeer/hash"
 	"hlc-miner/common/qitmeer/protocol"
 	"io"
-	"encoding/binary"
 	"time"
 )
 
@@ -201,6 +201,15 @@ func writeElement(w io.Writer, element interface{}) error {
 		err := BinarySerializer.PutUint64(w, littleEndian, e)
 		if err != nil {
 			return err
+		}
+		return nil
+
+	case []*uint32:
+		for i := 0;i<len(e);i++{
+			err := BinarySerializer.PutUint32(w, littleEndian, *e[i])
+			if err != nil {
+				return err
+			}
 		}
 		return nil
 
