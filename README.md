@@ -118,6 +118,7 @@ $ ./hlc-miner -o stratum+tcp://127.0.0.1:3177 -m RmN4SADy42FKmN8ARKieX9iHh9icptd
 - `-u` the node rpc username
 - `-P` the node rpc password
 - `--symbol` now just `HLC` is supported
+- `--trimmerCount` trimmer times
 - `--i` Intensities (the work size is 2^intensity) up to device
 - `--W` The explicitly declared sizes of the work to do up to device (overrides intensity)
 - `--mineraddress` the miner address
