@@ -134,7 +134,14 @@ func (this *HLCDevice) Mine() {
 			} else {
 				this.header.PackageRpcHeader(&this.Work)
 			}
-			this.Transactions[int(this.MinerId)] = this.header.Transactions
+			this.Transactions[int(this.MinerId)] = make([]Transactions,0)
+			for k := 0;k<len(this.header.Transactions);k++{
+				this.Transactions[int(this.MinerId)] = append(this.Transactions[int(this.MinerId)],Transactions{
+					Data:this.header.Transactions[k].Data,
+					Hash:this.header.Transactions[k].Hash,
+					Fee:this.header.Transactions[k].Fee,
+				})
+			}
 
 			hdrkey := hash.DoubleHashH(this.header.HeaderData[0:NONCEEND])
 			sip := cuckoo.Newsip(hdrkey[:16])
@@ -165,12 +172,12 @@ func (this *HLCDevice) Mine() {
 				return
 			}
 
-			// 2 ^ 24
+			// 2 ^ 24 2 ^ 11 * 2 ^ 8 * 2 * 2 ^ 4 11+8+1+4=24
 			if _, err = this.CommandQueue.EnqueueNDRangeKernel(this.CreateEdgeKernel, []int{0}, []int{2048*256*2}, []int{256}, nil); err != nil {
 				log.Println("CreateEdgeKernel-1058", this.MinerId,err)
 				return
 			}
-			for i:= 0;i<40;i++{
+			for i:= 0;i<this.Cfg.TrimmerCount;i++{
 				if _, err = this.CommandQueue.EnqueueNDRangeKernel(this.Trimmer01Kernel, []int{0}, []int{2048*256*2}, []int{256}, nil); err != nil {
 					log.Println("Trimmer01Kernel-1058", this.MinerId,err)
 					return
@@ -217,8 +224,8 @@ func (this *HLCDevice) Mine() {
 							this.header.HeaderData = append(this.header.HeaderData,b...)
 						}
 						h := hash.DoubleHashH(this.header.HeaderData)
-						log.Println("[Result Hash]",h)
-						log.Println(fmt.Sprintf("[Target Hash]%064x",this.header.TargetDiff))
+						log.Println("[Calc Hash]",h)
+						log.Println(fmt.Sprintf("[Target Hash] %064x",this.header.TargetDiff))
 						if blockchain.HashToBig(&h).Cmp(this.header.TargetDiff) <= 0 {
 							subm := hex.EncodeToString(this.header.HeaderData)
 							if !this.Pool{
