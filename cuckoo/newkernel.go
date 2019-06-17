@@ -80,8 +80,8 @@ __kernel  void CreateEdges(const u64 v0i, const u64 v1i, const u64 v2i, const u6
 
 		v00 = (v0 ^ v1) ^ (v2  ^ v3);	
 		u32 u = (( u00 & EDGEMASK)<<1);
-		u32 V = ((( ( v00 >> 32 ) & EDGEMASK)<<1) | 1);
-		//u32 V = ((( ( v00 ) & EDGEMASK)<<1) | 1);
+		//u32 V = ((( ( v00 >> 32 ) & EDGEMASK)<<1) | 1);
+		u32 V = ((( ( v00 ) & EDGEMASK)<<1) | 1);
 		//u64 index = u+V;
 		//int idx = atomic_inc(&existBucket[index]);
 			edges[nonce1] = u;
