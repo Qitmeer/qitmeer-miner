@@ -81,6 +81,9 @@ func (this *HLCWork) Submit (subm string) error {
 		return err
 	}
 	if !strings.Contains(res.Result,"Block submitted accepted") {
+		if strings.Contains(res.Result,"The tips of block is expired"){
+			return ErrSameWork
+		}
 		return errors.New("【submit data failed】"+res.Result)
 	}
 	return nil
