@@ -61,3 +61,4 @@ func (this *MinerBlockData)PackageRpcHeader(work *HLCWork)  {
 	r1 := hash.Hash(r)
 	this.TargetDiff = blockchain.HashToBig(&r1)
 }
+

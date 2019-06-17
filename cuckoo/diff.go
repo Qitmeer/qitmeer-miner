@@ -21,5 +21,5 @@ func CheckDiff(nonces []uint32)  bool {
 	//	fmt.Println("Found Solve")
 	//	return true
 	//}
-	return false
+	return true
 }

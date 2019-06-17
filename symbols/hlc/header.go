@@ -44,7 +44,7 @@ type BlockHeader struct {
 	HasCoinbasePack bool
 }
 
-//nox block header
+//hlc block header
 func (h *BlockHeader) BlockData() []byte {
 	buf := bytes.NewBuffer(make([]byte, 0, MaxBlockHeaderPayload))
 	// TODO, redefine the protocol version and storage

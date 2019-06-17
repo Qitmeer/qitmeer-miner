@@ -74,6 +74,7 @@ func (this *HLCWork) Submit (subm string) error {
 		return ErrSameWork
 	}
 	this.LastSub = subm
+	log.Println("【submit】",subm)
 	body := this.Rpc.RpcResult("submitBlock",[]interface{}{subm})
 	var res getSubmitResponseJson
 	err := json.Unmarshal(body, &res)

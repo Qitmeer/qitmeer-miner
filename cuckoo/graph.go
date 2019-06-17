@@ -6,7 +6,7 @@ import (
 	"log"
 )
 
-const PROOF_SIZE  = 42
+const PROOF_SIZE  = 20
 type paths struct {
 	values []int
 }

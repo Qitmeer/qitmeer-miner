@@ -15,8 +15,8 @@ import (
 	"hlc-miner/core"
 	"hlc-miner/cuckoo"
 	"log"
+	"math/big"
 	"sort"
-	"sync"
 	"sync/atomic"
 	"unsafe"
 )
@@ -44,6 +44,8 @@ type HLCDevice struct {
 	RecoveryKernel        *cl.Kernel
 	NewWork               chan HLCWork
 	Work                  HLCWork
+	Transactions                  map[int][]Transactions
+	header MinerBlockData
 }
 
 func (this *HLCDevice) InitDevice() {
@@ -119,17 +121,25 @@ func (this *HLCDevice) Mine() {
 			if this.HasNewWork {
 				break
 			}
-
-			this.Update()
-			var header MinerBlockData
-			if this.Pool {
-				header.PackagePoolHeader(&this.Work)
-			} else {
-				header.PackageRpcHeader(&this.Work)
+			this.header = MinerBlockData{
+				Transactions:[]Transactions{},
+				Parents:[]ParentItems{},
+				HeaderData:make([]byte,0),
+				TargetDiff:&big.Int{},
+				JobID:"",
 			}
-			hdrkey := hash.DoubleHashH(header.HeaderData[0:NONCEEND])
-			sip := cuckoo.Newsip(hdrkey[:])
+			this.Update()
+			if this.Pool {
+				this.header.PackagePoolHeader(&this.Work)
+			} else {
+				this.header.PackageRpcHeader(&this.Work)
+			}
+			this.Transactions[int(this.MinerId)] = this.header.Transactions
 
+			hdrkey := hash.DoubleHashH(this.header.HeaderData[0:NONCEEND])
+			sip := cuckoo.Newsip(hdrkey[:16])
+
+			this.InitParamData()
 			err = this.CreateEdgeKernel.SetArg(0,uint64(sip.V[0]))
 			if err != nil {
 				log.Println("-", this.MinerId, err)
@@ -154,24 +164,18 @@ func (this *HLCDevice) Mine() {
 				this.IsValid = false
 				return
 			}
-			this.InitParamData()
+
 			// 2 ^ 24
 			if _, err = this.CommandQueue.EnqueueNDRangeKernel(this.CreateEdgeKernel, []int{0}, []int{2048*256*2}, []int{256}, nil); err != nil {
 				log.Println("CreateEdgeKernel-1058", this.MinerId,err)
 				return
 			}
-			wg := sync.WaitGroup{}
-			for i:= 0;i<80;i++{
-				wg.Add(1)
-				go func() {
-					if _, err = this.CommandQueue.EnqueueNDRangeKernel(this.Trimmer01Kernel, []int{0}, []int{2048*256*2}, []int{256}, nil); err != nil {
-						log.Println("Trimmer01Kernel-1058", this.MinerId,err)
-						return
-					}
-					wg.Done()
-				}()
+			for i:= 0;i<40;i++{
+				if _, err = this.CommandQueue.EnqueueNDRangeKernel(this.Trimmer01Kernel, []int{0}, []int{2048*256*2}, []int{256}, nil); err != nil {
+					log.Println("Trimmer01Kernel-1058", this.MinerId,err)
+					return
+				}
 			}
-			wg.Wait()
 			if _, err = this.CommandQueue.EnqueueNDRangeKernel(this.Trimmer02Kernel, []int{0}, []int{2048*256*2}, []int{256}, nil); err != nil {
 				log.Println("Trimmer02Kernel-1058", this.MinerId,err)
 				return
@@ -206,41 +210,35 @@ func (this *HLCDevice) Mine() {
 					sort.Slice(this.Nonces, func(i, j int) bool {
 						return this.Nonces[i] < this.Nonces[j]
 					})
-					//log.Println(len(FoundNonce),FoundNonce)
-					if err = cuckoo.Verify(hdrkey[:],this.Nonces);err == nil{
+					if err = cuckoo.Verify(hdrkey[:16],this.Nonces);err == nil{
 						for i := 0; i < len(this.Nonces); i++ {
 							b := make([]byte,4)
 							binary.LittleEndian.PutUint32(b,this.Nonces[i])
-							header.HeaderData = append(header.HeaderData,b...)
+							this.header.HeaderData = append(this.header.HeaderData,b...)
 						}
-						h := hash.DoubleHashH(header.HeaderData)
+						h := hash.DoubleHashH(this.header.HeaderData)
 						log.Println("[Result Hash]",h)
-						log.Println(fmt.Sprintf("[Target Hash]%064x",header.TargetDiff))
-						if blockchain.HashToBig(&h).Cmp(header.TargetDiff) <= 0 {
-							log.Println("[Found Hash]",h)
-							subm := hex.EncodeToString(header.HeaderData)
+						log.Println(fmt.Sprintf("[Target Hash]%064x",this.header.TargetDiff))
+						if blockchain.HashToBig(&h).Cmp(this.header.TargetDiff) <= 0 {
+							subm := hex.EncodeToString(this.header.HeaderData)
 							if !this.Pool{
 								if this.Cfg.DAG{
-									subm += common.Int2varinthex(int64(len(header.Parents)))
-									for j := 0; j < len(header.Parents); j++ {
-										subm += header.Parents[j].Data
+									subm += common.Int2varinthex(int64(len(this.header.Parents)))
+									for j := 0; j < len(this.header.Parents); j++ {
+										subm += this.header.Parents[j].Data
 									}
 								}
 
-								txCount := len(header.Transactions) //real transaction count except coinbase
+								txCount := len(this.Transactions)
 								subm += common.Int2varinthex(int64(txCount))
 
 								for j := 0; j < txCount; j++ {
-									subm += header.Transactions[j].Data
+									subm += this.Transactions[int(this.MinerId)][j].Data
 								}
-
-								subm += common.Int2varinthex(int64(cuckoo.PROOF_SIZE))
-								subm += hex.EncodeToString(header.HeaderData[NONCEEND:])
-
-								txCount -= 1
+								txCount -= 1 //real transaction count except coinbase
 								subm += "-" + fmt.Sprintf("%d",txCount) + "-" + fmt.Sprintf("%d",this.Work.Block.Height)
 							} else {
-								subm += "-" + header.JobID + "-" + this.Work.PoolWork.ExtraNonce2
+								subm += "-" + this.header.JobID + "-" + this.Work.PoolWork.ExtraNonce2
 							}
 							this.SubmitData <- subm
 							if !this.Pool{

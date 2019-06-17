@@ -3,7 +3,6 @@ package cuckoo
 import (
 	"encoding/binary"
 	"errors"
-	"log"
 )
 type sip struct {
 	k0 uint64
@@ -45,8 +44,8 @@ func Verify(sipkey []byte, nonces []uint32) error {
 		u0 := uint32(u00&edgemask) << 1
 		xor0 ^= u0
 		uvs[2*n] = u0
-		//v0 := (uint32((v00)&edgemask) << 1) | 1
-		v0 := (uint32((v00>>32)&edgemask) << 1) | 1
+		v0 := (uint32((v00)&edgemask) << 1) | 1
+		//v0 := (uint32((v00>>32)&edgemask) << 1) | 1
 		xor1 ^= v0
 		uvs[2*n+1] = v0
 	}
@@ -59,7 +58,6 @@ func Verify(sipkey []byte, nonces []uint32) error {
 		return errors.New("V endpoinsts don't match")
 	}
 	n := 0
-	log.Println(uvs)
 	for i := 0; ; {
 		another := i
 		for k := (i + 2) % (2 * PROOF_SIZE); k != i; k = (k + 2) % (2 * PROOF_SIZE) {
