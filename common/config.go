@@ -94,6 +94,7 @@ type Config struct {
 	Devices           string `short:"D" long:"devices" description:"Single device ID or a comma separated list of device IDs to use."`
 	DeviceIDs         []int
 	Intensity         int `short:"i" long:"intensity" description:"Intensities (the work size is 2^intensity) per device. Single global value or a comma separated list."`
+	TrimmerCount         int `long:"trimmerCount" default-mask:"60" description:"trimmer count."`
 	WorkSize          int `short:"W" long:"worksize" description:"The explicitly declared sizes of the work to do per device (overrides intensity). Single global value or a comma separated list."`
 	WorkSizeInts      []uint32
 
