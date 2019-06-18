@@ -45,6 +45,7 @@ func (this *HLCRobot)InitDevice()  {
 		deviceMiner.Quit=this.Quit
 		log.Println(fmt.Sprintf("Found Can Mining Device %d : ",i),deviceMiner.DeviceName)
 		deviceMiner.AllDiffOneShares = 0
+		deviceMiner.Transactions = make(map[int][]Transactions)
 		this.Devices = append(this.Devices,deviceMiner)
 	}
 }

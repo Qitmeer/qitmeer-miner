@@ -14,6 +14,7 @@ import (
 	"hlc-miner/common/qitmeer/hash"
 	"hlc-miner/core"
 	"log"
+	"math/big"
 	"sync/atomic"
 )
 
@@ -21,6 +22,8 @@ type HLCDevice struct {
 	core.Device
 	NewWork chan HLCWork
 	Work    HLCWork
+	Transactions map[int][]Transactions
+	header MinerBlockData
 }
 
 func (this *HLCDevice) InitDevice() {
@@ -131,17 +134,29 @@ func (this *HLCDevice) Mine() {
 			if this.HasNewWork {
 				break
 			}
-
-			this.Update()
-			var header MinerBlockData
-			if this.Pool {
-				header.PackagePoolHeader(&this.Work)
-			} else {
-				header.PackageRpcHeader(&this.Work)
+			this.header = MinerBlockData{
+				Transactions:[]Transactions{},
+				Parents:[]ParentItems{},
+				HeaderData:make([]byte,0),
+				TargetDiff:&big.Int{},
+				JobID:"",
 			}
-
+			this.Update()
+			if this.Pool {
+				this.header.PackagePoolHeader(&this.Work)
+			} else {
+				this.header.PackageRpcHeader(&this.Work)
+			}
+			this.Transactions[int(this.MinerId)] = make([]Transactions,0)
+			for k := 0;k<len(this.header.Transactions);k++{
+				this.Transactions[int(this.MinerId)] = append(this.Transactions[int(this.MinerId)],Transactions{
+					Data:this.header.Transactions[k].Data,
+					Hash:this.header.Transactions[k].Hash,
+					Fee:this.header.Transactions[k].Fee,
+				})
+			}
 			var err error
-			if _, err = this.CommandQueue.EnqueueWriteBufferByte(this.BlockObj, true, 0, header.HeaderData, nil); err != nil {
+			if _, err = this.CommandQueue.EnqueueWriteBufferByte(this.BlockObj, true, 0, this.header.HeaderData, nil); err != nil {
 				log.Println("-", this.MinerId, err)
 				this.IsValid = false
 				break
@@ -165,32 +180,32 @@ func (this *HLCDevice) Mine() {
 				this.NonceOut[4] != 0 || this.NonceOut[5] != 0 || this.NonceOut[6] != 0 || this.NonceOut[7] != 0 {
 				//Found Hash
 				for i := 0; i < 8; i++ {
-					header.HeaderData[i+NONCESTART] = this.NonceOut[i]
+					this.header.HeaderData[i+NONCESTART] = this.NonceOut[i]
 				}
 				this.Work.Block.Nonce = binary.LittleEndian.Uint64(this.NonceOut)
-				h := hash.DoubleHashH(header.HeaderData)
+				h := hash.DoubleHashH(this.header.HeaderData)
 
-				if blockchain.HashToBig(&h).Cmp(header.TargetDiff) <= 0 {
+				if blockchain.HashToBig(&h).Cmp(this.header.TargetDiff) <= 0 {
 					log.Println("[Found Hash]",hex.EncodeToString(common.Reverse(h[:])))
-					subm := hex.EncodeToString(header.HeaderData)
+					subm := hex.EncodeToString(this.header.HeaderData)
 					if !this.Pool{
 						if this.Cfg.DAG{
-							subm += common.Int2varinthex(int64(len(header.Parents)))
-							for j := 0; j < len(header.Parents); j++ {
-								subm += header.Parents[j].Data
+							subm += common.Int2varinthex(int64(len(this.header.Parents)))
+							for j := 0; j < len(this.header.Parents); j++ {
+								subm += this.header.Parents[j].Data
 							}
 						}
 
-						txCount := len(header.Transactions) //real transaction count except coinbase
+						txCount := len(this.Transactions[int(this.MinerId)]) //real transaction count except coinbase
 						subm += common.Int2varinthex(int64(txCount))
 
 						for j := 0; j < txCount; j++ {
-							subm += header.Transactions[j].Data
+							subm += this.Transactions[int(this.MinerId)][j].Data
 						}
 						txCount -= 1
 						subm += "-" + fmt.Sprintf("%d",txCount) + "-" + fmt.Sprintf("%d",this.Work.Block.Height)
 					} else {
-						subm += "-" + header.JobID + "-" + this.Work.PoolWork.ExtraNonce2
+						subm += "-" + this.header.JobID + "-" + this.Work.PoolWork.ExtraNonce2
 					}
 					this.SubmitData <- subm
 					if !this.Pool{
