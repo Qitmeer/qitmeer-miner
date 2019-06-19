@@ -6,20 +6,21 @@
 package common
 
 import (
-	"fmt"
 	"encoding/binary"
 	"encoding/hex"
-	"math/big"
-	"math"
+	"fmt"
 	nox "hlc-miner/common/qitmeer/hash"
-	"strings"
-	"unicode"
-	"os/user"
+	"log"
+	"math"
+	"math/big"
+	"math/rand"
 	"os"
+	"os/user"
 	"path/filepath"
 	"runtime"
-	"log"
-	"crypto/rand"
+	"strings"
+	"time"
+	"unicode"
 )
 
 func SliceContains(s []uint64, e uint64) bool {
@@ -303,9 +304,25 @@ func AppendToFile(fileName string, content string) error {
 
 func GenerateRand(length int) uint32 {
 	// Per [BIP32], the seed must be in range [MinSeedBytes, MaxSeedBytes].
+	//buf,_ := seed.GenerateSeed(32)
+	//log.Println(buf)
+	//os.Exit(1)
+	//buf := make([]byte, length)
+	//rand.Read(buf)
+	s2 := rand.NewSource(time.Now().UnixNano())
 
-	buf := make([]byte, length)
-	rand.Read(buf)
-	t1 := binary.LittleEndian.Uint32(buf)
-	return t1
+	r1 := rand.New(s2)
+	r := uint32(r1.Intn(2<<32))
+	return r
+}
+
+func RandGenerator(n int) chan uint32 {
+	rand.Seed(time.Now().UnixNano())
+	out := make(chan uint32)
+	go func(x int) {
+		for {
+			out <- uint32(rand.Intn(x))
+			}
+		}(n)
+	return out
 }

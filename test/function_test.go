@@ -28,7 +28,15 @@ func TestCreateNoxAddr(t *testing.T) {
 }
 
 func TestRand(t *testing.T)  {
-	a := common.GenerateRand(32)
 
-	log.Println(a)
+	i := 0
+	for{
+		b := <- common.RandGenerator(2<<32)
+		log.Println(b)
+		i++
+		if i > 1000 {
+			break
+		}
+	}
+
 }
