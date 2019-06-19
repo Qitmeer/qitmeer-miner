@@ -1,7 +1,7 @@
 /**
-HLC FOUNDATION
-james
-*/
+	HLC FOUNDATION
+	james
+ */
 
 package common
 
@@ -9,8 +9,8 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	nox "hlc-miner/common/qitmeer/hash"
 	"log"
-	nox "github.com/HalalChain/qitmeer-lib/common/hash"
 	"math"
 	"math/big"
 	"math/rand"
@@ -322,7 +322,7 @@ func RandGenerator(n int) chan uint32 {
 	go func(x int) {
 		for {
 			out <- uint32(rand.Intn(x))
-		}
-	}(n)
+			}
+		}(n)
 	return out
 }
