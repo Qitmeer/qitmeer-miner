@@ -3,9 +3,8 @@ package hlc
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/HalalChain/qitmeer-lib/common/hash"
 	"hlc-miner/common"
-	"hlc-miner/common/qitmeer/blockchain"
-	"hlc-miner/common/qitmeer/hash"
 	"math/big"
 )
 
@@ -59,5 +58,5 @@ func (this *MinerBlockData)PackageRpcHeader(work *HLCWork)  {
 	var r [32]byte
 	copy(r[:],common.Reverse(b1)[:])
 	r1 := hash.Hash(r)
-	this.TargetDiff = blockchain.HashToBig(&r1)
+	this.TargetDiff = HashToBig(&r1)
 }
