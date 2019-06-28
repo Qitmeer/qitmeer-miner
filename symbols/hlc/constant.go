@@ -1,6 +1,6 @@
 package hlc
 
-import "hlc-miner/common/qitmeer/hash"
+import "github.com/HalalChain/qitmeer-lib/common/hash"
 
 const (
 	//128

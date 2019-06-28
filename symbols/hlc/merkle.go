@@ -5,7 +5,7 @@
 package hlc
 
 import (
-	"hlc-miner/common/qitmeer/hash"
+	"github.com/HalalChain/qitmeer-lib/common/hash"
 	"math"
 )
 

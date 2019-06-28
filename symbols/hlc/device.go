@@ -8,10 +8,9 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"github.com/HalalChain/qitmeer-lib/common/hash"
 	"github.com/robvanmieghem/go-opencl/cl"
 	"hlc-miner/common"
-	"hlc-miner/common/qitmeer/blockchain"
-	"hlc-miner/common/qitmeer/hash"
 	"hlc-miner/core"
 	"hlc-miner/cuckoo"
 	"log"
@@ -226,7 +225,7 @@ func (this *HLCDevice) Mine() {
 						h := hash.DoubleHashH(this.header.HeaderData)
 						log.Println("[Calc Hash]",h)
 						log.Println(fmt.Sprintf("[Target Hash] %064x",this.header.TargetDiff))
-						if blockchain.HashToBig(&h).Cmp(this.header.TargetDiff) <= 0 {
+						if HashToBig(&h).Cmp(this.header.TargetDiff) <= 0 {
 							subm := hex.EncodeToString(this.header.HeaderData)
 							if !this.Pool{
 								if this.Cfg.DAG{

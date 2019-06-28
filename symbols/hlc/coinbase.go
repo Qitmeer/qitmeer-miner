@@ -5,14 +5,14 @@
 package hlc
 
 import (
-	"hlc-miner/common/qitmeer/address"
-	"hlc-miner/common/qitmeer/hash"
-	"hlc-miner/common/qitmeer/params"
-	"hlc-miner/common/qitmeer/txscript"
-	"hlc-miner/common/qitmeer/types"
 	"encoding/hex"
 	"encoding/binary"
-	s "hlc-miner/common/qitmeer/serialization"
+	"github.com/HalalChain/qitmeer-lib/common/hash"
+	"github.com/HalalChain/qitmeer-lib/core/address"
+	s "github.com/HalalChain/qitmeer-lib/core/serialization"
+	"github.com/HalalChain/qitmeer-lib/core/types"
+	"github.com/HalalChain/qitmeer-lib/engine/txscript"
+	"github.com/HalalChain/qitmeer-lib/params"
 	"log"
 	"hlc-miner/common"
 	"sort"
