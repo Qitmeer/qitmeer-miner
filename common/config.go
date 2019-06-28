@@ -7,8 +7,8 @@ package common
 
 import (
 	"fmt"
+	"github.com/HalalChain/qitmeer-lib/params"
 	"hlc-miner/common/go-flags"
-	"hlc-miner/common/qitmeer/params"
 	"log"
 	"net"
 	"os"

@@ -2,8 +2,8 @@ package hlc
 
 import (
 	"bytes"
-	"hlc-miner/common/qitmeer/hash"
-	s "hlc-miner/common/qitmeer/serialization"
+	"github.com/HalalChain/qitmeer-lib/common/hash"
+	s "github.com/HalalChain/qitmeer-lib/core/serialization"
 	"io"
 )
 

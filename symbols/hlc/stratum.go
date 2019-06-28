@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"hlc-miner/common"
 	"math/big"
-	nox "hlc-miner/common/qitmeer/hash"
+	nox "github.com/HalalChain/qitmeer-lib/common/hash"
 	"log"
 	"time"
 	"sync/atomic"

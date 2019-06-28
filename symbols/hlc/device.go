@@ -8,10 +8,9 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"github.com/HalalChain/qitmeer-lib/common/hash"
 	"github.com/robvanmieghem/go-opencl/cl"
 	"hlc-miner/common"
-	"hlc-miner/common/qitmeer/blockchain"
-	"hlc-miner/common/qitmeer/hash"
 	"hlc-miner/core"
 	"log"
 	"math/big"
@@ -127,7 +126,7 @@ func (this *HLCDevice) Mine() {
 		}
 
 		this.HasNewWork = false
-		offset := this.MinerId
+		offset := 0
 		this.CurrentWorkID = 0
 		for {
 			// if has new work ,current calc stop
@@ -167,7 +166,7 @@ func (this *HLCDevice) Mine() {
 				this.IsValid = false
 				break
 			}
-			offset++
+			//offset++
 			//Get output
 			if _, err = this.CommandQueue.EnqueueReadBufferByte(this.NonceOutObj, true, 0, this.NonceOut, nil); err != nil {
 				log.Println("-", this.MinerId, err)
@@ -185,7 +184,7 @@ func (this *HLCDevice) Mine() {
 				this.Work.Block.Nonce = binary.LittleEndian.Uint64(this.NonceOut)
 				h := hash.DoubleHashH(this.header.HeaderData)
 
-				if blockchain.HashToBig(&h).Cmp(this.header.TargetDiff) <= 0 {
+				if HashToBig(&h).Cmp(this.header.TargetDiff) <= 0 {
 					log.Println("[Found Hash]",hex.EncodeToString(common.Reverse(h[:])))
 					subm := hex.EncodeToString(this.header.HeaderData)
 					if !this.Pool{
