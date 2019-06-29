@@ -49,8 +49,51 @@ $ go build
 ```bash
 $ cp halalchainminer.conf.example halalchainminer.conf
 ```
-- config file 
-    ![config](source/config.png)
+- the config file `halalchainminer.conf`
+
+```bash
+# the miner config file
+
+#node is dag
+dag=true
+
+#coin
+symbol=HLC
+
+#not tls
+notls=true
+
+#trimmerCount default 40
+trimmerCount=60
+
+#miner address
+mineraddress=RmN4SADy42FKmN8ARKieX9iHh9icptdgYNn
+
+# Intensities (the work size is 2^intensity), up to GPU device
+intensity=24
+
+# The explicitly declared sizes of the work to do up to device (overrides intensity)
+worksize=256
+
+########################## solo config ####################
+# node rpc server
+rpcserver=127.0.0.1:1234
+
+# node rpc user
+rpcuser=test
+
+# node rpc password
+rpcpass=test
+
+
+########################## pool config , if use this , it will use pool mining ########################
+
+#pool=stratum+tcp://127.0.0.1:3177
+#pooluser=RmN4SADy42FKmN8ARKieX9iHh9icptdgYNn
+#poolpass=
+
+```
+    
 ```bash
 $ ./hlc-miner
 ```
