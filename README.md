@@ -63,6 +63,9 @@ symbol=HLC
 #not tls
 notls=true
 
+#rpccert the node rpc cert
+# rpccert=CA.cert
+
 #trimmerCount default 40
 trimmerCount=60
 
@@ -121,6 +124,8 @@ $ ./hlc-miner -o stratum+tcp://127.0.0.1:3177 -m RmN4SADy42FKmN8ARKieX9iHh9icptd
 - `--mineraddress` the miner address
 - `-o` the pool address
 - `-m` the pool user account address
+- `-notls` rpc not use tls
+- `-rpccert` rpc use tls with cert path
 
 ## Supported coin 
         
