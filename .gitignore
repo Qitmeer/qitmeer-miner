@@ -4,3 +4,5 @@ hlc-miner
 hlc-miner.exe
 re
 halalchainminer.conf
+
+CA.cert
