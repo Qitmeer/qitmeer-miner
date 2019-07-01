@@ -1,4 +1,6 @@
 #ignore files
 miner.log
-
+re
 halalchainminer.conf
+CA.cert
+hlc-miner
