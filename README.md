@@ -49,7 +49,7 @@ $ go build
 ```bash
 $ cp halalchainminer.conf.example halalchainminer.conf
 ```
-- the config file `halalchainminer.conf`
+- 1.run with the config file `halalchainminer.conf`
     
 ```bash
 # the miner config file
@@ -63,6 +63,10 @@ symbol=HLC
 #pow type  cuckaroo|blake2bd|cuckatoo  cuckatoo TODO
 pow=blake2bd
     
+
+#trimmerCount use with pow cuckaroo
+trimmerCount=60
+
 #not tls
 notls=true
 
@@ -103,15 +107,15 @@ rpcpass=test
 ```bash
 $ ./hlc-miner
 ```
-- solo command line
+- 2.solo run with command line
 
 ```bash
-$ ./hlc-miner -s 127.0.0.1:1234 -u test -P test --symbol HLC --notls -i 24 -W 256 --mineraddress RmN4SADy42FKmN8ARKieX9iHh9icptdgYNn 
+$ ./hlc-miner -s 127.0.0.1:1234 -u test -P test --symbol HLC --notls -i 24 -W 256 --mineraddress RmN4SADy42FKmN8ARKieX9iHh9icptdgYNn --pow blake2bd
 ```
-- pool command line
+- 3.pool run command line
 
 ```bash
-$ ./hlc-miner -o stratum+tcp://127.0.0.1:3177 -m RmN4SADy42FKmN8ARKieX9iHh9icptdgYNn --symbol HLC --notls -i 24 -W 256
+$ ./hlc-miner -o stratum+tcp://127.0.0.1:3177 -m RmN4SADy42FKmN8ARKieX9iHh9icptdgYNn --symbol HLC --notls -i 24 -W 256 --pow blake2bd
 ``` 
 
 ## Param Description 
@@ -121,18 +125,26 @@ $ ./hlc-miner -o stratum+tcp://127.0.0.1:3177 -m RmN4SADy42FKmN8ARKieX9iHh9icptd
 - `-u` the node rpc username
 - `-P` the node rpc password
 - `--symbol` now just `HLC` is supported
+- `--symbol` now just `HLC` is supported
 - `--i` Intensities (the work size is 2^intensity) up to device
 - `--W` The explicitly declared sizes of the work to do up to device (overrides intensity)
-- `--mineraddress` the miner address
+- `--mineraddress` the miner account address
 - `-o` the pool address
 - `-m` the pool user account address
 - `--notls` rpc not use tls
-- `--rpccert` rpc use tls with cert path
-- `--pow` the type of pow
+- `--rpccert` rpc use tls with cert path,can get from node
+- `--pow` the type of pow `blake2bd|cuckaroo|cuckatoo`
+- `--trimmerCount` trimmer times ,default 40
 
 ## Supported coin 
         
   - `HLC`
+
+## Supported pow 
+        
+  - `blake2bd` double blake2b
+  - `cuckaroo` 
+  - `cuckatoo`  todo
         
 ## Directory structure
 
