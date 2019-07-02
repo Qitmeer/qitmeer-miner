@@ -17,21 +17,20 @@ import (
 	"sync/atomic"
 )
 
-type HLCDevice struct {
+type Blake2bD struct {
 	core.Device
-	NewWork chan HLCWork
 	Work    HLCWork
 	Transactions map[int][]Transactions
 	header MinerBlockData
 }
 
-func (this *HLCDevice) InitDevice() {
+func (this *Blake2bD) InitDevice() {
 	this.Device.InitDevice()
 	if !this.IsValid {
 		return
 	}
 	var err error
-	this.Program, err = this.Context.CreateProgramWithSource([]string{kernelSource})
+	this.Program, err = this.Context.CreateProgramWithSource([]string{DoubleBlake2bKernelSource})
 	if err != nil {
 		log.Println("-", this.MinerId, this.DeviceName, err)
 		this.IsValid = false
@@ -81,7 +80,7 @@ func (this *HLCDevice) InitDevice() {
 	}
 }
 
-func (this *HLCDevice) Update() {
+func (this *Blake2bD) Update() {
 	//update coinbase tx hash
 	this.Device.Update()
 	if this.Pool {
@@ -103,13 +102,14 @@ func (this *HLCDevice) Update() {
 	}
 }
 
-func (this *HLCDevice) Mine() {
-
+func (this *Blake2bD) Mine() {
+	this.Transactions = make(map[int][]Transactions)
 	defer this.Release()
 
 	for {
 		select {
-		case this.Work = <-this.NewWork:
+		case w := <-this.NewWork:
+			this.Work = *w.(*HLCWork)
 		case <-this.Quit:
 			return
 
@@ -223,17 +223,14 @@ func (this *HLCDevice) Mine() {
 	}
 }
 
-func (this *HLCDevice) SubmitShare(substr chan string) {
-	for {
-		select {
-		case <-this.Quit:
-			return
-		case str := <-this.SubmitData:
-			if this.HasNewWork {
-				//the stale submit
-				continue
-			}
-			substr <- str
-		}
-	}
+func (this *Blake2bD) SubmitShare(substr chan string) {
+	this.Device.SubmitShare(substr)
+}
+
+func (this *Blake2bD)Status()  {
+	this.Device.Status()
+}
+
+func (this *Blake2bD)Release()  {
+	this.Device.Release()
 }

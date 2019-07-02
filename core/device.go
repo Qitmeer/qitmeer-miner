@@ -5,13 +5,24 @@ james
 package core
 
 import (
+	"fmt"
 	"github.com/robvanmieghem/go-opencl/cl"
-	"os"
-	"time"
-	"sync"
 	"hlc-miner/common"
 	"log"
+	"math"
+	"os"
+	"sync"
+	"time"
 )
+
+type BaseDevice interface {
+	Mine()
+	Update()
+	InitDevice()
+	Status()
+	Release()
+	SubmitShare(substr chan string)
+}
 type Device struct{
 	Cfg *common.Config  //must init
 	DeviceName string
@@ -37,6 +48,24 @@ type Device struct{
 	Pool bool //must init
 	IsValid bool //is valid
 	SubmitData chan string //must
+	NewWork chan BaseWork
+}
+
+func (this *Device)Init(i int,device *cl.Device,pool bool,q chan os.Signal,cfg *common.Config)  {
+	this.MinerId = uint32(i)
+	this.NewWork = make(chan BaseWork,1)
+	this.Cfg=cfg
+	this.DeviceName=device.Name()
+	this.ClDevice=device
+	this.CurrentWorkID=0
+	this.IsValid=true
+	this.Pool=pool
+	this.SubmitData=make(chan string,0)
+	this.Started=uint32(time.Now().Unix())
+	this.GlobalItemSize= int(math.Exp2(float64(this.Cfg.Intensity)))
+	this.Quit=q
+	log.Println(fmt.Sprintf("Found Can Mining Device %d : ",i),this.DeviceName)
+	this.AllDiffOneShares = 0
 }
 
 func (this *Device)Mine()  {
@@ -92,6 +121,21 @@ func (this *Device)Status()  {
 				this.ClDevice.Name(),
 				common.FormatHashRate(averageHashRate),
 			)
+		}
+	}
+}
+
+func (this *Device) SubmitShare(substr chan string) {
+	for {
+		select {
+		case <-this.Quit:
+			return
+		case str := <-this.SubmitData:
+			if this.HasNewWork {
+				//the stale submit
+				continue
+			}
+			substr <- str
 		}
 	}
 }

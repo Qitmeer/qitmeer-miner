@@ -5,48 +5,58 @@
 package hlc
 
 import (
+	"fmt"
+	"github.com/robvanmieghem/go-opencl/cl"
+	"hlc-miner/common"
 	"hlc-miner/core"
 	"log"
-	"sync"
-	"time"
-	"math"
-	"fmt"
-	"sync/atomic"
-	"strings"
 	"strconv"
-	"hlc-miner/common"
+	"strings"
+	"sync"
+	"sync/atomic"
+	"time"
 )
 
+const (
+	POW_DOUBLE_BLAKE2B = "blake2bd"
+	POW_CUCKROO = "cuckaroo"
+	POW_CUCKTOO = "cuckatoo"
+)
 type HLCRobot struct {
 	core.MinerRobot
 	Work HLCWork
-	Devices 	  []*HLCDevice
+	Devices 	  []core.BaseDevice
 	Stratu      *HLCStratum
 	AllTransactionsCount     int64
 }
 
+func (this *HLCRobot)GetPow(i int ,device *cl.Device) core.BaseDevice{
+	switch this.Cfg.Pow {
+	case POW_CUCKROO:
+		deviceMiner := &Cuckaroo{}
+		deviceMiner.Init(i,device,this.Pool,this.Quit,this.Cfg)
+		this.Devices = append(this.Devices,deviceMiner)
+		return deviceMiner
+	case POW_CUCKTOO:
+	case POW_DOUBLE_BLAKE2B:
+		deviceMiner := &Blake2bD{}
+		deviceMiner.Init(i,device,this.Pool,this.Quit,this.Cfg)
+		this.Devices = append(this.Devices,deviceMiner)
+		return deviceMiner
+
+	default:
+		log.Fatalln(this.Cfg.Pow," pow has not exist!")
+	}
+	return nil
+}
+
 func (this *HLCRobot)InitDevice()  {
 	this.MinerRobot.InitDevice()
-	this.Devices = make([]*HLCDevice,0)
 	for i, device := range this.ClDevices {
-		deviceMiner := &HLCDevice{
-			NewWork:make(chan HLCWork),
+		deviceMiner := this.GetPow(i ,device)
+		if deviceMiner == nil{
+			return
 		}
-		deviceMiner.MinerId = uint32(i)
-		deviceMiner.Cfg=this.Cfg
-		deviceMiner.DeviceName=device.Name()
-		deviceMiner.ClDevice=device
-		deviceMiner.CurrentWorkID=0
-		deviceMiner.IsValid=true
-		deviceMiner.Pool=this.Pool
-		deviceMiner.SubmitData=make(chan string,0)
-		deviceMiner.Started=uint32(time.Now().Unix())
-		deviceMiner.GlobalItemSize= int(math.Exp2(float64(this.Cfg.Intensity)))
-		deviceMiner.Quit=this.Quit
-		log.Println(fmt.Sprintf("Found Can Mining Device %d : ",i),deviceMiner.DeviceName)
-		deviceMiner.AllDiffOneShares = 0
-		deviceMiner.Transactions = make(map[int][]Transactions)
-		this.Devices = append(this.Devices,deviceMiner)
 	}
 }
 
@@ -113,12 +123,24 @@ func (this *HLCRobot)ListenWork() {
 			if r {
 				//log.Println("has work")
 				//this.Work.StartWork = true
-				for _, d := range this.Devices {
-					if !d.IsValid{
-						continue
+				for _, dev := range this.Devices {
+					switch dev.(type) {
+					case *Cuckaroo:
+						if !dev.(*Cuckaroo).IsValid{
+							continue
+						}
+						dev.(*Cuckaroo).HasNewWork = true
+						dev.(*Cuckaroo).NewWork <- &this.Work
+					case *Blake2bD:
+						if !dev.(*Blake2bD).IsValid{
+							continue
+						}
+						dev.(*Blake2bD).HasNewWork = true
+						dev.(*Blake2bD).NewWork <- &this.Work
+					default:
+
 					}
-					d.HasNewWork = true
-					d.NewWork <- this.Work
+
 				}
 			} else{
 				//log.Println("not has work")
@@ -173,7 +195,7 @@ func (this *HLCRobot)SubmitWork() {
 					this.AllTransactionsCount += int64(count)
 					logContent := fmt.Sprintf("%s,receive block, block height = %s,Including %s transactions; Received Total transactions = %d\n",
 						time.Now().Format("2006-01-02 03:04:05 PM"),height,txCount,this.AllTransactionsCount)
-					common.AppendToFile(this.Cfg.MinerLogFile,logContent)
+					_ = common.AppendToFile(this.Cfg.MinerLogFile,logContent)
 				}
 			}
 		}
