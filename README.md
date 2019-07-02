@@ -59,6 +59,9 @@ dag=true
     
 #coin
 symbol=HLC
+
+#pow type  cuckaroo|blake2bd|cuckatoo  cuckatoo TODO
+pow=blake2bd
     
 #not tls
 notls=true
@@ -123,8 +126,9 @@ $ ./hlc-miner -o stratum+tcp://127.0.0.1:3177 -m RmN4SADy42FKmN8ARKieX9iHh9icptd
 - `--mineraddress` the miner address
 - `-o` the pool address
 - `-m` the pool user account address
-- `-notls` rpc not use tls
-- `-rpccert` rpc use tls with cert path
+- `--notls` rpc not use tls
+- `--rpccert` rpc use tls with cert path
+- `--pow` the type of pow
 
 ## Supported coin 
         

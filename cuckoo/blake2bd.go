@@ -1,6 +1,6 @@
 package cuckoo
 
-var CuckarooKernel = `
+var CuckarooKernelBak = `
 // Cuckaroo Cycle, a memory-hard proof-of-work by John Tromp and team Grin
 // Copyright (c) 2018 Jiri Photon Vadura and John Tromp
 // This GGM miner file is covered by the FAIR MINING license

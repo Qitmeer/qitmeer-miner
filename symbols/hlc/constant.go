@@ -4,7 +4,8 @@ import "github.com/HalalChain/qitmeer-lib/common/hash"
 
 const (
 	//128
-	MaxBlockHeaderPayload = 4 + (hash.HashSize * 3) + 4 + 8 + 8 + 8
+	MaxBlockHeaderPayload = 4 + (hash.HashSize * 3) + 4 + 8 + 8 + 8 + 42*4
+
 	//every mode position
 	TIMESTART = 112
 	TIMEEND = 120
@@ -20,6 +21,7 @@ const (
 	MERKLEEND = 68
 	PRESTART = 4
 	PREEND = 36
+	TXEND = 68
 	VERSIONSTART = 0
 	VERSIONEND = 4
 )

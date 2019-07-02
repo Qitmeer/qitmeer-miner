@@ -10,6 +10,13 @@ import (
 	"os"
 )
 
+type BaseWork interface {
+	Get() bool
+	Submit(subm string) error
+	PoolGet() bool
+	PoolSubmit(subm string) error
+}
+
 //standard work template
 type Work struct {
 	Cfg *common.Config
@@ -19,24 +26,4 @@ type Work struct {
 	Quit chan os.Signal
 	Started uint32
 	LastSub string //last submit string
-}
-
-//GetBlockTemplate
-func (this *Work) Get ()  {
-
-}
-
-//Submit
-func (this *Work) Submit ()  {
-
-}
-
-// pool get work
-func (this *Work) PoolGet ()  {
-
-}
-
-//pool submit work
-func (this *Work) PoolSubmit ()  {
-
 }

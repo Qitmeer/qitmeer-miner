@@ -35,7 +35,7 @@ type BlockHeader struct {
 
 	// Nonce
 	Nonce uint64 `json:"nonce"`
-
+	Nonces []*uint32 `json:"nonces"`
 	Target string `json:"target"`
 
 	Coinbasevalue   int64 `json:"coinbasevalue"`
@@ -50,11 +50,25 @@ func (h *BlockHeader) BlockData() []byte {
 	return buf.Bytes()
 }
 
+//nox block header
+func (h *BlockHeader) BlockDataCuckaroo() []byte {
+	buf := bytes.NewBuffer(make([]byte, 0, MaxBlockHeaderPayload))
+	// TODO, redefine the protocol version and storage
+	_ = writeBlockHeaderCuckaroo(buf, 0, h)
+	return buf.Bytes()
+}
+
 //nox Header structure of assembly
 func writeBlockHeader(w io.Writer, pver uint32, bh *BlockHeader) error {
 	sec := uint64(bh.Curtime)
 	return s.WriteElements(w, bh.Version, &bh.ParentRoot, &bh.TxRoot,
 		&bh.StateRoot, bh.Difficulty, bh.Height, sec, bh.Nonce)
+}
+
+func writeBlockHeaderCuckaroo(w io.Writer, pver uint32, bh *BlockHeader) error {
+	sec := uint64(bh.Curtime)
+	return s.WriteElements(w, bh.Version, &bh.ParentRoot, &bh.TxRoot,
+		&bh.StateRoot, bh.Difficulty, bh.Height, sec, bh.Nonce,bh.Nonces)
 }
 
 //block hash

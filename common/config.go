@@ -57,6 +57,8 @@ type Config struct {
 	LogDir       string `long:"logdir" description:"Directory to log output."`
 	DebugLevel   string `short:"d" long:"debuglevel" description:"Logging level for all subsystems {trace, debug, info, warn, error, critical} -- You may also specify <subsystem>=<level>,<subsystem2>=<level>,... to set the log level for individual subsystems -- Use show to list available subsystems"`
 	ClKernel     string `short:"k" long:"kernel" description:"File with cl kernel to use"`
+	Pow     string `long:"pow" description:"blake2bd|cuckroo|cucktoo"`
+	TrimmerCount     int `long:"trimmerCount" description:"the cuckaroo trimer times"`
 
 	// Debugging options
 	Profile    string `long:"profile" description:"Enable HTTP profiling on given port -- NOTE port must be between 1024 and 65536"`
@@ -273,6 +275,10 @@ func LoadConfig() (*Config, []string, error) {
 
 	if cfg.MinerLogFile == ""{
 		cfg.MinerLogFile = GetCurrentDir() + "/miner.log"
+	}
+
+	if cfg.TrimmerCount <= 0{
+		cfg.TrimmerCount = 40
 	}
 
 	// Check the devices if the user is setting that.

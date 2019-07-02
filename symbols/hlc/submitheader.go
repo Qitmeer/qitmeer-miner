@@ -1,6 +1,7 @@
 package hlc
 
 import (
+	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"github.com/HalalChain/qitmeer-lib/common/hash"
@@ -49,6 +50,23 @@ func (this *MinerBlockData)PackageRpcHeader(work *HLCWork)  {
 	//log.Println(work.Block.Target)
 	bitesBy ,_:= hex.DecodeString(work.Block.Target)
 	bitesBy = common.Reverse(bitesBy[:8])
+	this.HeaderData = work.Block.BlockData()
+	this.Transactions = work.Block.Transactions
+	this.Parents = work.Block.Parents
+	copy(this.HeaderData[NONCESTART:NONCEEND],bitesBy[:])
+
+	b1 , _ := hex.DecodeString(work.Block.Target)
+	var r [32]byte
+	copy(r[:],common.Reverse(b1)[:])
+	r1 := hash.Hash(r)
+	this.TargetDiff = HashToBig(&r1)
+}
+
+//the solo work submit structure
+func (this *MinerBlockData)PackageRpcHeaderByNonce(work *HLCWork,nonce uint64)  {
+	//log.Println(work.Block.Target)
+	bitesBy := make([]byte,8)
+	binary.LittleEndian.PutUint64(bitesBy,nonce)
 	this.HeaderData = work.Block.BlockData()
 	this.Transactions = work.Block.Transactions
 	this.Parents = work.Block.Parents
