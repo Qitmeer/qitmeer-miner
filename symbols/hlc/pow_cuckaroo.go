@@ -52,7 +52,7 @@ func (this *Cuckaroo) InitDevice() {
 		return
 	}
 	var err error
-	this.Program, err = this.Context.CreateProgramWithSource([]string{cuckoo.CuckrooKernel})
+	this.Program, err = this.Context.CreateProgramWithSource([]string{cuckoo.CuckarooKernel})
 	if err != nil {
 		log.Println("-", this.MinerId, this.DeviceName, err)
 		this.IsValid = false

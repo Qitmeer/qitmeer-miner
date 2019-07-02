@@ -74,7 +74,7 @@ func (this *Device)InitDevice()  {
 	if err != nil {
 		log.Println("-", this.MinerId,  err)
 	}
-	this.Program, err = this.Context.CreateProgramWithSource([]string{CuckrooKernel})
+	this.Program, err = this.Context.CreateProgramWithSource([]string{CuckarooKernel})
 	if err != nil {
 		log.Println("-", this.MinerId, err)
 		return
