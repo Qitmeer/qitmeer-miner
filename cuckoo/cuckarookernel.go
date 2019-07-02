@@ -1,6 +1,6 @@
 package cuckoo
 
-var CuckrooKernel = `
+var CuckarooKernel = `
 // Cuckaroo Cycle, a memory-hard proof-of-work by James HLC Foundation
 // Copyright (c) 2019 
 
