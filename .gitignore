@@ -6,3 +6,4 @@ re
 halalchainminer.conf
 
 CA.cert
+go.sum
