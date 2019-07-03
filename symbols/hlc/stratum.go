@@ -1,7 +1,6 @@
-/**
-	HLC FOUNDATION
-	james
- */
+// Copyright (c) 2019 The halalchain developers
+// Use of this source code is governed by an ISC
+// license that can be found in the LICENSE file.
 package hlc
 
 import (
@@ -196,7 +195,7 @@ func (s *HLCStratum) handleStratumMsg(resp interface{}) {
 		msg := StratumMsg{
 			Method: nResp.Method,
 			ID:     nResp.ID,
-			Params: []string{"decred-halalchainminer/" + s.Cfg.Version},
+			Params: []string{"qitmeer-miner/v0.0.1" },
 		}
 		m, err := json.Marshal(msg)
 		if err != nil {

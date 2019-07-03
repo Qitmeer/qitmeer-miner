@@ -13,6 +13,7 @@ import (
 	"hlc-miner/common"
 	"hlc-miner/core"
 	"hlc-miner/cuckoo"
+	"hlc-miner/kernel"
 	"log"
 	"math/big"
 	"sort"
@@ -52,7 +53,7 @@ func (this *Cuckaroo) InitDevice() {
 		return
 	}
 	var err error
-	this.Program, err = this.Context.CreateProgramWithSource([]string{cuckoo.CuckarooKernel})
+	this.Program, err = this.Context.CreateProgramWithSource([]string{kernel.CuckarooKernel})
 	if err != nil {
 		log.Println("-", this.MinerId, this.DeviceName, err)
 		this.IsValid = false
@@ -233,11 +234,9 @@ func (this *Cuckaroo) Mine() {
 							if HashToBig(&h).Cmp(this.header.TargetDiff) <= 0 {
 								subm := hex.EncodeToString(this.header.HeaderData)
 								if !this.Pool{
-									if this.Cfg.DAG{
-										subm += common.Int2varinthex(int64(len(this.header.Parents)))
-										for j := 0; j < len(this.header.Parents); j++ {
-											subm += this.header.Parents[j].Data
-										}
+									subm += common.Int2varinthex(int64(len(this.header.Parents)))
+									for j := 0; j < len(this.header.Parents); j++ {
+										subm += this.header.Parents[j].Data
 									}
 
 									txCount := len(this.Transactions)

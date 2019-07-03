@@ -52,7 +52,7 @@ func (rpc *RpcClient)newHTTPClient() (*http.Client, error) {
 		pool.AppendCertsFromPEM(pem)
 		tlsConfig = &tls.Config{
 			RootCAs:            pool,
-			InsecureSkipVerify: rpc.Cfg.TLSSkipVerify,
+			InsecureSkipVerify: rpc.Cfg.NoTLS,
 		}
 	}
 

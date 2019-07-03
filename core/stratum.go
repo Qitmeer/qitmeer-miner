@@ -23,9 +23,6 @@ type StratumMsg struct {
 	ID     interface{} `json:"id"`
 }
 
-// ErrStratumStaleWork indicates that the work to send to the pool was stale.
-var ErrStratumStaleWork = fmt.Errorf("Stale work, throwing away")
-
 type Stratum struct {
 	sync.Mutex
 	Cfg       *common.Config
@@ -58,11 +55,12 @@ func (this *Stratum)StratumConn(cfg *common.Config) error {
 	}
 	this.Cfg.Pool = pool
 	this.ID = 1
-	this.Reconnect()
+	_ = this.Reconnect()
+
 	go func() {
 		if uint32(time.Now().Unix()) - this.Timeout > 30{
 			log.Println("【timeout】reconnect")
-			this.Reconnect()
+			_ = this.Reconnect()
 		}
 	}()
 	return nil
@@ -172,7 +170,7 @@ func (s *Stratum) Subscribe() error {
 	msg := StratumMsg{
 		Method: "mining.subscribe",
 		ID:     s.ID,
-		Params: []string{"halalchainminer/" + s.Cfg.Version},
+		Params: []string{"qitmeer-miner/v0.0.1"},
 	}
 	s.SubID = msg.ID.(uint64)
 	s.ID++

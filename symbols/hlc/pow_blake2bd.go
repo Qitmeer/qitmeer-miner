@@ -12,6 +12,7 @@ import (
 	"github.com/robvanmieghem/go-opencl/cl"
 	"hlc-miner/common"
 	"hlc-miner/core"
+	"hlc-miner/kernel"
 	"log"
 	"math/big"
 	"sync/atomic"
@@ -30,7 +31,7 @@ func (this *Blake2bD) InitDevice() {
 		return
 	}
 	var err error
-	this.Program, err = this.Context.CreateProgramWithSource([]string{DoubleBlake2bKernelSource})
+	this.Program, err = this.Context.CreateProgramWithSource([]string{kernel.DoubleBlake2bKernelSource})
 	if err != nil {
 		log.Println("-", this.MinerId, this.DeviceName, err)
 		this.IsValid = false
@@ -188,11 +189,9 @@ func (this *Blake2bD) Mine() {
 					log.Println("[Found Hash]",hex.EncodeToString(common.Reverse(h[:])))
 					subm := hex.EncodeToString(this.header.HeaderData)
 					if !this.Pool{
-						if this.Cfg.DAG{
-							subm += common.Int2varinthex(int64(len(this.header.Parents)))
-							for j := 0; j < len(this.header.Parents); j++ {
-								subm += this.header.Parents[j].Data
-							}
+						subm += common.Int2varinthex(int64(len(this.header.Parents)))
+						for j := 0; j < len(this.header.Parents); j++ {
+							subm += this.header.Parents[j].Data
 						}
 
 						txCount := len(this.Transactions[int(this.MinerId)]) //real transaction count except coinbase
