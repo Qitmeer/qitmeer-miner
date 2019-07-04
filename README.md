@@ -6,7 +6,6 @@
 
 ```bash
 $ go version >= 1.12
-$ go build
 ```
     
 ## Compile
