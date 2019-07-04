@@ -180,7 +180,7 @@ func (s *HLCStratum) handleStratumMsg(resp interface{}) {
 		}
 		time.Sleep(time.Duration(wait) * time.Second)
 		pool := nResp.Params[0] + ":" + nResp.Params[1]
-		s.Cfg.Pool = pool
+		s.Cfg.PoolConfig.Pool = pool
 		err = s.Reconnect()
 		if err != nil {
 			fmt.Println(err)
@@ -519,7 +519,7 @@ func (s *HLCStratum) PrepSubmit(data []byte,jobID string,ExtraNonce2 string) (Su
 	if jobID != s.PoolWork.JobID && s.PoolWork.Clean {
 		return sub, ErrStratumStaleWork
 	}
-	sub.Params = []string{s.Cfg.PoolUser, jobID, ExtraNonce2, timestampStr,nonceStr}
+	sub.Params = []string{s.Cfg.PoolConfig.PoolUser, jobID, ExtraNonce2, timestampStr,nonceStr}
 	log.Println("【submit】",sub.Params)
 	return sub, nil
 }

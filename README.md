@@ -1,6 +1,6 @@
-# HLC Miner
+# Qitmeer Miner
 
-    The miner of Halalchain
+    The Miner of Qitmeer
 
 ## Enviroment
 
@@ -9,11 +9,10 @@ $ go version >= 1.12
 $ go build
 ```
     
-    
 ## Compile
 
 ```bash
-$ git clone (this repo)
+$ git clone git@github.com:HalalChain/hlc-miner.git
 ```
 
 * Ubuntu ENV
@@ -36,10 +35,8 @@ $ go build
 ```bash
 go build
 ```
-    
-* Windows ENV
 
-  - install the opencl driver
+* Windows ENV
 ```bash
 $ go build 
 ```
@@ -50,111 +47,48 @@ $ go build
 $ cp halalchainminer.conf.example halalchainminer.conf
 ```
 - 1.run with the config file `halalchainminer.conf`
-    
+- 2.run with command
 ```bash
-# the miner config file
-    
-#node is dag
-dag=true
-    
-#coin
-symbol=HLC
+$ ./hlc-miner -h
+Usage:
+  hlc-miner [OPTIONS]
 
-#pow type  cuckaroo|blake2bd|cuckatoo  cuckatoo TODO
-pow=blake2bd
-    
+Debug Command:
+  -l, --listdevices   List number of devices.
+  -T, --testpow=      test pow blake2bd|cuckaroo|cuckatoo
 
-#trimmerCount use with pow cuckaroo
-trimmerCount=60
+The Config File Options:
+  -C, --configfile=   Path to configuration file (/Users/fanxu/www/go/src/hlc-miner/halalchainminer.conf)
+      --minerlog=     Write miner log file (/Users/fanxu/www/go/src/hlc-miner/miner.log)
 
-#not tls
-notls=true
+The Necessary Config Options:
+  -P, --pow=          blake2bd|cuckaroo|cuckatoo (cuckaroo)
+  -S, --symbol=       Symbol (HLC)
 
-#rpccert the path of the node cert
-#rpccert=CA.cert
+The Solo Config Option:
+  -M, --mineraddress= Miner Address (RmN4SADy42FKmN8ARKieX9iHh9icptdgYNn)
+  -s, --rpcserver=    RPC server to connect to (127.0.0.1:1234)
+  -u, --rpcuser=      RPC username (test)
+  -p, --rpcpass=      RPC password
+      --randstr=      Rand String,Your Unique Marking. (Come from halalchain!)
+      --notls         Do not verify tls certificates (true)
+      --rpccert=      RPC server certificate chain for validation (CA.cert)
 
-#miner address
-mineraddress=RmN4SADy42FKmN8ARKieX9iHh9icptdgYNn
-    
-#network simnet | testnet | mainnet
-testnet=true
-    
-# Intensities (the work size is 2^intensity) up to device
-intensity=24
-    
-# The explicitly declared sizes of the work to do up to device (overrides intensity)
-worksize=256
-    
-########################## solo config ####################
-# node rpc server
-rpcserver=127.0.0.1:1234
-    
-# node rpc user
-rpcuser=test
-    
-# node rpc password
-rpcpass=test
-    
-########################## pool config ,if use this , it will use pool mining ########################
-    
-#pool=stratum+tcp://127.0.0.1:3177
-#pooluser=RmN4SADy42FKmN8ARKieX9iHh9icptdgYNn
-#poolpass=
-    
+The pool Config Option:
+  -o, --pool=         Pool to connect to (e.g.stratum+tcp://pool:port)
+  -m, --pooluser=     Pool username
+  -n, --poolpass=     Pool password
 
+The Optional Config Option:
+      --trimmerTimes= the cuckaroo trimmer times (40)
+      --proxy=        Connect via SOCKS5 proxy (eg. 127.0.0.1:9050)
+      --proxyuser=    Username for proxy server
+      --proxypass=    Password for proxy server
+      --intensity=    Intensities (the work size is 2^intensity) per device. Single global value or a comma
+                      separated list. (24)
+      --worksize=     The explicitly declared sizes of the work to do per device (overrides intensity). Single
+                      global value or a comma separated list. (256)
+
+Help Options:
+  -h, --help          Show this help message
 ```
-    
-```bash
-$ ./hlc-miner
-```
-- 2.solo run with command line
-
-```bash
-$ ./hlc-miner -s 127.0.0.1:1234 -u test -P test --symbol HLC --notls -i 24 -W 256 --mineraddress RmN4SADy42FKmN8ARKieX9iHh9icptdgYNn --pow blake2bd
-```
-- 3.pool run command line
-
-```bash
-$ ./hlc-miner -o stratum+tcp://127.0.0.1:3177 -m RmN4SADy42FKmN8ARKieX9iHh9icptdgYNn --symbol HLC --notls -i 24 -W 256 --pow blake2bd
-``` 
-
-## Param Description 
-          
-- `--dag` the node is dag node
-- `-s` the node rpc listen address
-- `-u` the node rpc username
-- `-P` the node rpc password
-- `--symbol` now just `HLC` is supported
-- `--symbol` now just `HLC` is supported
-- `--i` Intensities (the work size is 2^intensity) up to device
-- `--W` The explicitly declared sizes of the work to do up to device (overrides intensity)
-- `--mineraddress` the miner account address
-- `-o` the pool address
-- `-m` the pool user account address
-- `--notls` rpc not use tls
-- `--rpccert` rpc use tls with cert path,can get from node
-- `--pow` the type of pow `blake2bd|cuckaroo|cuckatoo`
-- `--trimmerCount` trimmer times ,default 40
-
-## Supported coin 
-        
-  - `HLC`
-
-## Supported pow 
-        
-  - `blake2bd` double blake2b
-  - `cuckaroo` 
-  - `cuckatoo`  todo
-        
-## Directory structure
-
-- common  the universally function
-    
-- core every coin miner must realize :
-    1) devices to mining the result
-    2) robot handle the logic
-    3) work get or submit the task 
-    
-- symbols 
-    
-    - like `HLC`

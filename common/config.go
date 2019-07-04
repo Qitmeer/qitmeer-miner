@@ -13,7 +13,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 )
 
 const (
@@ -24,49 +23,73 @@ var (
 	minerHomeDir          = GetCurrentDir()
 	defaultConfigFile     = filepath.Join(minerHomeDir, defaultConfigFilename)
 	defaultRPCServer      = "127.0.0.1"
+	defaultRPCPort      = "1234"
+	defaultIntensity = 24
 	defaultTrimmerCount = 40
+	defaultWorkSize = 255
 	minIntensity  = 8
+	defaultRpcMinerLog  = GetCurrentDir() + "/miner.log"
 	maxIntensity  = 31
 	maxWorkSize   = uint32(0xFFFFFFFF - 255)
 	ChainParams  *params.Params
+	defaultPow  ="cuckaroo"
+	defaultSymbol  ="HLC"
 )
 
-type Config struct {
+type DeviceConfig struct {
 	ListDevices bool `short:"l" long:"listdevices" description:"List number of devices."`
+	TestPow string `short:"T" long:"testpow" description:"test pow blake2bd|cuckaroo|cuckatoo"`
+}
 
-	// Config / log options
-	Experimental bool   `long:"experimental" description:"enable EXPERIMENTAL features such as setting a temperature target with (-t/--temptarget) which may DAMAGE YOUR DEVICE(S)."`
+type FileConfig struct {
 	ConfigFile   string `short:"C" long:"configfile" description:"Path to configuration file"`
-	Pow     string `long:"pow" description:"blake2bd|cuckroo|cucktoo"`
-	TrimmerCount     int `long:"trimmerCount" description:"the cuckaroo trimer times"`
-
 	// Debugging options
-	Profile    string `long:"profile" description:"Enable HTTP profiling on given port -- NOTE port must be between 1024 and 65536"`
-	CPUProfile string `long:"cpuprofile" description:"Write CPU profile to the specified file"`
-	MemProfile string `long:"memprofile" description:"Write mem profile to the specified file"`
 	MinerLogFile string `long:"minerlog" description:"Write miner log file"`
+}
 
-	// RPC connection options
-	RPCUser     string `short:"u" long:"rpcuser" description:"RPC username"`
-	//Dag     	bool `short:"dag" long:"dag" description:"dag mining"`
-	RPCPassword string `short:"P" long:"rpcpass" default-mask:"-" description:"RPC password"`
-	RPCServer   string `short:"s" long:"rpcserver" description:"RPC server to connect to"`
-	RPCCert     string `short:"c" long:"rpccert" description:"RPC server certificate chain for validation"`
-	NoTLS       bool   `long:"notls" description:"Do not verify tls certificates"`
-	Symbol      string   `long:"symbol" description:"Symbol" default-mask:"NOX"`
-	RandStr     string   `long:"randstr" description:"Rand String" default-mask:"Come from halalchain!"`
-	MinerAddr   string   `long:"mineraddress" description:"Miner Address" default-mask:""`
+type OptionalConfig struct {
+	// Config / log options
+	TrimmerCount     int `long:"trimmerTimes" description:"the cuckaroo trimmer times"`
+
 	Proxy       string `long:"proxy" description:"Connect via SOCKS5 proxy (eg. 127.0.0.1:9050)"`
 	ProxyUser   string `long:"proxyuser" description:"Username for proxy server"`
 	ProxyPass   string `long:"proxypass" default-mask:"-" description:"Password for proxy server"`
 
-	Intensity         int `short:"i" long:"intensity" description:"Intensities (the work size is 2^intensity) per device. Single global value or a comma separated list."`
-	WorkSize          int `short:"W" long:"worksize" description:"The explicitly declared sizes of the work to do per device (overrides intensity). Single global value or a comma separated list."`
+	Intensity         int `long:"intensity" description:"Intensities (the work size is 2^intensity) per device. Single global value or a comma separated list."`
+	WorkSize          int `long:"worksize" description:"The explicitly declared sizes of the work to do per device (overrides intensity). Single global value or a comma separated list."`
+}
 
+type PoolConfig struct {
 	// Pool related options
 	Pool         string `short:"o" long:"pool" description:"Pool to connect to (e.g.stratum+tcp://pool:port)"`
 	PoolUser     string `short:"m" long:"pooluser" description:"Pool username"`
 	PoolPassword string `short:"n" long:"poolpass" default-mask:"-" description:"Pool password"`
+}
+
+type SoloConfig struct {
+	// RPC connection options
+	MinerAddr   string `short:"M" long:"mineraddress" description:"Miner Address" default-mask:""`
+	RPCServer   string `short:"s" long:"rpcserver" description:"RPC server to connect to"`
+	RPCUser     string `short:"u" long:"rpcuser" description:"RPC username"`
+	RPCPassword string `short:"p" long:"rpcpass" default-mask:"-" description:"RPC password"`
+	RandStr     string `long:"randstr" description:"Rand String,Your Unique Marking." default-mask:"Come from halalchain!"`
+	NoTLS       bool   `long:"notls" description:"Do not verify tls certificates" default-mask:"true"`
+	RPCCert     string `long:"rpccert" description:"RPC server certificate chain for validation"`
+}
+
+type NecessaryConfig struct {
+	// Config / log options
+	Pow     string `short:"P" long:"pow" description:"blake2bd|cuckaroo|cuckatoo"`
+	Symbol      string   `short:"S" long:"symbol" description:"Symbol" default-mask:"HLC"`
+}
+
+type GlobalConfig struct {
+	OptionConfig OptionalConfig
+	LogConfig FileConfig
+	DeviceConfig DeviceConfig
+	SoloConfig SoloConfig
+	PoolConfig PoolConfig
+	NecessaryConfig NecessaryConfig
 }
 
 // removeDuplicateAddresses returns a new slice with all duplicate entries in
@@ -129,11 +152,28 @@ func cleanAndExpandPath(path string) string {
 // The above results in btcd functioning properly without any config settings
 // while still allowing the user to override settings with config files and
 // command line options.  Command line options always take precedence.
-func LoadConfig() (*Config, []string, error) {
+func LoadConfig() (*GlobalConfig, []string, error) {
 	// Default config.
-	cfg := Config{
-		ConfigFile: defaultConfigFile,
+	soloCfg := SoloConfig{
 		RPCServer:  defaultRPCServer,
+		NoTLS:  true,
+	}
+	poolCfg := PoolConfig{}
+	// Default config.
+	deviceCfg := DeviceConfig{}
+	// Default config.
+	fileCfg := FileConfig{
+		ConfigFile:defaultConfigFile,
+		MinerLogFile:  defaultRpcMinerLog,
+	}
+	necessaryCfg := NecessaryConfig{
+		Pow:defaultPow,
+		Symbol:defaultSymbol,
+	}
+	optionalCfg := OptionalConfig{
+		Intensity:  defaultIntensity,
+		WorkSize:  defaultWorkSize,
+		TrimmerCount:  defaultTrimmerCount,
 	}
 
 	// Create the home directory if it doesn't already exist.
@@ -142,84 +182,105 @@ func LoadConfig() (*Config, []string, error) {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(-1)
 	}
-
-	// Pre-parse the command line options to see if an alternative config
-	// file or the version flag was specified.
-	preCfg := cfg
-	preParser := flags.NewParser(&preCfg, flags.Default)
-	_, err = preParser.Parse()
-	if err != nil {
-		if e, ok := err.(*flags.Error); !ok || e.Type != flags.ErrHelp {
-			preParser.WriteHelp(os.Stderr)
-		}
-		return nil, nil, err
-	}
-
-	// Show the version and exit if the version flag was specified.
 	appName := filepath.Base(os.Args[0])
 	appName = strings.TrimSuffix(appName, filepath.Ext(appName))
+	// Pre-parse the command line options to see if an alternative config
+	// file or the version flag was specified.
+	preParser := flags.NewNamedParser(appName, flags.HelpFlag)
 
-	// Load additional config from file.
-	var configFileError error
-	parser := flags.NewParser(&cfg, flags.Default)
-	err = flags.NewIniParser(parser).ParseFile(preCfg.ConfigFile)
+	_,err = preParser.AddGroup("Debug Command", "The Miner Debug tools", &deviceCfg)
+	if err != nil {
+		log.Printf("%v", err)
+		os.Exit(0)
+	}
+	_,err = preParser.AddGroup("The Config File Options", "The Config File Options", &fileCfg)
+	if err != nil {
+		log.Printf("%v", err)
+		os.Exit(0)
+	}
+	_,err = preParser.AddGroup("The Necessary Config Options", "The Necessary Config Options", &necessaryCfg)
+	if err != nil {
+		log.Printf("%v", err)
+		os.Exit(0)
+	}
+	_,err = preParser.AddGroup("The Solo Config Option", "The Solo Config Option", &soloCfg)
+	if err != nil {
+		log.Printf("%v", err)
+		os.Exit(0)
+	}
+	_,err = preParser.AddGroup("The pool Config Option", "The pool Config Option", &poolCfg)
+	if err != nil {
+		log.Printf("%v", err)
+		os.Exit(0)
+	}
+	_,err = preParser.AddGroup("The Optional Config Option", "The Optional Config Option", &optionalCfg)
+	if err != nil {
+		log.Printf("%v", err)
+		os.Exit(0)
+	}
+
+
+	err = flags.NewIniParser(preParser).ParseFile(fileCfg.ConfigFile)
 	if err != nil {
 		if _, ok := err.(*os.PathError); !ok {
 			fmt.Fprintln(os.Stderr, err)
-			parser.WriteHelp(os.Stderr)
 			return nil, nil, err
 		}
-		configFileError = err
+		log.Printf("%v", err)
 	}
 
-	// Parse command line options again to ensure they take precedence.
-	remainingArgs, err := parser.Parse()
+	remainingArgs,err := preParser.Parse()
 	if err != nil {
-		if e, ok := err.(*flags.Error); !ok || e.Type != flags.ErrHelp {
-			parser.WriteHelp(os.Stderr)
+		if _, ok := err.(*flags.Error); !ok {
+			fmt.Fprintln(os.Stderr, err)
+			return nil, nil, err
 		}
-		return nil, nil, err
+		preParser.WriteHelp(os.Stderr)
+		os.Exit(0)
 	}
 
-	if cfg.MinerLogFile == ""{
-		cfg.MinerLogFile = GetCurrentDir() + "/miner.log"
+	_,err = preParser.Parse()
+	if err != nil{
+		log.Printf("%v", err)
+		log.Println(fmt.Sprintf("Usage to see  ./%s -h",appName))
+		os.Exit(0)
+	}
+	if poolCfg.Pool == "" && soloCfg.MinerAddr == ""{
+		log.Fatalln(fmt.Sprintf("solo need qitmeer address -M "))
+	}
+	if deviceCfg.ListDevices{
+		log.Println("【CPU Devices List】:")
+		GetDevices(DevicesTypesForCPUMining)
+		log.Println("【GPU Devices List】:")
+		GetDevices(DevicesTypesForGPUMining)
+		os.Exit(0)
 	}
 
-	if cfg.TrimmerCount <= 0{
-		cfg.TrimmerCount = defaultTrimmerCount
-	}
+	// Show the version and exit if the version flag was specified.
 
-	if cfg.Intensity <= 0 || cfg.Intensity < minIntensity || cfg.Intensity > maxIntensity{
-		cfg.Intensity = 28
-	}
-
-	if cfg.Experimental {
-		fmt.Fprintln(os.Stderr, "enabling EXPERIMENTAL features "+
-			"that may possibly DAMAGE YOUR DEVICE(S)")
-		time.Sleep(time.Second * 3)
+	if optionalCfg.Intensity < minIntensity || optionalCfg.Intensity > maxIntensity{
+		optionalCfg.Intensity = defaultIntensity
 	}
 
 	// Check the work size if the user is setting that.
-	if cfg.WorkSize <= 0 || cfg.WorkSize > int(maxWorkSize){
-		cfg.WorkSize = 256
+	if optionalCfg.WorkSize > int(maxWorkSize){
+		optionalCfg.WorkSize = defaultWorkSize
 	}
 
 
 	// Handle environment variable expansion in the RPC certificate path.
-	cfg.RPCCert = cleanAndExpandPath(cfg.RPCCert)
-
-	var defaultRPCPort string
+	soloCfg.RPCCert = cleanAndExpandPath(soloCfg.RPCCert)
 
 	// Add default port to RPC server based on --testnet flag
 	// if needed.
-	cfg.RPCServer = normalizeAddress(cfg.RPCServer, defaultRPCPort)
+	soloCfg.RPCServer = normalizeAddress(soloCfg.RPCServer, defaultRPCPort)
 
-	// Warn about missing config file only after all other configuration is
-	// done.  This prevents the warning on help messages and invalid
-	// options.  Note this should go directly before the return.
-	if configFileError != nil {
-		log.Printf("%v", configFileError)
-	}
-
-	return &cfg, remainingArgs, nil
+	return &GlobalConfig{
+		optionalCfg,
+		fileCfg,
+		deviceCfg,
+		soloCfg,
+		PoolConfig{},
+		necessaryCfg,
+	}, remainingArgs, nil
 }

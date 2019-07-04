@@ -18,7 +18,7 @@ type BaseWork interface {
 
 //standard work template
 type Work struct {
-	Cfg *common.Config
+	Cfg *common.GlobalConfig
 	Rpc *common.RpcClient
 	Clean bool
 	sync.Mutex

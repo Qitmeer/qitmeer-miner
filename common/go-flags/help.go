@@ -333,7 +333,6 @@ func (p *Parser) WriteHelp(writer io.Writer) {
 	}
 
 	c := p.Command
-
 	for c != nil {
 		printcmd := c != p.Command
 

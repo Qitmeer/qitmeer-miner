@@ -46,8 +46,8 @@ func main()  {
 }
 
 //get current coin miner
-func GetRobot(cfg *common.Config) core.Robot {
-	switch strings.ToUpper(cfg.Symbol) {
+func GetRobot(cfg *common.GlobalConfig) core.Robot {
+	switch strings.ToUpper(cfg.NecessaryConfig.Symbol) {
 	case core.SYMBOL_NOX:
 		r := &hlc.HLCRobot{}
 		r.Cfg = cfg

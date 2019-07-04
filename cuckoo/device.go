@@ -1,7 +1,7 @@
 package cuckoo
 
 import (
-	"github.com/robvanmieghem/go-opencl/cl"
+	"github.com/HalalChain/go-opencl/cl"
 	"hlc-miner/kernel"
 	"os"
 	"sync"

@@ -18,18 +18,18 @@ const (
 )
 
 type RpcClient struct {
-	Cfg *Config
+	Cfg *GlobalConfig
 }
 // newHTTPClient returns a new HTTP client that is configured according to the
 // proxy and TLS settings in the associated connection configuration.
 func (rpc *RpcClient)newHTTPClient() (*http.Client, error) {
 	// Configure proxy if needed.
 	var dial func(network, addr string) (net.Conn, error)
-	if rpc.Cfg.Proxy != "" {
+	if rpc.Cfg.OptionConfig.Proxy != "" {
 		proxy := &socks.Proxy{
-			Addr:     rpc.Cfg.Proxy,
-			Username: rpc.Cfg.ProxyUser,
-			Password: rpc.Cfg.ProxyPass,
+			Addr:     rpc.Cfg.OptionConfig.Proxy,
+			Username: rpc.Cfg.OptionConfig.ProxyUser,
+			Password: rpc.Cfg.OptionConfig.ProxyPass,
 		}
 		dial = func(network, addr string) (net.Conn, error) {
 			c, err := proxy.Dial(network, addr)
@@ -42,8 +42,8 @@ func (rpc *RpcClient)newHTTPClient() (*http.Client, error) {
 
 	// Configure TLS if needed.
 	var tlsConfig *tls.Config
-	if !rpc.Cfg.NoTLS && rpc.Cfg.RPCCert != "" {
-		pem, err := ioutil.ReadFile(rpc.Cfg.RPCCert)
+	if !rpc.Cfg.SoloConfig.NoTLS && rpc.Cfg.SoloConfig.RPCCert != "" {
+		pem, err := ioutil.ReadFile(rpc.Cfg.SoloConfig.RPCCert)
 		if err != nil {
 			return nil, err
 		}
@@ -52,7 +52,7 @@ func (rpc *RpcClient)newHTTPClient() (*http.Client, error) {
 		pool.AppendCertsFromPEM(pem)
 		tlsConfig = &tls.Config{
 			RootCAs:            pool,
-			InsecureSkipVerify: rpc.Cfg.NoTLS,
+			InsecureSkipVerify: rpc.Cfg.SoloConfig.NoTLS,
 		}
 	}
 
@@ -74,7 +74,7 @@ func (rpc *RpcClient)newHTTPClient() (*http.Client, error) {
 
 func (rpc *RpcClient)RpcResult(method string,params []interface{}) []byte{
 	protocol := "http"
-	if !rpc.Cfg.NoTLS {
+	if !rpc.Cfg.SoloConfig.NoTLS {
 		protocol = "https"
 	}
 	paramStr,err := json.Marshal(params)
@@ -82,7 +82,7 @@ func (rpc *RpcClient)RpcResult(method string,params []interface{}) []byte{
 		log.Println("rpc params error:",err)
 		return nil
 	}
-	url := protocol + "://" + rpc.Cfg.RPCServer
+	url := protocol + "://" + rpc.Cfg.SoloConfig.RPCServer
 	jsonStr := []byte(`{"jsonrpc": "2.0", "method": "`+method+`", "params": `+string(paramStr)+`, "id": 1}`)
 	bodyBuff := bytes.NewBuffer(jsonStr)
 	httpRequest, err := http.NewRequest("POST", url, bodyBuff)
@@ -93,7 +93,7 @@ func (rpc *RpcClient)RpcResult(method string,params []interface{}) []byte{
 	httpRequest.Close = true
 	httpRequest.Header.Set("Content-Type", "application/json")
 	// Configure basic access authorization.
-	httpRequest.SetBasicAuth(rpc.Cfg.RPCUser, rpc.Cfg.RPCPassword)
+	httpRequest.SetBasicAuth(rpc.Cfg.SoloConfig.RPCUser, rpc.Cfg.SoloConfig.RPCPassword)
 
 	// Create the new HTTP client that is configured according to the user-
 	// specified options and submit the request.

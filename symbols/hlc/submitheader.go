@@ -44,6 +44,15 @@ func (this *MinerBlockData)PackagePoolHeader(work *HLCWork)  {
 	copy(this.HeaderData[NONCESTART:NONCEEND],nbitesBy[:])
 	this.JobID = work.PoolWork.JobID
 }
+//the pool work submit structure
+func (this *MinerBlockData)PackagePoolHeaderByNonce(work *HLCWork,nonce uint64)  {
+	this.HeaderData = BlockComputePoolData(work.PoolWork.WorkData)
+	this.TargetDiff = work.stra.Target
+	nbitesBy := make([]byte,8)
+	binary.LittleEndian.PutUint64(nbitesBy,nonce)
+	copy(this.HeaderData[NONCESTART:NONCEEND],nbitesBy[:])
+	this.JobID = work.PoolWork.JobID
+}
 
 //the solo work submit structure
 func (this *MinerBlockData)PackageRpcHeader(work *HLCWork)  {
