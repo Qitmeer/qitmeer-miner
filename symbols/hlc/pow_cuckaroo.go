@@ -9,10 +9,11 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/HalalChain/qitmeer-lib/common/hash"
-	"github.com/robvanmieghem/go-opencl/cl"
+	"github.com/HalalChain/go-opencl/cl"
 	"hlc-miner/common"
 	"hlc-miner/core"
 	"hlc-miner/cuckoo"
+	"hlc-miner/kernel"
 	"log"
 	"math/big"
 	"sort"
@@ -52,7 +53,7 @@ func (this *Cuckaroo) InitDevice() {
 		return
 	}
 	var err error
-	this.Program, err = this.Context.CreateProgramWithSource([]string{cuckoo.CuckarooKernel})
+	this.Program, err = this.Context.CreateProgramWithSource([]string{kernel.CuckarooKernel})
 	if err != nil {
 		log.Println("-", this.MinerId, this.DeviceName, err)
 		this.IsValid = false
@@ -82,9 +83,9 @@ func (this *Cuckaroo) Update() {
 		this.Work.PoolWork.ExtraNonce2 = fmt.Sprintf("%08x", this.CurrentWorkID)
 		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepHlcWork()
 	} else {
-		randStr := fmt.Sprintf("%s%d%d", this.Cfg.RandStr, this.MinerId, this.CurrentWorkID)
+		randStr := fmt.Sprintf("%s%d%d", this.Cfg.SoloConfig.RandStr, this.MinerId, this.CurrentWorkID)
 		var err error
-		err = this.Work.Block.CalcCoinBase(randStr, this.Cfg.MinerAddr)
+		err = this.Work.Block.CalcCoinBase(randStr, this.Cfg.SoloConfig.MinerAddr)
 		if err != nil {
 			log.Println("calc coinbase error :", err)
 			return
@@ -133,10 +134,12 @@ func (this *Cuckaroo) Mine() {
 				if this.HasNewWork {
 					break
 				}
+				xnonce := <- common.RandGenerator(2<<32)
 				if this.Pool {
-					this.header.PackagePoolHeader(&this.Work)
+					this.header.PackagePoolHeaderByNonce(&this.Work,uint64(xnonce))
 				} else {
-					this.header.PackageRpcHeaderByNonce(&this.Work,uint64(nonce))
+
+					this.header.PackageRpcHeaderByNonce(&this.Work,uint64(xnonce))
 				}
 				this.Transactions[int(this.MinerId)] = make([]Transactions,0)
 				for k := 0;k<len(this.header.Transactions);k++{
@@ -181,7 +184,7 @@ func (this *Cuckaroo) Mine() {
 					log.Println("CreateEdgeKernel-1058", this.MinerId,err)
 					return
 				}
-				for i:= 0;i<this.Cfg.TrimmerCount;i++{
+				for i:= 0;i<this.Cfg.OptionConfig.TrimmerCount;i++{
 					if _, err = this.CommandQueue.EnqueueNDRangeKernel(this.Trimmer01Kernel, []int{0}, []int{2048*256*2}, []int{256}, nil); err != nil {
 						log.Println("Trimmer01Kernel-1058", this.MinerId,err)
 						return
@@ -233,11 +236,9 @@ func (this *Cuckaroo) Mine() {
 							if HashToBig(&h).Cmp(this.header.TargetDiff) <= 0 {
 								subm := hex.EncodeToString(this.header.HeaderData)
 								if !this.Pool{
-									if this.Cfg.DAG{
-										subm += common.Int2varinthex(int64(len(this.header.Parents)))
-										for j := 0; j < len(this.header.Parents); j++ {
-											subm += this.header.Parents[j].Data
-										}
+									subm += common.Int2varinthex(int64(len(this.header.Parents)))
+									for j := 0; j < len(this.header.Parents); j++ {
+										subm += this.header.Parents[j].Data
 									}
 
 									txCount := len(this.Transactions)

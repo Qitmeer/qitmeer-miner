@@ -1,21 +1,20 @@
-/**
-	HLC FOUNDATION
-	james
- */
+// Copyright (c) 2019 The halalchain developers
+// Use of this source code is governed by an ISC
+// license that can be found in the LICENSE file.
 package core
 
 import (
-	"sync"
-	"os"
-	"github.com/robvanmieghem/go-opencl/cl"
-	"log"
+	"github.com/HalalChain/go-opencl/cl"
 	"hlc-miner/common"
+	"log"
+	"os"
+	"sync"
 )
 
 const (
 	SYMBOL_NOX = "HLC"
 )
-var devicesTypesForMining = cl.DeviceTypeGPU
+
 //var devicesTypesForMining = cl.DeviceTypeAll
 
 type Robot interface {
@@ -25,7 +24,7 @@ type Robot interface {
 }
 
 type MinerRobot struct {
-	Cfg 		  *common.Config //config
+	Cfg 		  *common.GlobalConfig //config
 	ValidShares   uint64
 	StaleShares   uint64
 	InvalidShares uint64
@@ -42,27 +41,9 @@ type MinerRobot struct {
 
 //init GPU device
 func (this *MinerRobot)InitDevice()  {
-	platforms, err := cl.GetPlatforms()
-	if err != nil {
-		log.Fatalln("Get Graphics card platforms error,please check!【",err,"】")
+	this.ClDevices = common.GetDevices(common.DevicesTypesForGPUMining)
+	if this.ClDevices == nil{
+		log.Println("some error occurs!")
 		return
 	}
-	this.ClDevices = make([]*cl.Device, 0)
-
-	for _, platform := range platforms {
-		platormDevices, err := cl.GetDevices(platform, devicesTypesForMining)
-		if err != nil {
-			log.Fatalln("Don't had GPU devices to mining ,please check!【",err,"】")
-			return
-		}
-		for _, device := range platormDevices {
-			if device.Type() != cl.DeviceTypeGPU {
-				continue
-			}
-			this.ClDevices = append(this.ClDevices, device)
-			//break
-		}
-		//break
-	}
-
 }

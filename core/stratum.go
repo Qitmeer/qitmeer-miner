@@ -23,12 +23,9 @@ type StratumMsg struct {
 	ID     interface{} `json:"id"`
 }
 
-// ErrStratumStaleWork indicates that the work to send to the pool was stale.
-var ErrStratumStaleWork = fmt.Errorf("Stale work, throwing away")
-
 type Stratum struct {
 	sync.Mutex
-	Cfg       *common.Config
+	Cfg       *common.GlobalConfig
 	Conn      net.Conn
 	Reader    *bufio.Reader
 	ID        uint64
@@ -45,24 +42,25 @@ type Stratum struct {
 
 // StratumConn starts the initial connection to a stratum pool and sets defaults
 // in the pool object.
-func (this *Stratum)StratumConn(cfg *common.Config) error {
+func (this *Stratum)StratumConn(cfg *common.GlobalConfig) error {
 	this.Cfg = cfg
-	pool := cfg.Pool
+	pool := cfg.PoolConfig.Pool
 	log.Println("【Connect pool】:", pool)
 	proto := "stratum+tcp://"
-	if strings.HasPrefix(this.Cfg.Pool, proto) {
+	if strings.HasPrefix(this.Cfg.PoolConfig.Pool, proto) {
 		pool = strings.Replace(pool, proto, "", 1)
 	} else {
 		err := errors.New("Only stratum pools supported.")
 		return err
 	}
-	this.Cfg.Pool = pool
+	this.Cfg.PoolConfig.Pool = pool
 	this.ID = 1
-	this.Reconnect()
+	_ = this.Reconnect()
+
 	go func() {
 		if uint32(time.Now().Unix()) - this.Timeout > 30{
 			log.Println("【timeout】reconnect")
-			this.Reconnect()
+			_ = this.Reconnect()
 		}
 	}()
 	return nil
@@ -101,15 +99,15 @@ func (this *Stratum)Listen(handle func(data string))  {
 func (s *Stratum) Reconnect() error {
 	var conn net.Conn
 	var err error
-	if s.Cfg.Proxy != "" {
+	if s.Cfg.OptionConfig.Proxy != "" {
 		proxy := &socks.Proxy{
-			Addr:     s.Cfg.Proxy,
-			Username: s.Cfg.ProxyUser,
-			Password: s.Cfg.ProxyPass,
+			Addr:     s.Cfg.OptionConfig.Proxy,
+			Username: s.Cfg.OptionConfig.ProxyUser,
+			Password: s.Cfg.OptionConfig.ProxyPass,
 		}
-		conn, err = proxy.Dial("tcp", s.Cfg.Pool)
+		conn, err = proxy.Dial("tcp", s.Cfg.PoolConfig.Pool)
 	} else {
-		conn, err = net.Dial("tcp", s.Cfg.Pool)
+		conn, err = net.Dial("tcp", s.Cfg.PoolConfig.Pool)
 	}
 	if err != nil {
 		log.Println("【init reconnect error】",err)
@@ -141,7 +139,7 @@ func (s *Stratum) Auth() error {
 	msg := StratumMsg{
 		Method: "mining.authorize",
 		ID:     s.ID,
-		Params: []string{s.Cfg.PoolUser, s.Cfg.PoolPassword},
+		Params: []string{s.Cfg.PoolConfig.PoolUser, s.Cfg.PoolConfig.PoolPassword},
 	}
 	// Auth reply has no method so need a way to identify it.
 	// Ugly, but not much choice.
@@ -172,7 +170,7 @@ func (s *Stratum) Subscribe() error {
 	msg := StratumMsg{
 		Method: "mining.subscribe",
 		ID:     s.ID,
-		Params: []string{"halalchainminer/" + s.Cfg.Version},
+		Params: []string{"qitmeer-miner/v0.0.1"},
 	}
 	s.SubID = msg.ID.(uint64)
 	s.ID++

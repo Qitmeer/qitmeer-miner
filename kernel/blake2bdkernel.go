@@ -1,4 +1,4 @@
-package hlc
+package kernel
 const DoubleBlake2bKernelSource = `
 /****
 ** HLC Team double blake2b for opencl miner

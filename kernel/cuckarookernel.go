@@ -1,4 +1,4 @@
-package cuckoo
+package kernel
 
 var CuckarooKernel = `
 // Cuckaroo Cycle, a memory-hard proof-of-work by James HLC Foundation

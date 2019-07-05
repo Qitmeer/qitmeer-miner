@@ -1,7 +1,8 @@
 package cuckoo
 
 import (
-	"github.com/robvanmieghem/go-opencl/cl"
+	"github.com/HalalChain/go-opencl/cl"
+	"hlc-miner/kernel"
 	"os"
 	"sync"
 	"log"
@@ -74,7 +75,7 @@ func (this *Device)InitDevice()  {
 	if err != nil {
 		log.Println("-", this.MinerId,  err)
 	}
-	this.Program, err = this.Context.CreateProgramWithSource([]string{CuckarooKernel})
+	this.Program, err = this.Context.CreateProgramWithSource([]string{kernel.CuckarooKernel})
 	if err != nil {
 		log.Println("-", this.MinerId, err)
 		return

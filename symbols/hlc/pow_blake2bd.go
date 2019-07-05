@@ -9,9 +9,10 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/HalalChain/qitmeer-lib/common/hash"
-	"github.com/robvanmieghem/go-opencl/cl"
+	"github.com/HalalChain/go-opencl/cl"
 	"hlc-miner/common"
 	"hlc-miner/core"
+	"hlc-miner/kernel"
 	"log"
 	"math/big"
 	"sync/atomic"
@@ -30,7 +31,7 @@ func (this *Blake2bD) InitDevice() {
 		return
 	}
 	var err error
-	this.Program, err = this.Context.CreateProgramWithSource([]string{DoubleBlake2bKernelSource})
+	this.Program, err = this.Context.CreateProgramWithSource([]string{kernel.DoubleBlake2bKernelSource})
 	if err != nil {
 		log.Println("-", this.MinerId, this.DeviceName, err)
 		this.IsValid = false
@@ -65,13 +66,13 @@ func (this *Blake2bD) InitDevice() {
 	}
 	this.Kernel.SetArgBuffer(1, this.NonceOutObj)
 	this.LocalItemSize, err = this.Kernel.WorkGroupSize(this.ClDevice)
-	this.LocalItemSize = this.Cfg.WorkSize
+	this.LocalItemSize = this.Cfg.OptionConfig.WorkSize
 	if err != nil {
 		log.Println("- WorkGroupSize failed -", this.MinerId, err)
 		this.IsValid = false
 		return
 	}
-	log.Println("- Device ID:", this.MinerId, "- Global item size:", this.GlobalItemSize, "(Intensity", this.Cfg.Intensity, ")", "- Local item size:", this.LocalItemSize)
+	log.Println("- Device ID:", this.MinerId, "- Global item size:", this.GlobalItemSize, "(Intensity", this.Cfg.OptionConfig.Intensity, ")", "- Local item size:", this.LocalItemSize)
 	this.NonceOut = make([]byte, 8, 8)
 	if _, err = this.CommandQueue.EnqueueWriteBufferByte(this.NonceOutObj, true, 0, this.NonceOut, nil); err != nil {
 		log.Println("-", this.MinerId, err)
@@ -91,9 +92,9 @@ func (this *Blake2bD) Update() {
 		this.Work.PoolWork.ExtraNonce2 = fmt.Sprintf("%08x", this.CurrentWorkID)
 		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepHlcWork()
 	} else {
-		randStr := fmt.Sprintf("%s%d%d", this.Cfg.RandStr, this.MinerId, this.CurrentWorkID)
+		randStr := fmt.Sprintf("%s%d%d", this.Cfg.SoloConfig.RandStr, this.MinerId, this.CurrentWorkID)
 		var err error
-		err = this.Work.Block.CalcCoinBase(randStr, this.Cfg.MinerAddr)
+		err = this.Work.Block.CalcCoinBase(randStr, this.Cfg.SoloConfig.MinerAddr)
 		if err != nil {
 			log.Println("calc coinbase error :", err)
 			return
@@ -188,11 +189,9 @@ func (this *Blake2bD) Mine() {
 					log.Println("[Found Hash]",hex.EncodeToString(common.Reverse(h[:])))
 					subm := hex.EncodeToString(this.header.HeaderData)
 					if !this.Pool{
-						if this.Cfg.DAG{
-							subm += common.Int2varinthex(int64(len(this.header.Parents)))
-							for j := 0; j < len(this.header.Parents); j++ {
-								subm += this.header.Parents[j].Data
-							}
+						subm += common.Int2varinthex(int64(len(this.header.Parents)))
+						for j := 0; j < len(this.header.Parents); j++ {
+							subm += this.header.Parents[j].Data
 						}
 
 						txCount := len(this.Transactions[int(this.MinerId)]) //real transaction count except coinbase

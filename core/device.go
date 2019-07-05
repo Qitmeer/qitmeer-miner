@@ -5,8 +5,7 @@ james
 package core
 
 import (
-	"fmt"
-	"github.com/robvanmieghem/go-opencl/cl"
+	"github.com/HalalChain/go-opencl/cl"
 	"hlc-miner/common"
 	"log"
 	"math"
@@ -24,7 +23,7 @@ type BaseDevice interface {
 	SubmitShare(substr chan string)
 }
 type Device struct{
-	Cfg *common.Config  //must init
+	Cfg *common.GlobalConfig  //must init
 	DeviceName string
 	HasNewWork bool
 	AllDiffOneShares uint64
@@ -51,7 +50,7 @@ type Device struct{
 	NewWork chan BaseWork
 }
 
-func (this *Device)Init(i int,device *cl.Device,pool bool,q chan os.Signal,cfg *common.Config)  {
+func (this *Device)Init(i int,device *cl.Device,pool bool,q chan os.Signal,cfg *common.GlobalConfig)  {
 	this.MinerId = uint32(i)
 	this.NewWork = make(chan BaseWork,1)
 	this.Cfg=cfg
@@ -62,9 +61,8 @@ func (this *Device)Init(i int,device *cl.Device,pool bool,q chan os.Signal,cfg *
 	this.Pool=pool
 	this.SubmitData=make(chan string,0)
 	this.Started=uint32(time.Now().Unix())
-	this.GlobalItemSize= int(math.Exp2(float64(this.Cfg.Intensity)))
+	this.GlobalItemSize= int(math.Exp2(float64(this.Cfg.OptionConfig.Intensity)))
 	this.Quit=q
-	log.Println(fmt.Sprintf("Found Can Mining Device %d : ",i),this.DeviceName)
 	this.AllDiffOneShares = 0
 }
 

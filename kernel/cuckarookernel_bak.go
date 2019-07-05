@@ -1,4 +1,4 @@
-package cuckoo
+package kernel
 
 var CuckarooKernelBak = `
 // Cuckaroo Cycle, a memory-hard proof-of-work by John Tromp and team Grin

@@ -1,23 +1,22 @@
-/**
-	HLC FOUNDATION
-	james
- */
+// Copyright (c) 2019 The halalchain developers
+// Use of this source code is governed by an ISC
+// license that can be found in the LICENSE file.
 package hlc
 
 import (
-	"hlc-miner/core"
-	"encoding/json"
-	"fmt"
-	"strconv"
-	"hlc-miner/common"
-	"math/big"
-	nox "github.com/HalalChain/qitmeer-lib/common/hash"
-	"log"
-	"time"
-	"sync/atomic"
 	"encoding/binary"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
+	"fmt"
+	nox "github.com/HalalChain/qitmeer-lib/common/hash"
+	"hlc-miner/common"
+	"hlc-miner/core"
+	"log"
+	"math/big"
+	"strconv"
+	"sync/atomic"
+	"time"
 )
 
 // ErrStratumStaleWork indicates that the work to send to the pool was stale.
@@ -114,6 +113,13 @@ type HLCStratum struct {
 	PoolWork  NotifyWork
 }
 
+func (s *HLCStratum) CalcBasePowLimit() *big.Int {
+	powLimitbytes := common.BlockBitsToTarget(s.PoolWork.Nbits,32)
+	powLimit := new(big.Int)
+	powLimit = powLimit.SetBytes(powLimitbytes)
+	return powLimit
+}
+
 func (this *HLCStratum)HandleReply()  {
 	this.Stratum.Listen(func(data string) {
 		resp, err := this.Unmarshal([]byte(data))
@@ -181,7 +187,7 @@ func (s *HLCStratum) handleStratumMsg(resp interface{}) {
 		}
 		time.Sleep(time.Duration(wait) * time.Second)
 		pool := nResp.Params[0] + ":" + nResp.Params[1]
-		s.Cfg.Pool = pool
+		s.Cfg.PoolConfig.Pool = pool
 		err = s.Reconnect()
 		if err != nil {
 			fmt.Println(err)
@@ -196,7 +202,7 @@ func (s *HLCStratum) handleStratumMsg(resp interface{}) {
 		msg := StratumMsg{
 			Method: nResp.Method,
 			ID:     nResp.ID,
-			Params: []string{"decred-halalchainminer/" + s.Cfg.Version},
+			Params: []string{"qitmeer-miner/v0.0.1" },
 		}
 		m, err := json.Marshal(msg)
 		if err != nil {
@@ -236,10 +242,7 @@ func (s *HLCStratum) handleNotifyRes(resp interface{}) {
 		log.Println(err)
 	}
 	//sync the pool base difficulty
-	powLimitbytes := common.BlockBitsToTarget(s.PoolWork.Nbits,32)
-	powLimit := new(big.Int)
-	powLimit = powLimit.SetBytes(powLimitbytes)
-	s.Target, _ = common.DiffToTarget(s.Diff, powLimit)
+	s.Target, _ = common.DiffToTarget(s.Diff, s.CalcBasePowLimit())
 	log.Println(fmt.Sprintf("[Pool Base nbits]:%s\n[Pool diffculty]:%f\n[Pool target]:%064x",s.PoolWork.Nbits,s.Diff,s.Target))
 	s.PoolWork.Ntime = nResp.Ntime
 	s.PoolWork.NtimeDelta = parsedNtime - time.Now().Unix()
@@ -424,7 +427,7 @@ func (s *HLCStratum) Unmarshal(blob []byte) (interface{}, error) {
 		if !ok {
 			return nil, core.ErrJsonType
 		}
-		s.Target, err = common.DiffToTarget(difficulty, common.ChainParams.PowLimit)
+		s.Target, err = common.DiffToTarget(difficulty, big.NewInt(1))
 		if err != nil {
 			return nil, err
 		}
@@ -520,7 +523,7 @@ func (s *HLCStratum) PrepSubmit(data []byte,jobID string,ExtraNonce2 string) (Su
 	if jobID != s.PoolWork.JobID && s.PoolWork.Clean {
 		return sub, ErrStratumStaleWork
 	}
-	sub.Params = []string{s.Cfg.PoolUser, jobID, ExtraNonce2, timestampStr,nonceStr}
+	sub.Params = []string{s.Cfg.PoolConfig.PoolUser, jobID, ExtraNonce2, timestampStr,nonceStr}
 	log.Println("【submit】",sub.Params)
 	return sub, nil
 }

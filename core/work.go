@@ -1,7 +1,6 @@
-/**
-	HLC FOUNDATION
-	james
- */
+// Copyright (c) 2019 The halalchain developers
+// Use of this source code is governed by an ISC
+// license that can be found in the LICENSE file.
 package core
 
 import (
@@ -19,7 +18,7 @@ type BaseWork interface {
 
 //standard work template
 type Work struct {
-	Cfg *common.Config
+	Cfg *common.GlobalConfig
 	Rpc *common.RpcClient
 	Clean bool
 	sync.Mutex

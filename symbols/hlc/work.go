@@ -1,7 +1,6 @@
-/**
-	HLC FOUNDATION
-	james
- */
+// Copyright (c) 2019 The halalchain developers
+// Use of this source code is governed by an ISC
+// license that can be found in the LICENSE file.
 package hlc
 
 import (
@@ -59,7 +58,7 @@ func (this *HLCWork) Get () bool {
 	binary.LittleEndian.PutUint32(diffi, uint32(diff))
 	blockTemplate.Result.Difficulty = binary.LittleEndian.Uint32(diffi)
 	blockTemplate.Result.HasCoinbasePack = false
-	_ = blockTemplate.Result.CalcCoinBase(this.Cfg.RandStr,this.Cfg.MinerAddr)
+	_ = blockTemplate.Result.CalcCoinBase(this.Cfg.SoloConfig.RandStr,this.Cfg.SoloConfig.MinerAddr)
 	this.Block = blockTemplate.Result
 	this.Started = uint32(time.Now().Unix())
 	return true

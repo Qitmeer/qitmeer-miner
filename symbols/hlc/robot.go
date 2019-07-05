@@ -1,12 +1,11 @@
-/**
-	HLC FOUNDATION
-	james
- */
+// Copyright (c) 2019 The halalchain developers
+// Use of this source code is governed by an ISC
+// license that can be found in the LICENSE file.
 package hlc
 
 import (
 	"fmt"
-	"github.com/robvanmieghem/go-opencl/cl"
+	"github.com/HalalChain/go-opencl/cl"
 	"hlc-miner/common"
 	"hlc-miner/core"
 	"log"
@@ -31,7 +30,7 @@ type HLCRobot struct {
 }
 
 func (this *HLCRobot)GetPow(i int ,device *cl.Device) core.BaseDevice{
-	switch this.Cfg.Pow {
+	switch this.Cfg.NecessaryConfig.Pow {
 	case POW_CUCKROO:
 		deviceMiner := &Cuckaroo{}
 		deviceMiner.Init(i,device,this.Pool,this.Quit,this.Cfg)
@@ -45,7 +44,7 @@ func (this *HLCRobot)GetPow(i int ,device *cl.Device) core.BaseDevice{
 		return deviceMiner
 
 	default:
-		log.Fatalln(this.Cfg.Pow," pow has not exist!")
+		log.Fatalln(this.Cfg.NecessaryConfig.Pow," pow has not exist!")
 	}
 	return nil
 }
@@ -62,8 +61,9 @@ func (this *HLCRobot)InitDevice()  {
 
 // runing
 func (this *HLCRobot)Run() {
-	log.Println("miner start")
-	if this.Cfg.Pool != ""{ //is pool mode
+	connectName := "solo"
+	if this.Cfg.PoolConfig.Pool != ""{ //is pool mode
+		connectName = "pool"
 		this.Stratu = &HLCStratum{}
 		err := this.Stratu.StratumConn(this.Cfg)
 		if err != nil {
@@ -73,6 +73,7 @@ func (this *HLCRobot)Run() {
 		go this.Stratu.HandleReply()
 		this.Pool = true
 	}
+	log.Println(connectName,"miner start")
 	this.Work = HLCWork{}
 	this.Work.Cfg = this.Cfg
 	this.Work.Rpc = this.Rpc
@@ -195,7 +196,7 @@ func (this *HLCRobot)SubmitWork() {
 					this.AllTransactionsCount += int64(count)
 					logContent := fmt.Sprintf("%s,receive block, block height = %s,Including %s transactions; Received Total transactions = %d\n",
 						time.Now().Format("2006-01-02 03:04:05 PM"),height,txCount,this.AllTransactionsCount)
-					_ = common.AppendToFile(this.Cfg.MinerLogFile,logContent)
+					_ = common.AppendToFile(this.Cfg.LogConfig.MinerLogFile,logContent)
 				}
 			}
 		}
