@@ -36,7 +36,6 @@ var (
 
 type DeviceConfig struct {
 	ListDevices bool `short:"l" long:"listdevices" description:"List number of devices."`
-	TestPow string `short:"T" long:"testpow" description:"test pow blake2bd|cuckaroo|cuckatoo"`
 }
 
 type FileConfig struct {
@@ -47,12 +46,11 @@ type FileConfig struct {
 
 type OptionalConfig struct {
 	// Config / log options
-	TrimmerCount     int `long:"trimmerTimes" description:"the cuckaroo trimmer times"`
-
+	CPUMiner       bool   `long:"cpuminer" description:"CPUMiner" default-mask:"false"`
 	Proxy       string `long:"proxy" description:"Connect via SOCKS5 proxy (eg. 127.0.0.1:9050)"`
 	ProxyUser   string `long:"proxyuser" description:"Username for proxy server"`
 	ProxyPass   string `long:"proxypass" default-mask:"-" description:"Password for proxy server"`
-
+	TrimmerCount     int `long:"trimmerTimes" description:"the cuckaroo trimmer times"`
 	Intensity         int `long:"intensity" description:"Intensities (the work size is 2^intensity) per device. Single global value or a comma separated list."`
 	WorkSize          int `long:"worksize" description:"The explicitly declared sizes of the work to do per device (overrides intensity). Single global value or a comma separated list."`
 }
@@ -172,6 +170,7 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 		Intensity:  defaultIntensity,
 		WorkSize:  defaultWorkSize,
 		TrimmerCount:  defaultTrimmerCount,
+		CPUMiner:  false,
 	}
 
 	// Create the home directory if it doesn't already exist.
@@ -253,10 +252,6 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 		GetDevices(DevicesTypesForCPUMining)
 		log.Println("【GPU Devices List】:")
 		GetDevices(DevicesTypesForGPUMining)
-		os.Exit(0)
-	}
-	if deviceCfg.TestPow != ""{
-		log.Println(deviceCfg.TestPow,"test todo")
 		os.Exit(0)
 	}
 	if poolCfg.Pool == "" && soloCfg.MinerAddr == ""{
