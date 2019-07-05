@@ -6,7 +6,6 @@ package common
 
 import (
 	"fmt"
-	"github.com/HalalChain/qitmeer-lib/params"
 	"hlc-miner/common/go-flags"
 	"log"
 	"net"
@@ -31,7 +30,6 @@ var (
 	defaultRpcMinerLog  = GetCurrentDir() + "/miner.log"
 	maxIntensity  = 31
 	maxWorkSize   = uint32(0xFFFFFFFF - 255)
-	ChainParams  *params.Params
 	defaultPow  ="cuckaroo"
 	defaultSymbol  ="HLC"
 )
@@ -219,6 +217,12 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 		os.Exit(0)
 	}
 
+	_,err = preParser.Parse()
+	if err != nil{
+		log.Printf("%v", err)
+		log.Println(fmt.Sprintf("Usage to see  ./%s -h",appName))
+		os.Exit(0)
+	}
 
 	err = flags.NewIniParser(preParser).ParseFile(fileCfg.ConfigFile)
 	if err != nil {
@@ -226,7 +230,10 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 			fmt.Fprintln(os.Stderr, err)
 			return nil, nil, err
 		}
-		log.Printf("%v", err)
+		if fileCfg.ConfigFile != defaultConfigFile{
+			log.Printf("%v", err)
+			os.Exit(0)
+		}
 	}
 
 	remainingArgs,err := preParser.Parse()
@@ -239,15 +246,8 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 		os.Exit(0)
 	}
 
-	_,err = preParser.Parse()
-	if err != nil{
-		log.Printf("%v", err)
-		log.Println(fmt.Sprintf("Usage to see  ./%s -h",appName))
-		os.Exit(0)
-	}
-	if poolCfg.Pool == "" && soloCfg.MinerAddr == ""{
-		log.Fatalln(fmt.Sprintf("solo need qitmeer address -M "))
-	}
+
+
 	if deviceCfg.ListDevices{
 		log.Println("【CPU Devices List】:")
 		GetDevices(DevicesTypesForCPUMining)
@@ -259,7 +259,10 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 		log.Println(deviceCfg.TestPow,"test todo")
 		os.Exit(0)
 	}
-
+	if poolCfg.Pool == "" && soloCfg.MinerAddr == ""{
+		preParser.WriteHelp(os.Stderr)
+		os.Exit(0)
+	}
 	// Show the version and exit if the version flag was specified.
 
 	if optionalCfg.Intensity < minIntensity || optionalCfg.Intensity > maxIntensity{
@@ -270,7 +273,6 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 	if optionalCfg.WorkSize > int(maxWorkSize){
 		optionalCfg.WorkSize = defaultWorkSize
 	}
-
 
 	// Handle environment variable expansion in the RPC certificate path.
 	soloCfg.RPCCert = cleanAndExpandPath(soloCfg.RPCCert)
@@ -284,7 +286,7 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 		fileCfg,
 		deviceCfg,
 		soloCfg,
-		PoolConfig{},
+		poolCfg,
 		necessaryCfg,
 	}, remainingArgs, nil
 }

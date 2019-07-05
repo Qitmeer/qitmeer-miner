@@ -4,19 +4,19 @@
 package hlc
 
 import (
-	"hlc-miner/core"
-	"encoding/json"
-	"fmt"
-	"strconv"
-	"hlc-miner/common"
-	"math/big"
-	nox "github.com/HalalChain/qitmeer-lib/common/hash"
-	"log"
-	"time"
-	"sync/atomic"
 	"encoding/binary"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
+	"fmt"
+	nox "github.com/HalalChain/qitmeer-lib/common/hash"
+	"hlc-miner/common"
+	"hlc-miner/core"
+	"log"
+	"math/big"
+	"strconv"
+	"sync/atomic"
+	"time"
 )
 
 // ErrStratumStaleWork indicates that the work to send to the pool was stale.
@@ -111,6 +111,13 @@ type HLCStratum struct {
 	Target *big.Int
 	Diff float64
 	PoolWork  NotifyWork
+}
+
+func (s *HLCStratum) CalcBasePowLimit() *big.Int {
+	powLimitbytes := common.BlockBitsToTarget(s.PoolWork.Nbits,32)
+	powLimit := new(big.Int)
+	powLimit = powLimit.SetBytes(powLimitbytes)
+	return powLimit
 }
 
 func (this *HLCStratum)HandleReply()  {
@@ -235,10 +242,7 @@ func (s *HLCStratum) handleNotifyRes(resp interface{}) {
 		log.Println(err)
 	}
 	//sync the pool base difficulty
-	powLimitbytes := common.BlockBitsToTarget(s.PoolWork.Nbits,32)
-	powLimit := new(big.Int)
-	powLimit = powLimit.SetBytes(powLimitbytes)
-	s.Target, _ = common.DiffToTarget(s.Diff, powLimit)
+	s.Target, _ = common.DiffToTarget(s.Diff, s.CalcBasePowLimit())
 	log.Println(fmt.Sprintf("[Pool Base nbits]:%s\n[Pool diffculty]:%f\n[Pool target]:%064x",s.PoolWork.Nbits,s.Diff,s.Target))
 	s.PoolWork.Ntime = nResp.Ntime
 	s.PoolWork.NtimeDelta = parsedNtime - time.Now().Unix()
@@ -423,7 +427,7 @@ func (s *HLCStratum) Unmarshal(blob []byte) (interface{}, error) {
 		if !ok {
 			return nil, core.ErrJsonType
 		}
-		s.Target, err = common.DiffToTarget(difficulty, common.ChainParams.PowLimit)
+		s.Target, err = common.DiffToTarget(difficulty, big.NewInt(1))
 		if err != nil {
 			return nil, err
 		}

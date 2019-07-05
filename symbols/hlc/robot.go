@@ -61,8 +61,9 @@ func (this *HLCRobot)InitDevice()  {
 
 // runing
 func (this *HLCRobot)Run() {
-	log.Println("miner start")
+	connectName := "solo"
 	if this.Cfg.PoolConfig.Pool != ""{ //is pool mode
+		connectName = "pool"
 		this.Stratu = &HLCStratum{}
 		err := this.Stratu.StratumConn(this.Cfg)
 		if err != nil {
@@ -72,6 +73,7 @@ func (this *HLCRobot)Run() {
 		go this.Stratu.HandleReply()
 		this.Pool = true
 	}
+	log.Println(connectName,"miner start")
 	this.Work = HLCWork{}
 	this.Work.Cfg = this.Cfg
 	this.Work.Rpc = this.Rpc
