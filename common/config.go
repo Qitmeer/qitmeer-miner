@@ -255,6 +255,10 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 		GetDevices(DevicesTypesForGPUMining)
 		os.Exit(0)
 	}
+	if deviceCfg.TestPow != ""{
+		log.Println(deviceCfg.TestPow,"test todo")
+		os.Exit(0)
+	}
 
 	// Show the version and exit if the version flag was specified.
 
