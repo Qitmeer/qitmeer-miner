@@ -7,7 +7,7 @@
 #coin
 symbol=HLC
 #pow type cuckaroo|blake2bd|cuckatoo
-pow=cuckaroo
+pow=blake2bd
 
 #[Solo Config]
 #miner address

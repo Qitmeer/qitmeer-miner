@@ -20,7 +20,7 @@ import (
 
 type Blake2bD struct {
 	core.Device
-	Work    HLCWork
+	Work    *HLCWork
 	Transactions map[int][]Transactions
 	header MinerBlockData
 }
@@ -73,7 +73,7 @@ func (this *Blake2bD) InitDevice() {
 		return
 	}
 	log.Println("- Device ID:", this.MinerId, "- Global item size:", this.GlobalItemSize, "(Intensity", this.Cfg.OptionConfig.Intensity, ")", "- Local item size:", this.LocalItemSize)
-	this.NonceOut = make([]byte, 8, 8)
+	this.NonceOut = make([]byte, 8)
 	if _, err = this.CommandQueue.EnqueueWriteBufferByte(this.NonceOutObj, true, 0, this.NonceOut, nil); err != nil {
 		log.Println("-", this.MinerId, err)
 		this.IsValid = false
@@ -93,8 +93,7 @@ func (this *Blake2bD) Update() {
 		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepHlcWork()
 	} else {
 		randStr := fmt.Sprintf("%s%d%d", this.Cfg.SoloConfig.RandStr, this.MinerId, this.CurrentWorkID)
-		var err error
-		err = this.Work.Block.CalcCoinBase(randStr, this.Cfg.SoloConfig.MinerAddr)
+		err := this.Work.Block.CalcCoinBase(randStr, this.Cfg.SoloConfig.MinerAddr)
 		if err != nil {
 			log.Println("calc coinbase error :", err)
 			return
@@ -110,7 +109,7 @@ func (this *Blake2bD) Mine() {
 	for {
 		select {
 		case w := <-this.NewWork:
-			this.Work = *w.(*HLCWork)
+			this.Work = w.(*HLCWork)
 		case <-this.Quit:
 			return
 
@@ -143,9 +142,9 @@ func (this *Blake2bD) Mine() {
 			}
 			this.Update()
 			if this.Pool {
-				this.header.PackagePoolHeader(&this.Work)
+				this.header.PackagePoolHeader(this.Work)
 			} else {
-				this.header.PackageRpcHeader(&this.Work)
+				this.header.PackageRpcHeader(this.Work)
 			}
 			this.Transactions[int(this.MinerId)] = make([]Transactions,0)
 			for k := 0;k<len(this.header.Transactions);k++{
@@ -212,7 +211,7 @@ func (this *Blake2bD) Mine() {
 					}
 				}
 			}
-			this.NonceOut = make([]byte, 8, 8)
+			this.NonceOut = make([]byte, 8)
 			if _, err = this.CommandQueue.EnqueueWriteBufferByte(this.NonceOutObj, true, 0, this.NonceOut, nil); err != nil {
 				log.Println("-", this.MinerId, err)
 				this.IsValid = false

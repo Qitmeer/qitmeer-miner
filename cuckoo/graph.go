@@ -4,9 +4,9 @@ import (
 	"encoding/binary"
 	"fmt"
 	"log"
+	cuckaroo "github.com/HalalChain/qitmeer-lib/crypto/cuckoo"
 )
 
-const PROOF_SIZE  = 20
 type paths struct {
 	values []int
 }
@@ -117,7 +117,7 @@ func (this *Edges)AddEdges(e Edge1){
 }
 
 func (this *Edges)Check() bool{
-	if len(this.data) != PROOF_SIZE{
+	if len(this.data) != cuckaroo.ProofSize{
 		return false
 	}
 	//log.Println(this.nodeMap)
@@ -177,7 +177,6 @@ func (this *CGraph)Find(parents Edges,k int){
 
 		this.Find(newparents,v)
 	}
-	return
 }
 
 
@@ -268,7 +267,7 @@ func (this *CGraph)FindSolutions() bool {
 				joinA = i
 				joinB = path2Idx
 				cycle = joinB+joinA + 1
-				if cycle == PROOF_SIZE{
+				if cycle == cuckaroo.ProofSize{
 					//log.Println(e)
 					//log.Println(i)
 					//log.Println(path1)
@@ -291,9 +290,9 @@ func (this *CGraph)FindSolutions() bool {
 			}
 		}
 
-		if cycle >= 4 && cycle != PROOF_SIZE{
+		if cycle >= 4 && cycle != cuckaroo.ProofSize{
 			//log.Println(fmt.Sprintf("%d-cycle found!",cycle))
-		} else if cycle == PROOF_SIZE{
+		} else if cycle == cuckaroo.ProofSize{
 			//log.Println(fmt.Sprintf("%d-cycle found!",PROOF_SIZE),this.CycleEdges)
 			return true
 		} else{

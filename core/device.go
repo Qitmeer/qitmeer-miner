@@ -59,7 +59,7 @@ func (this *Device)Init(i int,device *cl.Device,pool bool,q chan os.Signal,cfg *
 	this.CurrentWorkID=0
 	this.IsValid=true
 	this.Pool=pool
-	this.SubmitData=make(chan string,0)
+	this.SubmitData=make(chan string)
 	this.Started=uint32(time.Now().Unix())
 	this.GlobalItemSize= int(math.Exp2(float64(this.Cfg.OptionConfig.Intensity)))
 	this.Quit=q

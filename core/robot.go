@@ -41,7 +41,11 @@ type MinerRobot struct {
 
 //init GPU device
 func (this *MinerRobot)InitDevice()  {
-	this.ClDevices = common.GetDevices(common.DevicesTypesForGPUMining)
+	var typ = common.DevicesTypesForGPUMining
+	if this.Cfg.OptionConfig.CPUMiner{
+		typ = common.DevicesTypesForCPUMining
+	}
+	this.ClDevices = common.GetDevices(typ)
 	if this.ClDevices == nil{
 		log.Println("some error occurs!")
 		return

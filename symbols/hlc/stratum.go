@@ -489,11 +489,7 @@ func (s *NotifyWork) PrepHlcWork() []byte {
 // PrepWork converts the stratum notify to getwork style data for mining.
 func (s *NotifyWork) PrepWork() error {
 	var givenTs uint64
-	var err error
 	s.ExtraNonce2 = fmt.Sprintf("%08x",0)
-	if err != nil{
-		return errors.New("ExtraNonce2 ERROR")
-	}
 	s.WorkData = s.PrepHlcWork()
 	if s.WorkData == nil {
 		return errors.New("Not Have New Work")
