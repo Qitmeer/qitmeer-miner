@@ -44,7 +44,7 @@ type Cuckaroo struct {
 	Trimmer01Kernel       *cl.Kernel
 	Trimmer02Kernel       *cl.Kernel
 	RecoveryKernel        *cl.Kernel
-	Work                  HLCWork
+	Work                  *HLCWork
 	Transactions                  map[int][]Transactions
 	header MinerBlockData
 }
@@ -82,8 +82,7 @@ func (this *Cuckaroo) Update() {
 		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepHlcWork()
 	} else {
 		randStr := fmt.Sprintf("%s%d%d", this.Cfg.SoloConfig.RandStr, this.MinerId, this.CurrentWorkID)
-		var err error
-		err = this.Work.Block.CalcCoinBase(randStr, this.Cfg.SoloConfig.MinerAddr)
+		err := this.Work.Block.CalcCoinBase(randStr, this.Cfg.SoloConfig.MinerAddr)
 		if err != nil {
 			log.Println("calc coinbase error :", err)
 			return
@@ -99,7 +98,7 @@ func (this *Cuckaroo) Mine() {
 	for {
 		select {
 		case w := <-this.NewWork:
-			this.Work = *w.(*HLCWork)
+			this.Work = w.(*HLCWork)
 		case <-this.Quit:
 			return
 
@@ -134,10 +133,10 @@ func (this *Cuckaroo) Mine() {
 				}
 				xnonce := <- common.RandGenerator(2<<32)
 				if this.Pool {
-					this.header.PackagePoolHeaderByNonce(&this.Work,uint64(xnonce))
+					this.header.PackagePoolHeaderByNonce(this.Work,uint64(xnonce))
 				} else {
 
-					this.header.PackageRpcHeaderByNonce(&this.Work,uint64(xnonce))
+					this.header.PackageRpcHeaderByNonce(this.Work,uint64(xnonce))
 				}
 				this.Transactions[int(this.MinerId)] = make([]Transactions,0)
 				for k := 0;k<len(this.header.Transactions);k++{

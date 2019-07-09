@@ -53,7 +53,7 @@ func GetRobot(cfg *common.GlobalConfig) core.Robot {
 		r.Cfg = cfg
 		r.Started = uint32(time.Now().Unix())
 		r.Rpc = &common.RpcClient{Cfg:cfg,}
-		r.SubmitStr = make(chan string,0)
+		r.SubmitStr = make(chan string)
 		return r
 	}
 	return nil

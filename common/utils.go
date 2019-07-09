@@ -60,13 +60,10 @@ func Int2lehex(x int64,width int ) string {
 	switch width {
 	case 2:
 		binary.LittleEndian.PutUint16(bs, uint16(x))
-		break
 	case 4:
 		binary.LittleEndian.PutUint32(bs, uint32(x))
-		break
 	case 8:
 		binary.LittleEndian.PutUint64(bs, uint64(x))
-		break
 	}
 	return hex.EncodeToString(bs)
 }

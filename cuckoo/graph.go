@@ -177,7 +177,6 @@ func (this *CGraph)Find(parents Edges,k int){
 
 		this.Find(newparents,v)
 	}
-	return
 }
 
 

@@ -1,7 +1,7 @@
 # Qitmeer Miner
 
     The Miner of Qitmeer
-
+[![Build Status](https://travis-ci.com/HalalChain/hlc-miner.svg?branch=master)](https://travis-ci.com/HalalChain/hlc-miner)
 ## Enviroment
 
 ```bash
