@@ -17,6 +17,7 @@ func GetDevices(t cl.DeviceType) []*cl.Device {
 	clDevices := make([]*cl.Device, 0)
 	i := 0
 	for _, platform := range platforms {
+		log.Println(platform.Name())
 		platormDevices, err := cl.GetDevices(platform, t)
 		if err != nil {
 			log.Fatalln("Don't had GPU devices to mining ,please check!【",err,"】")

@@ -7,3 +7,10 @@ halalchainminer.conf
 
 CA.cert
 go.sum
+
+lib/cuckoo/target
+lib/cuckoo/target
+cuckatoo/cuckatoo
+main
+lib/libcuckoo.dylib
+lib/cuckoo/Cargo.lock

@@ -1,0 +1,1 @@
+void search_circle(const unsigned int *arg_value,unsigned long length,unsigned int *ret);
