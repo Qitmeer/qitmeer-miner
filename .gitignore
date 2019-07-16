@@ -14,3 +14,4 @@ cuckatoo/cuckatoo
 main
 lib/libcuckoo.dylib
 lib/cuckoo/Cargo.lock
+lib/libcuckoo.a
