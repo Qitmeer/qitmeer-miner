@@ -186,7 +186,6 @@ func (this *HLCRobot)SubmitWork() {
 						if err == ErrStratumStaleWork{
 							atomic.AddUint64(&this.StaleShares, 1)
 						} else{
-							log.Println(err)
 							atomic.AddUint64(&this.InvalidShares, 1)
 						}
 					}
