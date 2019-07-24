@@ -5,12 +5,12 @@ import (
 	"sync"
 	"net"
 	"bufio"
-	"hlc-miner/common"
+	"qitmeer-miner/common"
 	"strings"
 	"time"
 	"errors"
 	"encoding/json"
-	"hlc-miner/common/socks"
+	"qitmeer-miner/common/socks"
 	"log"
 )
 // ErrJsonType is an error for json that we do not expect.

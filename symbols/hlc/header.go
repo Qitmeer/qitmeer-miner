@@ -7,7 +7,7 @@ import (
 	"io"
 )
 
-//nox block header
+//qitmeer block header
 type BlockHeader struct {
 	// block version
 	Version uint32 `json:"version"`
@@ -42,7 +42,7 @@ type BlockHeader struct {
 	HasCoinbasePack bool
 }
 
-//nox block header
+//qitmeer block header
 func (h *BlockHeader) BlockData() []byte {
 	buf := bytes.NewBuffer(make([]byte, 0, MaxBlockHeaderPayload))
 	// TODO, redefine the protocol version and storage
@@ -50,7 +50,7 @@ func (h *BlockHeader) BlockData() []byte {
 	return buf.Bytes()
 }
 
-//nox block header
+//qitmeer block header
 func (h *BlockHeader) BlockDataCuckaroo() []byte {
 	buf := bytes.NewBuffer(make([]byte, 0, MaxBlockHeaderPayload))
 	// TODO, redefine the protocol version and storage
@@ -58,7 +58,7 @@ func (h *BlockHeader) BlockDataCuckaroo() []byte {
 	return buf.Bytes()
 }
 
-//nox Header structure of assembly
+//qitmeer Header structure of assembly
 func writeBlockHeader(w io.Writer, pver uint32, bh *BlockHeader) error {
 	sec := uint64(bh.Curtime)
 	return s.WriteElements(w, bh.Version, &bh.ParentRoot, &bh.TxRoot,

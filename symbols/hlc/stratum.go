@@ -9,9 +9,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	nox "github.com/HalalChain/qitmeer-lib/common/hash"
-	"hlc-miner/common"
-	"hlc-miner/core"
+	qitmeer "github.com/HalalChain/qitmeer-lib/common/hash"
+	"qitmeer-miner/common"
+	"qitmeer-miner/core"
 	"log"
 	"math/big"
 	"strconv"
@@ -454,15 +454,15 @@ func (s *HLCStratum) Unmarshal(blob []byte) (interface{}, error) {
 func (s *NotifyWork) PrepHlcWork() []byte {
 	coinbase1 := s.CB1 + s.ExtraNonce1 + s.ExtraNonce2+ s.CB2
 	coinbase1D,_ := hex.DecodeString(coinbase1)
-	coinbase := common.ConvertHashToString(nox.DoubleHashH(coinbase1D)) + s.CB3
+	coinbase := common.ConvertHashToString(qitmeer.DoubleHashH(coinbase1D)) + s.CB3
 	coinbaseD,_ := hex.DecodeString(coinbase)
-	coinbaseH := nox.DoubleHashH(coinbaseD)
+	coinbaseH := qitmeer.DoubleHashH(coinbaseD)
 	coinbase_hash_bin := coinbaseH[:]
 	merkle_root := string(coinbase_hash_bin)
 	for _,h := range s.MerkleBranches {
 		d,_ := hex.DecodeString(h)
 		bs := merkle_root + string(d)
-		merkle_root = string(nox.DoubleHashB([]byte(bs)))
+		merkle_root = string(qitmeer.DoubleHashB([]byte(bs)))
 	}
 	merkleRootStr := hex.EncodeToString([]byte(merkle_root))
 	d,_:=hex.DecodeString(merkleRootStr)

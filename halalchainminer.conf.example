@@ -5,7 +5,7 @@
 
 #[Necessary Config]
 #coin
-symbol=HLC
+symbol=MEER
 #pow type cuckaroo|blake2bd|cuckatoo
 pow=blake2bd
 

@@ -9,7 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"hlc-miner/core"
+	"qitmeer-miner/core"
 	"log"
 	"strconv"
 	"strings"
@@ -46,7 +46,13 @@ func (this *HLCWork) Get () bool {
 	var blockTemplate getResponseJson
 	err := json.Unmarshal(body,&blockTemplate)
 	if err != nil {
-		log.Println("json decode failed",err,string(body))
+		var r map[string]interface{}
+		_ = json.Unmarshal(body,&r)
+		if _,ok := r["error"];ok{
+			log.Println("[node reply]",r["error"])
+			return false
+		}
+		log.Println("[node reply]",string(body))
 		return false
 	}
 	if this.Block.Height > 0 && this.Block.Height == blockTemplate.Result.Height{

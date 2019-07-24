@@ -10,7 +10,7 @@ import (
 	"bytes"
 	"log"
 	"time"
-	"hlc-miner/common/socks"
+	"qitmeer-miner/common/socks"
 )
 const (
 	MaxIdleConnections int = 20
@@ -108,7 +108,7 @@ func (rpc *RpcClient)RpcResult(method string,params []interface{}) []byte{
 		return nil
 	}
 	body, err := ioutil.ReadAll(httpResponse.Body)
-	httpResponse.Body.Close()
+	_ = httpResponse.Body.Close()
 	if err != nil {
 		log.Println("error reading json reply:", err)
 		return nil
