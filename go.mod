@@ -1,4 +1,4 @@
-module hlc-miner
+module qitmeer-miner
 
 go 1.12
 

@@ -5,14 +5,14 @@ package core
 
 import (
 	"github.com/HalalChain/go-opencl/cl"
-	"hlc-miner/common"
+	"qitmeer-miner/common"
 	"log"
 	"os"
 	"sync"
 )
 
 const (
-	SYMBOL_NOX = "HLC"
+	SYMBOL_MEER = "MEER"
 )
 
 //var devicesTypesForMining = cl.DeviceTypeAll

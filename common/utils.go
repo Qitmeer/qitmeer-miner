@@ -10,7 +10,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
-	nox "github.com/HalalChain/qitmeer-lib/common/hash"
+	qitmeer "github.com/HalalChain/qitmeer-lib/common/hash"
 	"math"
 	"math/big"
 	"math/rand"
@@ -157,7 +157,7 @@ func RolloverExtraNonce(v *uint32) {
 }
 
 
-func ConvertHashToString( hash nox.Hash )string{
+func ConvertHashToString( hash qitmeer.Hash )string{
 	newB := make([]byte,32)
 	copy(newB[:],hash[:])
 	return hex.EncodeToString(newB)

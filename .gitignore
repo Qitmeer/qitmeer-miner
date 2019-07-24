@@ -1,7 +1,7 @@
 #ignore files
 miner.log
-hlc-miner
-hlc-miner.exe
+qitmeer-miner
+qitmeer-miner.exe
 re
 halalchainminer.conf
 

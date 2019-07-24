@@ -13,7 +13,7 @@ import (
 	s "github.com/HalalChain/qitmeer-lib/core/serialization"
 	"github.com/HalalChain/qitmeer-lib/params"
 	"log"
-	"hlc-miner/common"
+	"qitmeer-miner/common"
 	"sort"
 )
 
@@ -29,7 +29,7 @@ func standardCoinbaseOpReturn(height uint32, extraNonce uint64) ([]byte, error) 
 	return extraNonceScript, nil
 }
 
-func noxCoinBase(coinbaseVal int, coinbaseScript []byte, opReturnPkScript []byte, nextBlockHeight int64,
+func qitmeerCoinBase(coinbaseVal int, coinbaseScript []byte, opReturnPkScript []byte, nextBlockHeight int64,
 	addr types.Address, voters uint16, params *params.Params)(*types.Tx, error){
 	tx := types.NewTransaction()
 	tx.AddTxIn(&types.TxInput{
@@ -158,7 +158,7 @@ func (h *BlockHeader) CalcCoinBase(coinbaseStr string,payAddress string) error{
 	params1.BlockTaxProportion = 1
 	//group
 	params1.OrganizationPkScript = common.HexMustDecode("76a914699e7e705893b4e7b3f9742ca55a743c7167288a88ac")
-	coinbaseTx, err := noxCoinBase(int(h.Coinbasevalue),
+	coinbaseTx, err := qitmeerCoinBase(int(h.Coinbasevalue),
 		coinbaseScript,
 		opReturnPkScript,
 		int64(nextBlockHeight), //TODO remove type conversion

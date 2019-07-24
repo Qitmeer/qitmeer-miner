@@ -6,7 +6,7 @@ package common
 
 import (
 	"fmt"
-	"hlc-miner/common/go-flags"
+	"qitmeer-miner/common/go-flags"
 	"log"
 	"net"
 	"os"

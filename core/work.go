@@ -4,7 +4,7 @@
 package core
 
 import (
-	"hlc-miner/common"
+	"qitmeer-miner/common"
 	"sync"
 	"os"
 )

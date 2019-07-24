@@ -5,10 +5,10 @@ package main
 
 import (
 	"runtime"
-	"hlc-miner/core"
-	"hlc-miner/common"
+	"qitmeer-miner/core"
+	"qitmeer-miner/common"
 	"log"
-	"hlc-miner/symbols/hlc"
+	"qitmeer-miner/symbols/hlc"
 	"os"
 	"os/signal"
 	"time"
@@ -48,7 +48,7 @@ func main()  {
 //get current coin miner
 func GetRobot(cfg *common.GlobalConfig) core.Robot {
 	switch strings.ToUpper(cfg.NecessaryConfig.Symbol) {
-	case core.SYMBOL_NOX:
+	case core.SYMBOL_MEER:
 		r := &hlc.HLCRobot{}
 		r.Cfg = cfg
 		r.Started = uint32(time.Now().Unix())

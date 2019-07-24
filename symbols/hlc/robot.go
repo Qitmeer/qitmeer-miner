@@ -6,8 +6,8 @@ package hlc
 import (
 	"fmt"
 	"github.com/HalalChain/go-opencl/cl"
-	"hlc-miner/common"
-	"hlc-miner/core"
+	"qitmeer-miner/common"
+	"qitmeer-miner/core"
 	"log"
 	"strconv"
 	"strings"

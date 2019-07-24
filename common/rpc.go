@@ -10,7 +10,7 @@ import (
 	"bytes"
 	"log"
 	"time"
-	"hlc-miner/common/socks"
+	"qitmeer-miner/common/socks"
 )
 const (
 	MaxIdleConnections int = 20
