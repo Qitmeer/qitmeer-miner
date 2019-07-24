@@ -48,7 +48,7 @@ func main()  {
 //get current coin miner
 func GetRobot(cfg *common.GlobalConfig) core.Robot {
 	switch strings.ToUpper(cfg.NecessaryConfig.Symbol) {
-	case core.SYMBOL_MEER:
+	case core.SYMBOL_PMEER:
 		r := &hlc.HLCRobot{}
 		r.Cfg = cfg
 		r.Started = uint32(time.Now().Unix())
