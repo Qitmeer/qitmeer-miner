@@ -30,7 +30,7 @@ var (
 	defaultRpcMinerLog  = GetCurrentDir() + "/miner.log"
 	maxIntensity  = 31
 	maxWorkSize   = uint32(0xFFFFFFFF - 255)
-	defaultPow  ="cuckaroo"
+	defaultPow  ="blake2bd"
 	defaultSymbol  ="PMEER"
 )
 
