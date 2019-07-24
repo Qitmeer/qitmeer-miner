@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/HalalChain/qitmeer-lib/common/hash"
-	"hlc-miner/common"
+	"qitmeer-miner/common"
 	"math/big"
 )
 
@@ -18,7 +18,7 @@ type MinerBlockData struct {
 }
 // Header structure of assembly pool
 func BlockComputePoolData(b []byte) []byte{
-	//the nox order
+	//the qitmeer order
 	nonce := hex.EncodeToString(b[NONCESTART:NONCEEND])
 	ntime := hex.EncodeToString(b[TIMESTART:TIMEEND])
 	height := hex.EncodeToString(b[HEIGHTSTART:HEIGHTEND])

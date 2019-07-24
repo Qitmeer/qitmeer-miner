@@ -9,7 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"hlc-miner/core"
+	"qitmeer-miner/core"
 	"log"
 	"strconv"
 	"strings"

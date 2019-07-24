@@ -1,7 +1,7 @@
 # Qitmeer Miner
 
     The Miner of Qitmeer
-[![Build Status](https://travis-ci.com/HalalChain/hlc-miner.svg?token=n9AoZUDqAJmhesf4MYUd&branch=master)](https://travis-ci.com/HalalChain/hlc-miner)
+[![Build Status](https://travis-ci.com/HalalChain/qitmeer-miner.svg?token=n9AoZUDqAJmhesf4MYUd&branch=master)](https://travis-ci.com/HalalChain/qitmeer-miner)
 ## Enviroment
 
 ```bash
@@ -11,7 +11,7 @@ $ go version >= 1.12
 ## Compile
 
 ```bash
-$ git clone git@github.com:HalalChain/hlc-miner.git
+$ git clone git@github.com:HalalChain/qitmeer-miner.git
 ```
 
 * Ubuntu ENV
@@ -39,6 +39,8 @@ go build
 ```bash
 $ go build 
 ```
+
+###### Any questions see [issues](https://github.com/HalalChain/hlc-miner/issues?q=is%3Aissue+is%3Aclosed) or create
         
     
 ## Run
@@ -48,17 +50,17 @@ $ cp halalchainminer.conf.example halalchainminer.conf
 - 1.run with the config file `halalchainminer.conf`
 - 2.run with command
 ```bash
-$ ./hlc-miner -h
+$ ./qitmeer-miner -h
 Usage:
-  hlc-miner [OPTIONS]
+  qitmeer-miner [OPTIONS]
 
 Debug Command:
   -l, --listdevices   List number of devices.
   -T, --testpow=      test pow blake2bd|cuckaroo|cuckatoo
 
 The Config File Options:
-  -C, --configfile=   Path to configuration file (/Users/fanxu/www/go/src/hlc-miner/halalchainminer.conf)
-      --minerlog=     Write miner log file (/Users/fanxu/www/go/src/hlc-miner/miner.log)
+  -C, --configfile=   Path to configuration file (/Users/fanxu/www/go/src/qitmeer-miner/halalchainminer.conf)
+      --minerlog=     Write miner log file (/Users/fanxu/www/go/src/qitmeer-miner/miner.log)
 
 The Necessary Config Options:
   -P, --pow=          blake2bd|cuckaroo|cuckatoo (cuckaroo)

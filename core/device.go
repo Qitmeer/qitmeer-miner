@@ -6,7 +6,7 @@ package core
 
 import (
 	"github.com/HalalChain/go-opencl/cl"
-	"hlc-miner/common"
+	"qitmeer-miner/common"
 	"log"
 	"math"
 	"os"
