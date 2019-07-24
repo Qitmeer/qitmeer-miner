@@ -39,7 +39,7 @@ func main()  {
 		os.Exit(0)
 	}()
 	if robotminer == nil{
-		log.Fatalln("please check the coin in the README.md! if this coin is supported")
+		log.Fatalln("[error] Please check the coin in the README.md! if this coin is supported -S ")
 		return
 	}
 	robotminer.Run()
@@ -55,6 +55,8 @@ func GetRobot(cfg *common.GlobalConfig) core.Robot {
 		r.Rpc = &common.RpcClient{Cfg:cfg,}
 		r.SubmitStr = make(chan string)
 		return r
+	default:
+
 	}
 	return nil
 }

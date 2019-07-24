@@ -3,7 +3,6 @@ miner.log
 qitmeer-miner
 qitmeer-miner.exe
 re
-halalchainminer.conf
-
+qitmeer.conf
 CA.cert
 go.sum
