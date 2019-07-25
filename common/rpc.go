@@ -115,7 +115,7 @@ func (rpc *RpcClient)RpcResult(method string,params []interface{}) []byte{
 	}
 
 	if httpResponse.Status != "200 OK" {
-		log.Println("error http response :",  httpResponse.Status, body)
+		log.Println("error http response :",  httpResponse.Status, string(body))
 		return nil
 	}
 	return body

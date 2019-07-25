@@ -50,7 +50,7 @@ func (this *Stratum)StratumConn(cfg *common.GlobalConfig) error {
 	if strings.HasPrefix(this.Cfg.PoolConfig.Pool, proto) {
 		pool = strings.Replace(pool, proto, "", 1)
 	} else {
-		err := errors.New("Only stratum pools supported.")
+		err := errors.New("[error] Only stratum pools supported.stratum+tcp://")
 		return err
 	}
 	this.Cfg.PoolConfig.Pool = pool

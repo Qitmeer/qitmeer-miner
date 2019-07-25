@@ -45,9 +45,9 @@ $ go build
     
 ## Run
 ```bash
-$ cp halalchainminer.conf.example halalchainminer.conf
+$ cp qitmeer.conf.example qitmeer.conf
 ```
-- 1.run with the config file `halalchainminer.conf`
+- 1.run with the config file `qitmeer.conf`
 - 2.run with command
 ```bash
 $ ./qitmeer-miner -h
@@ -59,19 +59,19 @@ Debug Command:
   -T, --testpow=      test pow blake2bd|cuckaroo|cuckatoo
 
 The Config File Options:
-  -C, --configfile=   Path to configuration file (/Users/fanxu/www/go/src/qitmeer-miner/halalchainminer.conf)
+  -C, --configfile=   Path to configuration file (/Users/fanxu/www/go/src/qitmeer-miner/qitmeer.conf)
       --minerlog=     Write miner log file (/Users/fanxu/www/go/src/qitmeer-miner/miner.log)
 
 The Necessary Config Options:
-  -P, --pow=          blake2bd|cuckaroo|cuckatoo (cuckaroo)
-  -S, --symbol=       Symbol (HLC)
+  -P, --pow=          blake2bd|cuckaroo|cuckatoo (blake2bd)
+  -S, --symbol=       Symbol (PMEER)
 
 The Solo Config Option:
   -M, --mineraddress= Miner Address (RmN4SADy42FKmN8ARKieX9iHh9icptdgYNn)
   -s, --rpcserver=    RPC server to connect to (127.0.0.1:1234)
   -u, --rpcuser=      RPC username (test)
   -p, --rpcpass=      RPC password
-      --randstr=      Rand String,Your Unique Marking. (Come from halalchain!)
+      --randstr=      Rand String,Your Unique Marking. (Come from qitmeer!)
       --notls         Do not verify tls certificates (true)
       --rpccert=      RPC server certificate chain for validation (CA.cert)
 
