@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	defaultConfigFilename = "halalchainminer.conf"
+	defaultConfigFilename = "qitmeer.conf"
 )
 
 var (
@@ -30,8 +30,8 @@ var (
 	defaultRpcMinerLog  = GetCurrentDir() + "/miner.log"
 	maxIntensity  = 31
 	maxWorkSize   = uint32(0xFFFFFFFF - 255)
-	defaultPow  ="cuckaroo"
-	defaultSymbol  ="HLC"
+	defaultPow  ="blake2bd"
+	defaultSymbol  ="PMEER"
 )
 
 type DeviceConfig struct {
@@ -68,7 +68,7 @@ type SoloConfig struct {
 	RPCServer   string `short:"s" long:"rpcserver" description:"RPC server to connect to"`
 	RPCUser     string `short:"u" long:"rpcuser" description:"RPC username"`
 	RPCPassword string `short:"p" long:"rpcpass" default-mask:"-" description:"RPC password"`
-	RandStr     string `long:"randstr" description:"Rand String,Your Unique Marking." default-mask:"Come from halalchain!"`
+	RandStr     string `long:"randstr" description:"Rand String,Your Unique Marking." default-mask:"Come from Qitmeer!"`
 	NoTLS       bool   `long:"notls" description:"Do not verify tls certificates" default-mask:"true"`
 	RPCCert     string `long:"rpccert" description:"RPC server certificate chain for validation"`
 }
@@ -76,7 +76,7 @@ type SoloConfig struct {
 type NecessaryConfig struct {
 	// Config / log options
 	Pow     string `short:"P" long:"pow" description:"blake2bd|cuckaroo|cuckatoo"`
-	Symbol      string   `short:"S" long:"symbol" description:"Symbol" default-mask:"HLC"`
+	Symbol      string   `short:"S" long:"symbol" description:"Symbol" default-mask:"PMEER"`
 }
 
 type GlobalConfig struct {
@@ -159,7 +159,7 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 	deviceCfg := DeviceConfig{}
 	// Default config.
 	fileCfg := FileConfig{
-		ConfigFile:defaultConfigFile,
+		//ConfigFile:defaultConfigFile,
 		MinerLogFile:  defaultRpcMinerLog,
 	}
 	necessaryCfg := NecessaryConfig{
@@ -222,18 +222,18 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 		log.Println(fmt.Sprintf("Usage to see  ./%s -h",appName))
 		os.Exit(0)
 	}
-
-	err = flags.NewIniParser(preParser).ParseFile(fileCfg.ConfigFile)
-	if err != nil {
-		if _, ok := err.(*os.PathError); !ok {
-			fmt.Fprintln(os.Stderr, err)
-			return nil, nil, err
-		}
-		if fileCfg.ConfigFile != defaultConfigFile{
-			log.Printf("%v", err)
-			os.Exit(0)
+	if fileCfg.ConfigFile == ""{
+		log.Printf("[warn] Don't have config file.")
+	} else {
+		err = flags.NewIniParser(preParser).ParseFile(fileCfg.ConfigFile)
+		if err != nil {
+			if _, ok := err.(*os.PathError); !ok {
+				fmt.Fprintln(os.Stderr, err)
+				return nil, nil, err
+			}
 		}
 	}
+
 
 	remainingArgs,err := preParser.Parse()
 	if err != nil {
@@ -255,6 +255,7 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 		os.Exit(0)
 	}
 	if poolCfg.Pool == "" && soloCfg.MinerAddr == ""{
+		log.Println("[error] Solo need address -M , pool need -o pool address")
 		preParser.WriteHelp(os.Stderr)
 		os.Exit(0)
 	}

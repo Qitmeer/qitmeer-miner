@@ -5,7 +5,7 @@
 
 #[Necessary Config]
 #coin
-symbol=MEER
+symbol=PMEER
 #pow type cuckaroo|blake2bd|cuckatoo
 pow=blake2bd
 

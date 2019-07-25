@@ -39,7 +39,7 @@ func main()  {
 		os.Exit(0)
 	}()
 	if robotminer == nil{
-		log.Fatalln("please check the coin in the README.md! if this coin is supported")
+		log.Fatalln("[error] Please check the coin in the README.md! if this coin is supported -S ")
 		return
 	}
 	robotminer.Run()
@@ -48,13 +48,15 @@ func main()  {
 //get current coin miner
 func GetRobot(cfg *common.GlobalConfig) core.Robot {
 	switch strings.ToUpper(cfg.NecessaryConfig.Symbol) {
-	case core.SYMBOL_MEER:
+	case core.SYMBOL_PMEER:
 		r := &hlc.HLCRobot{}
 		r.Cfg = cfg
 		r.Started = uint32(time.Now().Unix())
 		r.Rpc = &common.RpcClient{Cfg:cfg,}
 		r.SubmitStr = make(chan string)
 		return r
+	default:
+
 	}
 	return nil
 }
