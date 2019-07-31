@@ -1,8 +1,8 @@
 /**
-HLC FOUNDATION
+Qitmeer
 james
 */
-package hlc
+package qitmeer
 
 import (
 	"encoding/binary"
@@ -20,7 +20,7 @@ import (
 
 type Blake2bD struct {
 	core.Device
-	Work    *HLCWork
+	Work    *QitmeerWork
 	Transactions map[int][]Transactions
 	header MinerBlockData
 }
@@ -86,11 +86,11 @@ func (this *Blake2bD) Update() {
 	this.Device.Update()
 	if this.Pool {
 		//this.CurrentWorkID = 0
-		//randstr := fmt.Sprintf("%dhlcminer%d",this.CurrentWorkID,this.MinerId)
+		//randstr := fmt.Sprintf("%dqitmeerminer%d",this.CurrentWorkID,this.MinerId)
 		//byt := []byte(randstr)[:4]
 		//this.Work.PoolWork.ExtraNonce2 = hex.EncodeToString(byt)
 		this.Work.PoolWork.ExtraNonce2 = fmt.Sprintf("%08x", this.CurrentWorkID)
-		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepHlcWork()
+		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepQitmeerWork()
 	} else {
 		randStr := fmt.Sprintf("%s%d%d", this.Cfg.SoloConfig.RandStr, this.MinerId, this.CurrentWorkID)
 		err := this.Work.Block.CalcCoinBase(randStr, this.Cfg.SoloConfig.MinerAddr)
@@ -109,7 +109,7 @@ func (this *Blake2bD) Mine() {
 	for {
 		select {
 		case w := <-this.NewWork:
-			this.Work = w.(*HLCWork)
+			this.Work = w.(*QitmeerWork)
 		case <-this.Quit:
 			return
 
@@ -174,7 +174,6 @@ func (this *Blake2bD) Mine() {
 				break
 			}
 			atomic.AddUint64(&this.AllDiffOneShares, 1)
-
 			if this.NonceOut[0] != 0 || this.NonceOut[1] != 0 || this.NonceOut[2] != 0 || this.NonceOut[3] != 0 ||
 				this.NonceOut[4] != 0 || this.NonceOut[5] != 0 || this.NonceOut[6] != 0 || this.NonceOut[7] != 0 {
 				//Found Hash

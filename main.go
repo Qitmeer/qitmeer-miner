@@ -8,7 +8,7 @@ import (
 	"qitmeer-miner/core"
 	"qitmeer-miner/common"
 	"log"
-	"qitmeer-miner/symbols/hlc"
+	"qitmeer-miner/symbols/qitmeer"
 	"os"
 	"os/signal"
 	"time"
@@ -49,7 +49,7 @@ func main()  {
 func GetRobot(cfg *common.GlobalConfig) core.Robot {
 	switch strings.ToUpper(cfg.NecessaryConfig.Symbol) {
 	case core.SYMBOL_PMEER:
-		r := &hlc.HLCRobot{}
+		r := &qitmeer.QitmeerRobot{}
 		r.Cfg = cfg
 		r.Started = uint32(time.Now().Unix())
 		r.Rpc = &common.RpcClient{Cfg:cfg,}

@@ -1,7 +1,7 @@
 // Copyright (c) 2019 The halalchain developers
 // Use of this source code is governed by an ISC
 // license that can be found in the LICENSE file.
-package hlc
+package qitmeer
 
 import (
 	"fmt"
@@ -21,15 +21,15 @@ const (
 	POW_CUCKROO = "cuckaroo"
 	POW_CUCKTOO = "cuckatoo"
 )
-type HLCRobot struct {
+type QitmeerRobot struct {
 	core.MinerRobot
-	Work HLCWork
-	Devices 	  []core.BaseDevice
-	Stratu      *HLCStratum
-	AllTransactionsCount     int64
+	Work                 QitmeerWork
+	Devices              []core.BaseDevice
+	Stratu               *QitmeerStratum
+	AllTransactionsCount int64
 }
 
-func (this *HLCRobot)GetPow(i int ,device *cl.Device) core.BaseDevice{
+func (this *QitmeerRobot)GetPow(i int ,device *cl.Device) core.BaseDevice{
 	switch this.Cfg.NecessaryConfig.Pow {
 	case POW_CUCKROO:
 		deviceMiner := &Cuckaroo{}
@@ -49,7 +49,7 @@ func (this *HLCRobot)GetPow(i int ,device *cl.Device) core.BaseDevice{
 	return nil
 }
 
-func (this *HLCRobot)InitDevice()  {
+func (this *QitmeerRobot)InitDevice()  {
 	this.MinerRobot.InitDevice()
 	for i, device := range this.ClDevices {
 		deviceMiner := this.GetPow(i ,device)
@@ -60,11 +60,11 @@ func (this *HLCRobot)InitDevice()  {
 }
 
 // runing
-func (this *HLCRobot)Run() {
+func (this *QitmeerRobot)Run() {
 	connectName := "solo"
 	if this.Cfg.PoolConfig.Pool != ""{ //is pool mode
 		connectName = "pool"
-		this.Stratu = &HLCStratum{}
+		this.Stratu = &QitmeerStratum{}
 		err := this.Stratu.StratumConn(this.Cfg)
 		if err != nil {
 			log.Fatalln(err)
@@ -74,7 +74,7 @@ func (this *HLCRobot)Run() {
 		this.Pool = true
 	}
 	log.Println(connectName,"miner start")
-	this.Work = HLCWork{}
+	this.Work = QitmeerWork{}
 	this.Work.Cfg = this.Cfg
 	this.Work.Rpc = this.Rpc
 	this.Work.stra = this.Stratu
@@ -107,7 +107,7 @@ func (this *HLCRobot)Run() {
 }
 
 // ListenWork
-func (this *HLCRobot)ListenWork() {
+func (this *QitmeerRobot)ListenWork() {
 	log.Println("listen new work server")
 	time.Sleep(1*time.Second)
 	for {
@@ -152,7 +152,7 @@ func (this *HLCRobot)ListenWork() {
 }
 
 // ListenWork
-func (this *HLCRobot)SubmitWork() {
+func (this *QitmeerRobot)SubmitWork() {
 	log.Println("listen submit block server")
 	wg := sync.WaitGroup{}
 	wg.Add(1)
@@ -208,7 +208,7 @@ func (this *HLCRobot)SubmitWork() {
 }
 
 // stats the submit result
-func (this *HLCRobot)Status()  {
+func (this *QitmeerRobot)Status()  {
 	t := time.NewTicker(time.Second * 5)
 	defer t.Stop()
 	for {
