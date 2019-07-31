@@ -1,7 +1,7 @@
 # Qitmeer Miner
 
     The Miner of Qitmeer
-[![Build Status](https://travis-ci.com/HalalChain/hlc-miner.svg?token=n9AoZUDqAJmhesf4MYUd&branch=master)](https://travis-ci.com/HalalChain/qitmeer-miner)
+[![Build Status](https://travis-ci.com/HalalChain/qitmeer-miner.svg?token=n9AoZUDqAJmhesf4MYUd&branch=master)](https://travis-ci.com/HalalChain/qitmeer-miner)
 ## Enviroment
 
 ```bash
@@ -40,7 +40,7 @@ go build
 $ go build 
 ```
 
-###### Any questions see [issues](https://github.com/HalalChain/hlc-miner/issues?q=is%3Aissue+is%3Aclosed) or create
+###### Any questions see [issues](https://github.com/HalalChain/qitmeer-miner/issues?q=is%3Aissue+is%3Aclosed) or create
         
     
 ## Run

@@ -102,7 +102,9 @@ func (rpc *RpcClient)RpcResult(method string,params []interface{}) []byte{
 		log.Println("rpc auth faild",err)
 		return nil
 	}
+	httpClient.Timeout = 5*time.Second
 	httpResponse, err := httpClient.Do(httpRequest)
+
 	if err != nil {
 		log.Println("rpc request faild",err)
 		return nil

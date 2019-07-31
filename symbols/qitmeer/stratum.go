@@ -1,7 +1,7 @@
 // Copyright (c) 2019 The halalchain developers
 // Use of this source code is governed by an ISC
 // license that can be found in the LICENSE file.
-package hlc
+package qitmeer
 
 import (
 	"encoding/binary"
@@ -106,21 +106,21 @@ type NotifyWork struct {
 	WorkData	[]byte
 	LatestJobTime	uint64
 }
-type HLCStratum struct {
+type QitmeerStratum struct {
 	core.Stratum
 	Target *big.Int
 	Diff float64
 	PoolWork  NotifyWork
 }
 
-func (s *HLCStratum) CalcBasePowLimit() *big.Int {
+func (s *QitmeerStratum) CalcBasePowLimit() *big.Int {
 	powLimitbytes := common.BlockBitsToTarget(s.PoolWork.Nbits,32)
 	powLimit := new(big.Int)
 	powLimit = powLimit.SetBytes(powLimitbytes)
 	return powLimit
 }
 
-func (this *HLCStratum)HandleReply()  {
+func (this *QitmeerStratum)HandleReply()  {
 	this.Stratum.Listen(func(data string) {
 		resp, err := this.Unmarshal([]byte(data))
 		if err != nil {
@@ -145,13 +145,13 @@ func (this *HLCStratum)HandleReply()  {
 	})
 }
 
-func (s *HLCStratum) handleSubscribeReply(resp interface{}) {
+func (s *QitmeerStratum) handleSubscribeReply(resp interface{}) {
 	nResp := resp.(*SubscribeReply)
 	s.PoolWork.ExtraNonce1 = nResp.ExtraNonce1
 	s.PoolWork.ExtraNonce2Length = nResp.ExtraNonce2Length
 }
 
-func (s *HLCStratum) HandleSubmitReply(resp interface{}) {
+func (s *QitmeerStratum) HandleSubmitReply(resp interface{}) {
 	aResp := resp.(*BasicReply)
 	if int(aResp.ID.(float64)) == int(s.AuthID) {
 		if aResp.Result {
@@ -170,7 +170,7 @@ func (s *HLCStratum) HandleSubmitReply(resp interface{}) {
 	}
 }
 
-func (s *HLCStratum) handleStratumMsg(resp interface{}) {
+func (s *QitmeerStratum) handleStratumMsg(resp interface{}) {
 	nResp := resp.(StratumMsg)
 	//fmt.Println(nResp)
 	// Too much is still handled in unmarshaler.  Need to
@@ -222,7 +222,7 @@ func (s *HLCStratum) handleStratumMsg(resp interface{}) {
 	}
 }
 
-func (s *HLCStratum) handleNotifyRes(resp interface{}) {
+func (s *QitmeerStratum) handleNotifyRes(resp interface{}) {
 	s.Lock()
 	defer s.Unlock()
 	nResp := resp.(NotifyRes)
@@ -253,7 +253,7 @@ func (s *HLCStratum) handleNotifyRes(resp interface{}) {
 // Unmarshal provides a json unmarshaler for the commands.
 // I'm sure a lot of this can be generalized but the json we deal with
 // is pretty yucky.
-func (s *HLCStratum) Unmarshal(blob []byte) (interface{}, error) {
+func (s *QitmeerStratum) Unmarshal(blob []byte) (interface{}, error) {
 	s.Lock()
 	defer s.Unlock()
 	var (
@@ -451,7 +451,7 @@ func (s *HLCStratum) Unmarshal(blob []byte) (interface{}, error) {
 	}
 }
 
-func (s *NotifyWork) PrepHlcWork() []byte {
+func (s *NotifyWork) PrepQitmeerWork() []byte {
 	coinbase1 := s.CB1 + s.ExtraNonce1 + s.ExtraNonce2+ s.CB2
 	coinbase1D,_ := hex.DecodeString(coinbase1)
 	coinbase := common.ConvertHashToString(qitmeer.DoubleHashH(coinbase1D)) + s.CB3
@@ -490,7 +490,7 @@ func (s *NotifyWork) PrepHlcWork() []byte {
 func (s *NotifyWork) PrepWork() error {
 	var givenTs uint64
 	s.ExtraNonce2 = fmt.Sprintf("%08x",0)
-	s.WorkData = s.PrepHlcWork()
+	s.WorkData = s.PrepQitmeerWork()
 	if s.WorkData == nil {
 		return errors.New("Not Have New Work")
 	}
@@ -500,7 +500,7 @@ func (s *NotifyWork) PrepWork() error {
 	return nil
 }
 
-func (s *HLCStratum) PrepSubmit(data []byte,jobID string,ExtraNonce2 string) (Submit, error) {
+func (s *QitmeerStratum) PrepSubmit(data []byte,jobID string,ExtraNonce2 string) (Submit, error) {
 	sub := Submit{}
 	sub.Method = "mining.submit"
 	// Format data to send off.

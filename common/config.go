@@ -25,7 +25,7 @@ var (
 	defaultRPCPort      = "1234"
 	defaultIntensity = 24
 	defaultTrimmerCount = 40
-	defaultWorkSize = 255
+	defaultWorkSize = 256
 	minIntensity  = 8
 	defaultRpcMinerLog  = GetCurrentDir() + "/miner.log"
 	maxIntensity  = 31

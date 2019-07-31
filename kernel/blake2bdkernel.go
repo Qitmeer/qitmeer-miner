@@ -1,7 +1,7 @@
 package kernel
 const DoubleBlake2bKernelSource = `
 /****
-** HLC Team double blake2b for opencl miner
+** Qitmeer Team double blake2b for opencl miner
 ****/
 
 
@@ -30,7 +30,7 @@ __constant static const uchar blake2b_sigma[12][16] = {
 	{ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15 } ,
 	{ 14, 10, 4,  8,  9,  15, 13, 6,  1,  12, 0,  2,  11, 7,  5,  3  } };
 
-// Target is passed in via headerIn[120 - 128]
+// Blake2bDTarget is passed in via headerIn[120 - 128]
 __kernel void search(__global ulong *headerIn, __global ulong *nonceOut) {
 	ulong target = headerIn[15];
 	ulong nonce = (ulong)get_global_id(0)+0x00FE00000F00000000;
