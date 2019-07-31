@@ -1,4 +1,4 @@
-package hlc
+package qitmeer
 
 import (
 	"github.com/HalalChain/qitmeer-lib/common/hash"

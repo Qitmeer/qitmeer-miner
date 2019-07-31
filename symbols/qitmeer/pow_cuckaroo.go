@@ -1,8 +1,8 @@
 /**
-HLC FOUNDATION
+Qitmeer
 james
 */
-package hlc
+package qitmeer
 
 import (
 	"encoding/binary"
@@ -44,7 +44,7 @@ type Cuckaroo struct {
 	Trimmer01Kernel       *cl.Kernel
 	Trimmer02Kernel       *cl.Kernel
 	RecoveryKernel        *cl.Kernel
-	Work                  *HLCWork
+	Work                  *QitmeerWork
 	Transactions                  map[int][]Transactions
 	header MinerBlockData
 }
@@ -79,7 +79,7 @@ func (this *Cuckaroo) Update() {
 	this.Device.Update()
 	if this.Pool {
 		this.Work.PoolWork.ExtraNonce2 = fmt.Sprintf("%08x", this.CurrentWorkID)
-		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepHlcWork()
+		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepQitmeerWork()
 	} else {
 		randStr := fmt.Sprintf("%s%d%d", this.Cfg.SoloConfig.RandStr, this.MinerId, this.CurrentWorkID)
 		err := this.Work.Block.CalcCoinBase(randStr, this.Cfg.SoloConfig.MinerAddr)
@@ -98,7 +98,7 @@ func (this *Cuckaroo) Mine() {
 	for {
 		select {
 		case w := <-this.NewWork:
-			this.Work = w.(*HLCWork)
+			this.Work = w.(*QitmeerWork)
 		case <-this.Quit:
 			return
 
@@ -241,7 +241,7 @@ func (this *Cuckaroo) Mine() {
 						this.header.HeaderData = append(this.header.HeaderData,b...)
 					}
 					h := hash.DoubleHashH(this.header.HeaderData)
-					//log.Println(fmt.Sprintf("[Target Hash] %064x",this.header.TargetDiff))
+					//log.Println(fmt.Sprintf("[Blake2bDTarget Hash] %064x",this.header.TargetDiff))
 					if HashToBig(&h).Cmp(this.header.TargetDiff) <= 0 {
 						log.Println("[Found Hash]",h)
 						subm := hex.EncodeToString(this.header.HeaderData)

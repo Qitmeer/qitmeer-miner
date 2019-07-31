@@ -1,7 +1,7 @@
 // Copyright (c) 2019 The halalchain developers
 // Use of this source code is governed by an ISC
 // license that can be found in the LICENSE file.
-package hlc
+package qitmeer
 
 import (
 	"github.com/HalalChain/qitmeer-lib/common/hash"

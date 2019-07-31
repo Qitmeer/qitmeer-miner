@@ -1,7 +1,7 @@
 // Copyright (c) 2019 The halalchain developers
 // Use of this source code is governed by an ISC
 // license that can be found in the LICENSE file.
-package hlc
+package qitmeer
 
 import (
 	"encoding/binary"
@@ -28,16 +28,16 @@ type getSubmitResponseJson struct {
 	Error string `json:"error"`
 	JsonRpc string `json:"jsonrpc"`
 }
-type HLCWork struct {
+type QitmeerWork struct {
 	core.Work
 	Block BlockHeader
 	PoolWork NotifyWork
-	stra *HLCStratum
+	stra *QitmeerStratum
 	StartWork bool
 }
 
 //GetBlockTemplate
-func (this *HLCWork) Get () bool {
+func (this *QitmeerWork) Get () bool {
 	body := this.Rpc.RpcResult("getBlockTemplate",[]interface{}{})
 	if body == nil{
 		log.Println("network failed")
@@ -71,7 +71,7 @@ func (this *HLCWork) Get () bool {
 }
 
 //Submit
-func (this *HLCWork) Submit (subm string) error {
+func (this *QitmeerWork) Submit (subm string) error {
 	this.Lock()
 	defer this.Unlock()
 	if this.LastSub == subm{
@@ -95,7 +95,7 @@ func (this *HLCWork) Submit (subm string) error {
 }
 
 // pool get work
-func (this *HLCWork) PoolGet () bool {
+func (this *QitmeerWork) PoolGet () bool {
 	if !this.stra.PoolWork.NewWork {
 		return false
 	}
@@ -114,7 +114,7 @@ func (this *HLCWork) PoolGet () bool {
 }
 
 //pool submit work
-func (this *HLCWork) PoolSubmit (subm string) error {
+func (this *QitmeerWork) PoolSubmit (subm string) error {
 	if this.LastSub == subm{
 		return ErrSameWork
 	}

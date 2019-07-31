@@ -1,4 +1,4 @@
-package hlc
+package qitmeer
 
 import (
 	"encoding/binary"
@@ -37,7 +37,7 @@ func BlockComputePoolData(b []byte) []byte{
 	return bb
 }
 //the pool work submit structure
-func (this *MinerBlockData)PackagePoolHeader(work *HLCWork)  {
+func (this *MinerBlockData)PackagePoolHeader(work *QitmeerWork)  {
 	this.HeaderData = BlockComputePoolData(work.PoolWork.WorkData)
 	this.TargetDiff = work.stra.Target
 	nbitesBy := common.Target2BlockBits(fmt.Sprintf("%064x",this.TargetDiff))
@@ -45,7 +45,7 @@ func (this *MinerBlockData)PackagePoolHeader(work *HLCWork)  {
 	this.JobID = work.PoolWork.JobID
 }
 //the pool work submit structure
-func (this *MinerBlockData)PackagePoolHeaderByNonce(work *HLCWork,nonce uint64)  {
+func (this *MinerBlockData)PackagePoolHeaderByNonce(work *QitmeerWork,nonce uint64)  {
 	this.HeaderData = BlockComputePoolData(work.PoolWork.WorkData)
 	this.TargetDiff = work.stra.Target
 	nbitesBy := make([]byte,8)
@@ -55,8 +55,8 @@ func (this *MinerBlockData)PackagePoolHeaderByNonce(work *HLCWork,nonce uint64) 
 }
 
 //the solo work submit structure
-func (this *MinerBlockData)PackageRpcHeader(work *HLCWork)  {
-	//log.Println(work.Block.Target)
+func (this *MinerBlockData)PackageRpcHeader(work *QitmeerWork)  {
+	//log.Println(work.Block.Blake2bDTarget)
 	bitesBy ,_:= hex.DecodeString(work.Block.Target)
 	bitesBy = common.Reverse(bitesBy[:8])
 	this.HeaderData = work.Block.BlockData()
@@ -72,8 +72,8 @@ func (this *MinerBlockData)PackageRpcHeader(work *HLCWork)  {
 }
 
 //the solo work submit structure
-func (this *MinerBlockData)PackageRpcHeaderByNonce(work *HLCWork,nonce uint64)  {
-	//log.Println(work.Block.Target)
+func (this *MinerBlockData)PackageRpcHeaderByNonce(work *QitmeerWork,nonce uint64)  {
+	//log.Println(work.Block.Blake2bDTarget)
 	bitesBy := make([]byte,8)
 	binary.LittleEndian.PutUint64(bitesBy,nonce)
 	this.HeaderData = work.Block.BlockData()

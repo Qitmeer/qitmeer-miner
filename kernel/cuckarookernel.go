@@ -1,7 +1,7 @@
 package kernel
 
 var CuckarooKernel = `
-// Cuckaroo Cycle, a memory-hard proof-of-work by James HLC Foundation
+// Cuckaroo Cycle, a memory-hard proof-of-work by James Qitmeer
 // Copyright (c) 2019 
 
 #pragma OPENCL EXTENSION cl_khr_int64_base_atomics : enable
