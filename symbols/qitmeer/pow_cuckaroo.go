@@ -45,7 +45,7 @@ type Cuckaroo struct {
 	Trimmer01Kernel       *cl.Kernel
 	Trimmer02Kernel       *cl.Kernel
 	RecoveryKernel        *cl.Kernel
-	Work                  *QitmeerWork
+	Work                  QitmeerWork
 	Transactions                  map[int][]Transactions
 	header MinerBlockData
 }
@@ -99,7 +99,7 @@ func (this *Cuckaroo) Mine() {
 	for {
 		select {
 		case w := <-this.NewWork:
-			this.Work = w.(*QitmeerWork)
+			this.Work = *(w.(*QitmeerWork))
 		case <-this.Quit:
 			return
 
@@ -132,7 +132,8 @@ func (this *Cuckaroo) Mine() {
 				if this.HasNewWork {
 					break
 				}
-				xnonce := <- common.RandGenerator(2<<32)
+				xnonce1 := <- common.RandGenerator(2<<32)
+				xnonce2 := <- common.RandGenerator(2<<32)
 				//if this.Pool {
 				//	this.header.PackagePoolHeaderByNonce(this.Work,uint64(xnonce))
 				//} else {
@@ -147,7 +148,9 @@ func (this *Cuckaroo) Mine() {
 				//		Fee:this.header.Transactions[k].Fee,
 				//	})
 				//}
-				this.Work.Block.Pow.SetNonce(uint64(xnonce))
+				nonce := uint64(xnonce1) + uint64(xnonce2)
+				log.Println(nonce)
+				this.Work.Block.Pow.SetNonce(nonce)
 				hdrkey := hash.HashH(this.Work.Block.BlockData())
 				if this.Cfg.OptionConfig.CPUMiner{
 					c := cuckaroo.NewCuckoo()
@@ -237,9 +240,10 @@ func (this *Cuckaroo) Mine() {
 				}
 				powStruct := this.Work.Block.Pow.(*pow.Cuckaroo)
 				powStruct.SetCircleEdges(this.Nonces)
+				powStruct.SetNonce(nonce)
 				err := powStruct.Verify(this.Work.Block.BlockData(),uint64(this.Work.Block.Difficulty))
 				if err != nil{
-					log.Println("[miner]",err)
+					log.Println("[error]",err)
 					continue
 				}
 				log.Println("[Found Hash]",powStruct.GetBlockHash(this.Work.Block.BlockData()))
