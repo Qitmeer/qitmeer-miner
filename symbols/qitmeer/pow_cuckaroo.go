@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"github.com/HalalChain/go-opencl/cl"
 	"github.com/HalalChain/qitmeer-lib/common/hash"
+	"github.com/HalalChain/qitmeer-lib/core/types/pow"
 	cuckaroo "github.com/HalalChain/qitmeer-lib/crypto/cuckoo"
 	"github.com/HalalChain/qitmeer-lib/crypto/cuckoo/siphash"
 	"qitmeer-miner/common"
@@ -127,36 +128,36 @@ func (this *Cuckaroo) Mine() {
 				JobID:"",
 			}
 			this.Update()
-			for nonce := 0;nonce <= 1 << 32 ;nonce++{
+			for {
 				if this.HasNewWork {
 					break
 				}
 				xnonce := <- common.RandGenerator(2<<32)
-				if this.Pool {
-					this.header.PackagePoolHeaderByNonce(this.Work,uint64(xnonce))
-				} else {
-
-					this.header.PackageRpcHeaderByNonce(this.Work,uint64(xnonce))
-				}
-				this.Transactions[int(this.MinerId)] = make([]Transactions,0)
-				for k := 0;k<len(this.header.Transactions);k++{
-					this.Transactions[int(this.MinerId)] = append(this.Transactions[int(this.MinerId)],Transactions{
-						Data:this.header.Transactions[k].Data,
-						Hash:this.header.Transactions[k].Hash,
-						Fee:this.header.Transactions[k].Fee,
-					})
-				}
-
-				hdrkey := hash.DoubleHashH(this.header.HeaderData[0:NONCEEND])
+				//if this.Pool {
+				//	this.header.PackagePoolHeaderByNonce(this.Work,uint64(xnonce))
+				//} else {
+				//
+				//	this.header.PackageRpcHeaderByNonce(this.Work,uint64(xnonce))
+				//}
+				//this.Transactions[int(this.MinerId)] = make([]Transactions,0)
+				//for k := 0;k<len(this.header.Transactions);k++{
+				//	this.Transactions[int(this.MinerId)] = append(this.Transactions[int(this.MinerId)],Transactions{
+				//		Data:this.header.Transactions[k].Data,
+				//		Hash:this.header.Transactions[k].Hash,
+				//		Fee:this.header.Transactions[k].Fee,
+				//	})
+				//}
+				this.Work.Block.Pow.SetNonce(uint64(xnonce))
+				hdrkey := hash.HashH(this.Work.Block.BlockData())
 				if this.Cfg.OptionConfig.CPUMiner{
 					c := cuckaroo.NewCuckoo()
 					var found = false
-					this.Nonces,found = c.PoW(hdrkey[:16])
+					this.Nonces,found = c.PoW(hdrkey[:])
 					if !found || len(this.Nonces) != cuckaroo.ProofSize{
 						continue
 					}
 				} else{
-					sip := siphash.Newsip(hdrkey[:16])
+					sip := siphash.Newsip(hdrkey[:])
 
 					this.InitParamData()
 					err = this.CreateEdgeKernel.SetArg(0,uint64(sip.V[0]))
@@ -234,43 +235,37 @@ func (this *Cuckaroo) Mine() {
 						return this.Nonces[i] < this.Nonces[j]
 					})
 				}
-				if err = cuckaroo.Verify(hdrkey[:16],this.Nonces);err == nil{
-					for i := 0; i < len(this.Nonces); i++ {
-						b := make([]byte,4)
-						binary.LittleEndian.PutUint32(b,this.Nonces[i])
-						this.header.HeaderData = append(this.header.HeaderData,b...)
-					}
-					h := hash.DoubleHashH(this.header.HeaderData)
-					//log.Println(fmt.Sprintf("[Blake2bDTarget Hash] %064x",this.header.TargetDiff))
-					if HashToBig(&h).Cmp(this.header.TargetDiff) <= 0 {
-						log.Println("[Found Hash]",h)
-						subm := hex.EncodeToString(this.header.HeaderData)
-						if !this.Pool{
-							subm += common.Int2varinthex(int64(len(this.header.Parents)))
-							for j := 0; j < len(this.header.Parents); j++ {
-								subm += this.header.Parents[j].Data
-							}
-
-							txCount := len(this.Transactions)
-							subm += common.Int2varinthex(int64(txCount))
-
-							for j := 0; j < txCount; j++ {
-								subm += this.Transactions[int(this.MinerId)][j].Data
-							}
-							txCount -= 1 //real transaction count except coinbase
-							subm += "-" + fmt.Sprintf("%d",txCount) + "-" + fmt.Sprintf("%d",this.Work.Block.Height)
-						} else {
-							subm += "-" + this.header.JobID + "-" + this.Work.PoolWork.ExtraNonce2
-						}
-						this.SubmitData <- subm
-						if !this.Pool{
-							//solo wait new task
-							break
-						}
+				powStruct := this.Work.Block.Pow.(*pow.Cuckaroo)
+				powStruct.SetCircleEdges(this.Nonces)
+				err := powStruct.Verify(this.Work.Block.BlockData(),uint64(this.Work.Block.Difficulty))
+				if err != nil{
+					log.Println("[miner]",err)
+					continue
+				}
+				log.Println("[Found Hash]",powStruct.GetBlockHash(this.Work.Block.BlockData()))
+				subm := hex.EncodeToString(this.Work.Block.BlockDataWithProof())
+				if !this.Pool{
+					subm += common.Int2varinthex(int64(len(this.Work.Block.Parents)))
+					for j := 0; j < len(this.Work.Block.Parents); j++ {
+						log.Println(this.Work.Block.Parents[j].Data)
+						subm += this.Work.Block.Parents[j].Data
 					}
 
-				} else{
-					log.Println("result not match:",err)
+					txCount := len(this.Transactions)
+					subm += common.Int2varinthex(int64(txCount))
+
+					for j := 0; j < txCount; j++ {
+						subm += this.Transactions[int(this.MinerId)][j].Data
+					}
+					txCount -= 1 //real transaction count except coinbase
+					subm += "-" + fmt.Sprintf("%d",txCount) + "-" + fmt.Sprintf("%d",this.Work.Block.Height)
+				} else {
+					subm += "-" + this.header.JobID + "-" + this.Work.PoolWork.ExtraNonce2
+				}
+				this.SubmitData <- subm
+				if !this.Pool{
+					//solo wait new task
+					break
 				}
 
 			}

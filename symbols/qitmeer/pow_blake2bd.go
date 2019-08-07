@@ -8,13 +8,12 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"github.com/HalalChain/qitmeer-lib/common/hash"
 	"github.com/HalalChain/go-opencl/cl"
+	"log"
+	"math/big"
 	"qitmeer-miner/common"
 	"qitmeer-miner/core"
 	"qitmeer-miner/kernel"
-	"log"
-	"math/big"
 	"sync/atomic"
 )
 
@@ -180,12 +179,12 @@ func (this *Blake2bD) Mine() {
 				for i := 0; i < 8; i++ {
 					this.header.HeaderData[i+NONCESTART] = this.NonceOut[i]
 				}
-				this.Work.Block.Nonce = binary.LittleEndian.Uint64(this.NonceOut)
-				h := hash.DoubleHashH(this.header.HeaderData)
+				this.Work.Block.Pow.SetNonce(binary.LittleEndian.Uint64(this.NonceOut))
+				h := this.Work.Block.BlockHash()
 
 				if HashToBig(&h).Cmp(this.header.TargetDiff) <= 0 {
 					log.Println("[Found Hash]",hex.EncodeToString(common.Reverse(h[:])))
-					subm := hex.EncodeToString(this.header.HeaderData)
+					subm := hex.EncodeToString(this.Work.Block.BlockDataWithProof())
 					if !this.Pool{
 						subm += common.Int2varinthex(int64(len(this.header.Parents)))
 						for j := 0; j < len(this.header.Parents); j++ {

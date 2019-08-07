@@ -9,8 +9,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"qitmeer-miner/core"
+	"github.com/HalalChain/qitmeer-lib/core/types/pow"
 	"log"
+	"qitmeer-miner/core"
 	"strconv"
 	"strings"
 	"time"
@@ -59,10 +60,27 @@ func (this *QitmeerWork) Get () bool {
 		//not has new work
 		return false
 	}
-	diff, _ := strconv.ParseUint(blockTemplate.Result.Bits, 16, 32)
-	diffi := make([]byte,4)
-	binary.LittleEndian.PutUint32(diffi, uint32(diff))
-	blockTemplate.Result.Difficulty = binary.LittleEndian.Uint32(diffi)
+	switch this.Cfg.NecessaryConfig.Pow {
+	case POW_DOUBLE_BLAKE2B:
+		blockTemplate.Result.Pow = pow.GetInstance(pow.BLAKE2BD,0,[]byte{})
+		diff, _ := strconv.ParseUint(blockTemplate.Result.Bits, 16, 32)
+		diffi := make([]byte,4)
+		binary.LittleEndian.PutUint32(diffi, uint32(diff))
+		blockTemplate.Result.Difficulty = binary.LittleEndian.Uint32(diffi)
+	case POW_CUCKROO:
+		blockTemplate.Result.Pow = pow.GetInstance(pow.CUCKAROO,0,[]byte{})
+		powStruct := blockTemplate.Result.Pow.(*pow.Cuckaroo)
+		powStruct.SetScale(uint32(blockTemplate.Result.CuckarooScale))
+		powStruct.SetEdgeBits(24)
+		blockTemplate.Result.Difficulty = uint32(blockTemplate.Result.CuckarooTarget)
+	case POW_CUCKTOO:
+		blockTemplate.Result.Pow = pow.GetInstance(pow.CUCKATOO,0,[]byte{})
+		powStruct := blockTemplate.Result.Pow.(*pow.Cuckatoo)
+		powStruct.SetScale(uint32(blockTemplate.Result.CuckatooScale))
+		powStruct.SetEdgeBits(29)
+		blockTemplate.Result.Difficulty = uint32(blockTemplate.Result.CuckatooTarget)
+	}
+
 	blockTemplate.Result.HasCoinbasePack = false
 	_ = blockTemplate.Result.CalcCoinBase(this.Cfg.SoloConfig.RandStr,this.Cfg.SoloConfig.MinerAddr)
 	this.Block = blockTemplate.Result
@@ -81,6 +99,7 @@ func (this *QitmeerWork) Submit (subm string) error {
 	body := this.Rpc.RpcResult("submitBlock",[]interface{}{subm})
 	var res getSubmitResponseJson
 	err := json.Unmarshal(body, &res)
+	log.Println(string(body),"=========")
 	if err != nil {
 		fmt.Println("【submit error】",string(body))
 		return err

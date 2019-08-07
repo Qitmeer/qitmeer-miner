@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"github.com/HalalChain/qitmeer-lib/common/hash"
 	s "github.com/HalalChain/qitmeer-lib/core/serialization"
+	"github.com/HalalChain/qitmeer-lib/core/types/pow"
 	"io"
 )
 
@@ -25,7 +26,7 @@ type BlockHeader struct {
 	Transactions []Transactions `json:"transactions"`
 	Parents []ParentItems `json:"parents"`
 	// Difficulty target for tx
-	Bits string `json:"bits"`
+	Bits string `json:"blake2bd_bits"`
 
 	// block number
 	Height uint64 `json:"height"`
@@ -33,10 +34,14 @@ type BlockHeader struct {
 	// TimeStamp
 	Curtime uint32 `json:"curtime"`
 
+	Pow pow.IPow
+
 	// Nonce
-	Nonce uint64 `json:"nonce"`
-	Nonces []*uint32 `json:"nonces"`
-	Target string `json:"target"`
+	Target string `json:"blake2bd_target"`
+	CuckarooTarget uint64 `json:"cuckaroo_target"`
+	CuckatooTarget uint64 `json:"cuckatoo_target"`
+	CuckarooScale uint64 `json:"cuckaroo_scale"`
+	CuckatooScale uint64 `json:"cuckatoo_scale"`
 
 	Coinbasevalue   int64 `json:"coinbasevalue"`
 	HasCoinbasePack bool
@@ -44,17 +49,17 @@ type BlockHeader struct {
 
 //qitmeer block header
 func (h *BlockHeader) BlockData() []byte {
-	buf := bytes.NewBuffer(make([]byte, 0, MaxBlockHeaderPayload))
+	buf := bytes.NewBuffer(make([]byte, 0, 128))
 	// TODO, redefine the protocol version and storage
 	_ = writeBlockHeader(buf, 0, h)
 	return buf.Bytes()
 }
 
 //qitmeer block header
-func (h *BlockHeader) BlockDataCuckaroo() []byte {
+func (h *BlockHeader) BlockDataWithProof() []byte {
 	buf := bytes.NewBuffer(make([]byte, 0, MaxBlockHeaderPayload))
 	// TODO, redefine the protocol version and storage
-	_ = writeBlockHeaderCuckaroo(buf, 0, h)
+	_ = writeBlockHeaderWithProof(buf, 0, h)
 	return buf.Bytes()
 }
 
@@ -62,20 +67,20 @@ func (h *BlockHeader) BlockDataCuckaroo() []byte {
 func writeBlockHeader(w io.Writer, pver uint32, bh *BlockHeader) error {
 	sec := uint64(bh.Curtime)
 	return s.WriteElements(w, bh.Version, &bh.ParentRoot, &bh.TxRoot,
-		&bh.StateRoot, bh.Difficulty, bh.Height, sec, bh.Nonce)
+		&bh.StateRoot, bh.Difficulty, bh.Height, sec, bh.Pow.GetNonce())
 }
 
-func writeBlockHeaderCuckaroo(w io.Writer, pver uint32, bh *BlockHeader) error {
+func writeBlockHeaderWithProof(w io.Writer, pver uint32, bh *BlockHeader) error {
 	sec := uint64(bh.Curtime)
 	return s.WriteElements(w, bh.Version, &bh.ParentRoot, &bh.TxRoot,
-		&bh.StateRoot, bh.Difficulty, bh.Height, sec, bh.Nonce,bh.Nonces)
+		&bh.StateRoot, bh.Difficulty, bh.Height, sec, bh.Pow)
 }
 
 //block hash
 func (h *BlockHeader) BlockHash() hash.Hash {
-	buf := bytes.NewBuffer(make([]byte, 0, MaxBlockHeaderPayload))
+	buf := bytes.NewBuffer(make([]byte, 0, 128))
 	// TODO, redefine the protocol version and storage
 	_ = writeBlockHeader(buf, 0, h)
-	return hash.DoubleHashH(buf.Bytes())
+	return hash.DoubleHashH(h.BlockData())
 }
 

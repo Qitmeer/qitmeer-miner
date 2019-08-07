@@ -187,6 +187,7 @@ func (this *QitmeerRobot)SubmitWork() {
 							atomic.AddUint64(&this.StaleShares, 1)
 						} else{
 							atomic.AddUint64(&this.InvalidShares, 1)
+							log.Println(err.Error())
 						}
 					}
 				} else {
