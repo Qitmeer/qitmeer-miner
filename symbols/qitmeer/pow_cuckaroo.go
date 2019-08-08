@@ -255,11 +255,11 @@ func (this *Cuckaroo) Mine() {
 						subm += this.Work.Block.Parents[j].Data
 					}
 
-					txCount := len(this.Transactions)
+					txCount := len(this.Work.Block.Transactions)
 					subm += common.Int2varinthex(int64(txCount))
 
 					for j := 0; j < txCount; j++ {
-						subm += this.Transactions[int(this.MinerId)][j].Data
+						subm += this.Work.Block.Transactions[j].Data
 					}
 					txCount -= 1 //real transaction count except coinbase
 					subm += "-" + fmt.Sprintf("%d",txCount) + "-" + fmt.Sprintf("%d",this.Work.Block.Height)
