@@ -6,6 +6,7 @@
 
 ```bash
 $ go version >= 1.12
+$ cargo >= 1.36.0 (c4fcfb725 2019-05-15)
 ```
     
 ## Compile
