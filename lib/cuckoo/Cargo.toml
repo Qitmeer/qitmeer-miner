@@ -3,7 +3,7 @@ name = "cuckoo"
 version = "0.1.0"
 
 [lib]
-crate-type = ["staticlib"]
+crate-type = ["cdylib"]
 
 [dependencies]
 libc = "0.2.2"
