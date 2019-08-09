@@ -246,7 +246,6 @@ func (this *Cuckatoo) Mine() {
 					}
 					txCount -= 1 //real transaction count except coinbase
 					subm += "-" + fmt.Sprintf("%d",txCount) + "-" + fmt.Sprintf("%d",this.Work.Block.Height)
-					log.Println("submit string:",subm)
 				} else {
 					subm += "-" + this.header.JobID + "-" + this.Work.PoolWork.ExtraNonce2
 				}
