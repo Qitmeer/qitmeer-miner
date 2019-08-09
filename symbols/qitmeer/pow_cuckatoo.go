@@ -55,7 +55,7 @@ type Cuckatoo struct {
 	NodesBytes            []byte
 	Edges                 []uint32
 	CreateEdgeKernel      *cl.Kernel
-	Work                  QitmeerWork
+	Work                  *QitmeerWork
 	Transactions                  map[int][]Transactions
 	header MinerBlockData
 }
@@ -92,14 +92,7 @@ func (this *Cuckatoo) Update() {
 		this.Work.PoolWork.ExtraNonce2 = fmt.Sprintf("%08x", this.CurrentWorkID)
 		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepQitmeerWork()
 	} else {
-		randStr := fmt.Sprintf("%s%d%d", this.Cfg.SoloConfig.RandStr, this.MinerId, this.CurrentWorkID)
-		log.Println("rand string:",randStr)
-		err := this.Work.Block.CalcCoinBase(randStr, this.Cfg.SoloConfig.MinerAddr)
-		if err != nil {
-			log.Println("calc coinbase error :", err)
-			return
-		}
-		this.Work.Block.BuildMerkleTreeStore()
+		this.header.HeaderBlock.ExNonce = uint64(this.CurrentWorkID)
 	}
 }
 
@@ -110,7 +103,7 @@ func (this *Cuckatoo) Mine() {
 	for {
 		select {
 		case w := <-this.NewWork:
-			this.Work = *(w.(*QitmeerWork))
+			this.Work = w.(*QitmeerWork)
 		case <-this.Quit:
 			return
 
@@ -136,35 +129,23 @@ func (this *Cuckatoo) Mine() {
 				TargetDiff:&big.Int{},
 				JobID:"",
 			}
-			this.Update()
+			if this.Pool {
+				this.header.PackagePoolHeader(this.Work)
+			} else {
+				this.header.PackageRpcHeader(this.Work)
+			}
 			for {
 				if this.HasNewWork {
 					break
 				}
 				xnonce1 := <- common.RandGenerator(2<<32)
 				xnonce2 := <- common.RandGenerator(2<<32)
-				//if this.Pool {
-				//	this.header.PackagePoolHeaderByNonce(this.Work,uint64(xnonce))
-				//} else {
-				//
-				//	this.header.PackageRpcHeaderByNonce(this.Work,uint64(xnonce))
-				//}
-				//this.Transactions[int(this.MinerId)] = make([]Transactions,0)
-				//for k := 0;k<len(this.header.Transactions);k++{
-				//	this.Transactions[int(this.MinerId)] = append(this.Transactions[int(this.MinerId)],Transactions{
-				//		Data:this.header.Transactions[k].Data,
-				//		Hash:this.header.Transactions[k].Hash,
-				//		Fee:this.header.Transactions[k].Fee,
-				//	})
-				//}
 				this.Update()
 				nonce := uint64(xnonce1) + uint64(xnonce2)
-				this.Work.Block.Pow.SetNonce(nonce)
-				hdrkey := hash.HashH(this.Work.Block.BlockData())
-
-					sip := siphash.Newsip(hdrkey[:])
-
-					this.InitParamData()
+				this.header.HeaderBlock.Pow.SetNonce(nonce)
+				hdrkey := hash.HashH(this.header.HeaderBlock.BlockData())
+				sip := siphash.Newsip(hdrkey[:])
+				this.InitParamData()
 				err = this.CreateEdgeKernel.SetArg(0,uint64(sip.V[0]))
 				if err != nil {
 					log.Println("-", this.MinerId, err)
@@ -242,24 +223,26 @@ func (this *Cuckatoo) Mine() {
 				powStruct := this.Work.Block.Pow.(*pow.Cuckatoo)
 				powStruct.SetCircleEdges(this.Nonces)
 				powStruct.SetNonce(nonce)
-				err := powStruct.Verify(this.Work.Block.BlockData(),uint64(this.Work.Block.Difficulty))
+				powStruct.SetScale(uint32(this.Work.Block.CuckatooScale))
+				powStruct.SetEdgeBits(29)
+				err := powStruct.Verify(this.header.HeaderBlock.BlockData(),uint64(this.header.HeaderBlock.Difficulty))
 				if err != nil{
 					log.Println("[error]",err)
 					continue
 				}
-				log.Println("[Found Hash]",powStruct.GetBlockHash(this.Work.Block.BlockData()))
-				subm := hex.EncodeToString(this.Work.Block.BlockDataWithProof())
+				log.Println("[Found Hash]",this.header.HeaderBlock.BlockHash())
+				subm := hex.EncodeToString(BlockDataWithProof(this.header.HeaderBlock))
 				if !this.Pool{
-					subm += common.Int2varinthex(int64(len(this.Work.Block.Parents)))
-					for j := 0; j < len(this.Work.Block.Parents); j++ {
-						subm += this.Work.Block.Parents[j].Data
+					subm += common.Int2varinthex(int64(len(this.header.Parents)))
+					for j := 0; j < len(this.header.Parents); j++ {
+						subm += this.header.Parents[j].Data
 					}
 
-					txCount := len(this.Work.Block.Transactions)
+					txCount := len(this.header.Transactions)
 					subm += common.Int2varinthex(int64(txCount))
 
 					for j := 0; j < txCount; j++ {
-						subm += this.Work.Block.Transactions[j].Data
+						subm += this.header.Transactions[j].Data
 					}
 					txCount -= 1 //real transaction count except coinbase
 					subm += "-" + fmt.Sprintf("%d",txCount) + "-" + fmt.Sprintf("%d",this.Work.Block.Height)

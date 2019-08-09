@@ -49,53 +49,16 @@ type BlockHeader struct {
 }
 
 //qitmeer block header
-func (h *BlockHeader) BlockData() []byte {
-	buf := bytes.NewBuffer(make([]byte, 0, 128))
-	// TODO, redefine the protocol version and storage
-	_ = writeBlockHeader(buf, 0, h)
-	return buf.Bytes()
-}
-
-//qitmeer block header
-func (h *BlockHeader) BlockDataWithProof() []byte {
+func BlockDataWithProof(h *types.BlockHeader) []byte {
 	buf := bytes.NewBuffer(make([]byte, 0, MaxBlockHeaderPayload))
 	// TODO, redefine the protocol version and storage
 	_ = writeBlockHeaderWithProof(buf, 0, h)
 	return buf.Bytes()
 }
 
-//qitmeer block header
-func BlockDataWithProof(h *types.BlockHeader) []byte {
-	buf := bytes.NewBuffer(make([]byte, 0, MaxBlockHeaderPayload))
-	// TODO, redefine the protocol version and storage
-	_ = writeBlockHeaderWithProof1(buf, 0, h)
-	return buf.Bytes()
-}
-
-//qitmeer Header structure of assembly
-func writeBlockHeader(w io.Writer, pver uint32, bh *BlockHeader) error {
-	sec := uint64(bh.Curtime)
-	return s.WriteElements(w, bh.Version, &bh.ParentRoot, &bh.TxRoot,
-		&bh.StateRoot, bh.Difficulty, bh.Height, sec, bh.Pow.GetNonce())
-}
-
-func writeBlockHeaderWithProof(w io.Writer, pver uint32, bh *BlockHeader) error {
-	sec := uint64(bh.Curtime)
-	return s.WriteElements(w, bh.Version, &bh.ParentRoot, &bh.TxRoot,
-		&bh.StateRoot, bh.Difficulty, bh.Height, sec, bh.Pow)
-}
-
-func writeBlockHeaderWithProof1(w io.Writer, pver uint32, bh *types.BlockHeader) error {
+func writeBlockHeaderWithProof(w io.Writer, pver uint32, bh *types.BlockHeader) error {
 	sec := bh.Timestamp.Unix()
 	return s.WriteElements(w, bh.Version, &bh.ParentRoot, &bh.TxRoot,
 		&bh.StateRoot, bh.Difficulty, bh.ExNonce, sec, bh.Pow)
-}
-
-//block hash
-func (h *BlockHeader) BlockHash() hash.Hash {
-	buf := bytes.NewBuffer(make([]byte, 0, 128))
-	// TODO, redefine the protocol version and storage
-	_ = writeBlockHeader(buf, 0, h)
-	return hash.DoubleHashH(h.BlockData())
 }
 
