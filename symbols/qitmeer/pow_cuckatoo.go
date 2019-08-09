@@ -141,7 +141,7 @@ func (this *Cuckatoo) Mine() {
 				xnonce1 := <- common.RandGenerator(2<<32)
 				xnonce2 := <- common.RandGenerator(2<<32)
 				this.Update()
-				nonce := uint64(xnonce1) + uint64(xnonce2)
+				nonce := uint64(xnonce1) + uint64(xnonce2) + 0x00FE00000F00000000
 				this.header.HeaderBlock.Pow.SetNonce(nonce)
 				hdrkey := hash.HashH(this.header.HeaderBlock.BlockData())
 				sip := siphash.Newsip(hdrkey[:])
