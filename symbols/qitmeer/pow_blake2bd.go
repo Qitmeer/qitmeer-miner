@@ -20,7 +20,6 @@ import (
 type Blake2bD struct {
 	core.Device
 	Work    *QitmeerWork
-	Transactions map[int][]Transactions
 	header MinerBlockData
 }
 
@@ -56,14 +55,14 @@ func (this *Blake2bD) InitDevice() {
 		this.IsValid = false
 		return
 	}
-	this.Kernel.SetArgBuffer(0, this.BlockObj)
+	_ = this.Kernel.SetArgBuffer(0, this.BlockObj)
 	this.NonceOutObj, err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, 8)
 	if err != nil {
 		log.Println("-", this.MinerId, err)
 		this.IsValid = false
 		return
 	}
-	this.Kernel.SetArgBuffer(1, this.NonceOutObj)
+	_= this.Kernel.SetArgBuffer(1, this.NonceOutObj)
 	this.LocalItemSize, err = this.Kernel.WorkGroupSize(this.ClDevice)
 	this.LocalItemSize = this.Cfg.OptionConfig.WorkSize
 	if err != nil {
@@ -84,25 +83,14 @@ func (this *Blake2bD) Update() {
 	//update coinbase tx hash
 	this.Device.Update()
 	if this.Pool {
-		//this.CurrentWorkID = 0
-		//randstr := fmt.Sprintf("%dqitmeerminer%d",this.CurrentWorkID,this.MinerId)
-		//byt := []byte(randstr)[:4]
-		//this.Work.PoolWork.ExtraNonce2 = hex.EncodeToString(byt)
 		this.Work.PoolWork.ExtraNonce2 = fmt.Sprintf("%08x", this.CurrentWorkID)
 		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepQitmeerWork()
 	} else {
-		randStr := fmt.Sprintf("%s%d%d", this.Cfg.SoloConfig.RandStr, this.MinerId, this.CurrentWorkID)
-		err := this.Work.Block.CalcCoinBase(randStr, this.Cfg.SoloConfig.MinerAddr)
-		if err != nil {
-			log.Println("calc coinbase error :", err)
-			return
-		}
-		this.Work.Block.BuildMerkleTreeStore()
+		this.header.HeaderBlock.ExNonce = uint64(this.CurrentWorkID)
 	}
 }
 
 func (this *Blake2bD) Mine() {
-	this.Transactions = make(map[int][]Transactions)
 	defer this.Release()
 
 	for {
@@ -116,9 +104,6 @@ func (this *Blake2bD) Mine() {
 		if !this.IsValid {
 			continue
 		}
-		//if !this.Work.StartWork{
-		//	continue
-		//}
 
 		if len(this.Work.PoolWork.WorkData) <= 0 && this.Work.Block.Height <= 0 {
 			continue
@@ -127,34 +112,27 @@ func (this *Blake2bD) Mine() {
 		this.HasNewWork = false
 		offset := 0
 		this.CurrentWorkID = 0
+		this.header = MinerBlockData{
+			Transactions:[]Transactions{},
+			Parents:[]ParentItems{},
+			HeaderData:make([]byte,0),
+			TargetDiff:&big.Int{},
+			JobID:"",
+		}
+		if this.Pool {
+			this.header.PackagePoolHeader(this.Work)
+		} else {
+			this.header.PackageRpcHeader(this.Work)
+		}
 		for {
 			// if has new work ,current calc stop
 			if this.HasNewWork {
 				break
 			}
-			this.header = MinerBlockData{
-				Transactions:[]Transactions{},
-				Parents:[]ParentItems{},
-				HeaderData:make([]byte,0),
-				TargetDiff:&big.Int{},
-				JobID:"",
-			}
+
 			this.Update()
-			if this.Pool {
-				this.header.PackagePoolHeader(this.Work)
-			} else {
-				this.header.PackageRpcHeader(this.Work)
-			}
-			this.Transactions[int(this.MinerId)] = make([]Transactions,0)
-			for k := 0;k<len(this.header.Transactions);k++{
-				this.Transactions[int(this.MinerId)] = append(this.Transactions[int(this.MinerId)],Transactions{
-					Data:this.header.Transactions[k].Data,
-					Hash:this.header.Transactions[k].Hash,
-					Fee:this.header.Transactions[k].Fee,
-				})
-			}
 			var err error
-			if _, err = this.CommandQueue.EnqueueWriteBufferByte(this.BlockObj, true, 0, this.header.HeaderData, nil); err != nil {
+			if _, err = this.CommandQueue.EnqueueWriteBufferByte(this.BlockObj, true, 0, this.header.HeaderBlock.BlockData(), nil); err != nil {
 				log.Println("-", this.MinerId, err)
 				this.IsValid = false
 				break
@@ -176,26 +154,24 @@ func (this *Blake2bD) Mine() {
 			if this.NonceOut[0] != 0 || this.NonceOut[1] != 0 || this.NonceOut[2] != 0 || this.NonceOut[3] != 0 ||
 				this.NonceOut[4] != 0 || this.NonceOut[5] != 0 || this.NonceOut[6] != 0 || this.NonceOut[7] != 0 {
 				//Found Hash
-				for i := 0; i < 8; i++ {
-					this.header.HeaderData[i+NONCESTART] = this.NonceOut[i]
-				}
-				this.Work.Block.Pow.SetNonce(binary.LittleEndian.Uint64(this.NonceOut))
-				h := this.Work.Block.BlockHash()
+				this.header.HeaderBlock.Pow.SetNonce(binary.LittleEndian.Uint64(this.NonceOut))
+				h := this.header.HeaderBlock.BlockHash()
 
 				if HashToBig(&h).Cmp(this.header.TargetDiff) <= 0 {
 					log.Println("[Found Hash]",hex.EncodeToString(common.Reverse(h[:])))
-					subm := hex.EncodeToString(this.Work.Block.BlockDataWithProof())
+					headerData := BlockDataWithProof(this.header.HeaderBlock)
+					subm := hex.EncodeToString(headerData)
 					if !this.Pool{
 						subm += common.Int2varinthex(int64(len(this.header.Parents)))
 						for j := 0; j < len(this.header.Parents); j++ {
 							subm += this.header.Parents[j].Data
 						}
 
-						txCount := len(this.Transactions[int(this.MinerId)]) //real transaction count except coinbase
+						txCount := len(this.header.Transactions) //real transaction count except coinbase
 						subm += common.Int2varinthex(int64(txCount))
 
 						for j := 0; j < txCount; j++ {
-							subm += this.Transactions[int(this.MinerId)][j].Data
+							subm += this.header.Transactions[j].Data
 						}
 						txCount -= 1
 						subm += "-" + fmt.Sprintf("%d",txCount) + "-" + fmt.Sprintf("%d",this.Work.Block.Height)

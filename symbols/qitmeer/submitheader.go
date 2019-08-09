@@ -5,8 +5,11 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/HalalChain/qitmeer-lib/common/hash"
-	"qitmeer-miner/common"
+	"github.com/HalalChain/qitmeer-lib/core/types"
+	"github.com/HalalChain/qitmeer-lib/core/types/pow"
 	"math/big"
+	"qitmeer-miner/common"
+	"time"
 )
 
 type MinerBlockData struct {
@@ -15,6 +18,7 @@ type MinerBlockData struct {
 	HeaderData []byte
 	TargetDiff *big.Int
 	JobID string
+	HeaderBlock *types.BlockHeader
 }
 // Header structure of assembly pool
 func BlockComputePoolData(b []byte) []byte{
@@ -59,16 +63,23 @@ func (this *MinerBlockData)PackageRpcHeader(work *QitmeerWork)  {
 	//log.Println(work.Block.Blake2bDTarget)
 	bitesBy ,_:= hex.DecodeString(work.Block.Target)
 	bitesBy = common.Reverse(bitesBy[:8])
-	this.HeaderData = work.Block.BlockData()
-	this.Transactions = work.Block.Transactions
 	this.Parents = work.Block.Parents
-	copy(this.HeaderData[NONCESTART:NONCEEND],bitesBy[:])
-
+	this.Transactions = work.Block.Transactions
 	b1 , _ := hex.DecodeString(work.Block.Target)
 	var r [32]byte
 	copy(r[:],common.Reverse(b1)[:])
 	r1 := hash.Hash(r)
 	this.TargetDiff = HashToBig(&r1)
+	this.HeaderBlock = &types.BlockHeader{}
+	this.HeaderBlock.Version = work.Block.Version
+	this.HeaderBlock.ParentRoot = work.Block.ParentRoot
+	this.HeaderBlock.TxRoot = work.Block.TxRoot
+	this.HeaderBlock.StateRoot = work.Block.StateRoot
+	this.HeaderBlock.Difficulty = work.Block.Difficulty
+	this.HeaderBlock.ExNonce = work.Block.Height
+	this.HeaderBlock.Timestamp = time.Unix(int64(work.Block.Curtime), 0)
+	this.HeaderBlock.Pow = pow.GetInstance(work.Block.Pow.GetPowType(),binary.LittleEndian.Uint64(bitesBy),[]byte{})
+
 }
 
 //the solo work submit structure

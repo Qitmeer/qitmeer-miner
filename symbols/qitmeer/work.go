@@ -83,6 +83,7 @@ func (this *QitmeerWork) Get () bool {
 
 	blockTemplate.Result.HasCoinbasePack = false
 	_ = blockTemplate.Result.CalcCoinBase(this.Cfg.SoloConfig.RandStr,this.Cfg.SoloConfig.MinerAddr)
+	blockTemplate.Result.BuildMerkleTreeStore()
 	this.Block = blockTemplate.Result
 	this.Started = uint32(time.Now().Unix())
 	return true
@@ -99,7 +100,6 @@ func (this *QitmeerWork) Submit (subm string) error {
 	body := this.Rpc.RpcResult("submitBlock",[]interface{}{subm})
 	var res getSubmitResponseJson
 	err := json.Unmarshal(body, &res)
-	log.Println(string(body),"=========")
 	if err != nil {
 		fmt.Println("【submit error】",string(body))
 		return err

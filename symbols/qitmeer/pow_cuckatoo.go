@@ -214,7 +214,7 @@ func (this *Cuckatoo) Mine() {
 					// copy the data into the buffer, by converting it to a Go array
 					cBuf := (*[1 << 30]byte)(p)
 					copy(cBuf[:], this.ResultBytes)
-					C.search_circle((*C.uint)(p),(*C.ulong)(C.size_t(len(this.ResultBytes))),(*C.uint)(unsafe.Pointer(&noncesBytes[0])))
+					C.search_circle((*C.uint)(p),(C.ulong)(C.size_t(len(this.ResultBytes))),(*C.uint)(unsafe.Pointer(&noncesBytes[0])))
 					C.free(p)
 				}){
 					//timeout
