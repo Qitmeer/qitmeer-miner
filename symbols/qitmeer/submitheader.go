@@ -41,12 +41,17 @@ func BlockComputePoolData(b []byte) []byte{
 	return bb
 }
 //the pool work submit structure
-func (this *MinerBlockData)PackagePoolHeader(work *QitmeerWork)  {
-	this.HeaderData = BlockComputePoolData(work.PoolWork.WorkData)
+func (this *MinerBlockData)PackagePoolHeader(work *QitmeerWork,powType pow.PowType)  {
+	this.HeaderData = BlockComputePoolData(work.PoolWork.WorkData) // 128
 	this.TargetDiff = work.stra.Target
 	nbitesBy := common.Target2BlockBits(fmt.Sprintf("%064x",this.TargetDiff))
 	copy(this.HeaderData[NONCESTART:NONCEEND],nbitesBy[:])
+	instance := pow.GetInstance(powType,0,[]byte{})
+	proofData,_ := hex.DecodeString(instance.GetProofData())
+	this.HeaderData = append(this.HeaderData,proofData...) //328 bytes
 	this.JobID = work.PoolWork.JobID
+	this.HeaderBlock = &types.BlockHeader{}
+	_ = ReadBlockHeader(this.HeaderData,this.HeaderBlock)
 }
 //the pool work submit structure
 func (this *MinerBlockData)PackagePoolHeaderByNonce(work *QitmeerWork,nonce uint64)  {

@@ -18,6 +18,7 @@ import (
 	"github.com/HalalChain/qitmeer-lib/common/hash"
 	"github.com/HalalChain/qitmeer-lib/core/types/pow"
 	"github.com/HalalChain/qitmeer-lib/crypto/cuckoo/siphash"
+	"github.com/HalalChain/qitmeer-lib/params"
 	"log"
 	"math/big"
 	"qitmeer-miner/common"
@@ -91,6 +92,7 @@ func (this *Cuckatoo) Update() {
 	if this.Pool {
 		this.Work.PoolWork.ExtraNonce2 = fmt.Sprintf("%08x", this.CurrentWorkID)
 		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepQitmeerWork()
+		this.header.PackagePoolHeader(this.Work,pow.CUCKATOO)
 	} else {
 		this.header.HeaderBlock.ExNonce = uint64(this.CurrentWorkID)
 	}
@@ -129,9 +131,7 @@ func (this *Cuckatoo) Mine() {
 				TargetDiff:&big.Int{},
 				JobID:"",
 			}
-			if this.Pool {
-				this.header.PackagePoolHeader(this.Work)
-			} else {
+			if !this.Pool {
 				this.header.PackageRpcHeader(this.Work)
 			}
 			for {
@@ -223,8 +223,8 @@ func (this *Cuckatoo) Mine() {
 				powStruct := this.header.HeaderBlock.Pow.(*pow.Cuckatoo)
 				powStruct.SetCircleEdges(this.Nonces)
 				powStruct.SetNonce(nonce)
-				powStruct.SetScale(uint32(this.Work.Block.CuckatooScale))
-				powStruct.SetEdgeBits((this.Work.Block.Pow).(*pow.Cuckatoo).GetEdgeBits())
+				powStruct.SetEdgeBits(29)
+				powStruct.SetScale(uint32(params.TestPowNetParams.PowConfig.CuckatooScale))
 				err := powStruct.Verify(this.header.HeaderBlock.BlockData(),uint64(this.header.HeaderBlock.Difficulty))
 				if err != nil{
 					log.Println("[error]",err)

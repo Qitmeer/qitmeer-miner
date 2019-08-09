@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/HalalChain/go-opencl/cl"
+	"github.com/HalalChain/qitmeer-lib/core/types/pow"
 	"log"
 	"math/big"
 	"qitmeer-miner/common"
@@ -85,6 +86,7 @@ func (this *Blake2bD) Update() {
 	if this.Pool {
 		this.Work.PoolWork.ExtraNonce2 = fmt.Sprintf("%08x", this.CurrentWorkID)
 		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepQitmeerWork()
+		this.header.PackagePoolHeader(this.Work,pow.BLAKE2BD)
 	} else {
 		this.header.HeaderBlock.ExNonce = uint64(this.CurrentWorkID)
 	}
@@ -119,9 +121,7 @@ func (this *Blake2bD) Mine() {
 			TargetDiff:&big.Int{},
 			JobID:"",
 		}
-		if this.Pool {
-			this.header.PackagePoolHeader(this.Work)
-		} else {
+		if !this.Pool {
 			this.header.PackageRpcHeader(this.Work)
 		}
 		for {

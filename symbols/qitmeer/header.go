@@ -62,3 +62,14 @@ func writeBlockHeaderWithProof(w io.Writer, pver uint32, bh *types.BlockHeader) 
 		&bh.StateRoot, bh.Difficulty, bh.ExNonce, sec, bh.Pow)
 }
 
+// readBlockHeader reads a block header from io reader.  See Deserialize for
+// decoding block headers stored to disk, such as in a database, as opposed to
+// decoding from the type.
+// TODO, redefine the protocol version and storage
+func ReadBlockHeader(b []byte,bh *types.BlockHeader) error {
+	r := bytes.NewReader(b)
+	// TODO fix time ambiguous
+	return s.ReadElements(r, &bh.Version, &bh.ParentRoot, &bh.TxRoot,
+		&bh.StateRoot, &bh.Difficulty, &bh.ExNonce, (*s.Int64Time)(&bh.Timestamp),
+		&bh.Pow)
+}
