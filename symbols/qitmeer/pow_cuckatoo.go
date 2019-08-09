@@ -220,7 +220,7 @@ func (this *Cuckatoo) Mine() {
 					return this.Nonces[i]<this.Nonces[j]
 				})
 				log.Println("find",nonce)
-				powStruct := this.Work.Block.Pow.(*pow.Cuckatoo)
+				powStruct := this.header.HeaderBlock.Pow.(*pow.Cuckatoo)
 				powStruct.SetCircleEdges(this.Nonces)
 				powStruct.SetNonce(nonce)
 				powStruct.SetScale(uint32(this.Work.Block.CuckatooScale))
