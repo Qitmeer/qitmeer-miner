@@ -37,6 +37,10 @@ func (this *QitmeerRobot)GetPow(i int ,device *cl.Device) core.BaseDevice{
 		this.Devices = append(this.Devices,deviceMiner)
 		return deviceMiner
 	case POW_CUCKTOO:
+		deviceMiner := &Cuckatoo{}
+		deviceMiner.Init(i,device,this.Pool,this.Quit,this.Cfg)
+		this.Devices = append(this.Devices,deviceMiner)
+		return deviceMiner
 	case POW_DOUBLE_BLAKE2B:
 		deviceMiner := &Blake2bD{}
 		deviceMiner.Init(i,device,this.Pool,this.Quit,this.Cfg)
@@ -132,6 +136,12 @@ func (this *QitmeerRobot)ListenWork() {
 						}
 						dev.(*Cuckaroo).HasNewWork = true
 						dev.(*Cuckaroo).NewWork <- &this.Work
+					case *Cuckatoo:
+						if !dev.(*Cuckatoo).IsValid{
+							continue
+						}
+						dev.(*Cuckatoo).HasNewWork = true
+						dev.(*Cuckatoo).NewWork <- &this.Work
 					case *Blake2bD:
 						if !dev.(*Blake2bD).IsValid{
 							continue

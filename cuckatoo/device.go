@@ -13,12 +13,12 @@ import (
 	"github.com/HalalChain/qitmeer-lib/common/hash"
 	"github.com/HalalChain/qitmeer-lib/crypto/cuckoo"
 	"github.com/HalalChain/qitmeer-lib/crypto/cuckoo/siphash"
-	"hlc-miner/common"
-	"hlc-miner/core"
-	"hlc-miner/kernel"
-	"hlc-miner/symbols/hlc"
+	"qitmeer-miner/common"
+	"qitmeer-miner/core"
+	"qitmeer-miner/kernel"
 	"log"
 	"os"
+	"qitmeer-miner/symbols/qitmeer"
 	"sort"
 	"unsafe"
 )
@@ -60,9 +60,9 @@ type Cuckatoo struct {
 	Trimmer01Kernel            *cl.Kernel
 	Trimmer02Kernel            *cl.Kernel
 	RecoveryKernel             *cl.Kernel
-	Work                       hlc.HLCWork
-	Transactions               map[int][]hlc.Transactions
-	header                     hlc.MinerBlockData
+	Work                       qitmeer.QitmeerWork
+	Transactions               map[int][]qitmeer.Transactions
+	header                     qitmeer.MinerBlockData
 }
 const edges_bits = 29
 var el_count = (1024 * 1024 * 512 / 32) << (edges_bits - 29)
@@ -94,12 +94,12 @@ func (this *Cuckatoo) InitDevice() {
 }
 
 func (this *Cuckatoo) Update() {
-	this.Transactions = make(map[int][]hlc.Transactions)
+	this.Transactions = make(map[int][]qitmeer.Transactions)
 	//update coinbase tx hash
 	this.Device.Update()
 	if this.Pool {
 		this.Work.PoolWork.ExtraNonce2 = fmt.Sprintf("%08x", this.CurrentWorkID)
-		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepHlcWork()
+		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepQitmeerWork()
 	} else {
 		randStr := fmt.Sprintf("%s%d%d", this.Cfg.SoloConfig.RandStr, this.MinerId, this.CurrentWorkID)
 		var err error
@@ -207,7 +207,7 @@ func (this *Cuckatoo) Mine() {
 					return nonces[i]<nonces[j]
 				})
 				log.Println(nonces)
-				if err := cuckoo.VerifyCuckatoo(hdrkey[:16],nonces);err == nil{
+				if err := cuckoo.VerifyCuckatoo(hdrkey[:16],nonces,edges_bits);err == nil{
 					log.Println("[Found Circle Success]")
 				} else{
 					log.Println(err)

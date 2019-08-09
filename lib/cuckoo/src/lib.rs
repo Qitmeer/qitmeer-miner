@@ -10,11 +10,11 @@ pub unsafe extern "C" fn search_circle(array:*mut libc::c_uint,length:libc::c_ul
     let array: &[libc::c_uint] = slice::from_raw_parts(array, length as usize);
 
     let g = Graph::build(&array);
-    println!(
-        "Number of nodes {}, edges {}",
-        g.node_count(),
-        g.edge_count()
-    );
+//    println!(
+//        "Number of nodes {}, edges {}",
+//        g.node_count(),
+//        g.edge_count()
+//    );
     let solutions = g.find().unwrap();;
     for sol in solutions {
         println!("Solution: {:x?}", sol.nonces);

@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 )
@@ -322,4 +323,25 @@ func RandGenerator(n int) chan uint32 {
 		}
 	}(n)
 	return out
+}
+
+func Timeout(timeout time.Duration, runFunc func()) bool {
+	var wg = new(sync.WaitGroup)
+	c := make(chan interface{})
+	wg.Add(1)
+	go func() {
+		defer close(c)
+		wg.Wait()
+	}()
+	go func() {
+		runFunc()
+		c <- nil
+		wg.Done()
+	}()
+	select {
+	case <-c:
+		return false
+	case <-time.After(timeout):
+		return true
+	}
 }
