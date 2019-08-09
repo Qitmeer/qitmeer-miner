@@ -17,7 +17,7 @@ pub unsafe extern "C" fn search_circle(array:*mut libc::c_uint,length:libc::c_ul
 //    );
     let solutions = g.find().unwrap();;
     for sol in solutions {
-        println!("Solution: {:x?}", sol.nonces);
+//        println!("Solution: {:x?}", sol.nonces);
             if sol.nonces.len() == 42{
                 sol.nonces.as_ptr().copy_to(nonces,42);
             }
@@ -258,8 +258,8 @@ impl Graph {
             self.walk_graph(*node, &mut search)?;
             search.clear();
         }
-        println!("Explored nodes: {}", search.node_explored);
-        println!("Found cycles: {}", search.solutions.len());
+//        println!("Explored nodes: {}", search.node_explored);
+//        println!("Found cycles: {}", search.solutions.len());
         Ok(search.solutions.clone())
     }
 
