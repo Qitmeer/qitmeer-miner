@@ -126,35 +126,12 @@ func (this *QitmeerRobot)ListenWork() {
 				r = this.Work.Get() // get new work
 			}
 			if r {
-				//log.Println("has work")
-				//this.Work.StartWork = true
 				for _, dev := range this.Devices {
-					switch dev.(type) {
-					case *Cuckaroo:
-						if !dev.(*Cuckaroo).IsValid{
-							continue
-						}
-						dev.(*Cuckaroo).HasNewWork = true
-						dev.(*Cuckaroo).NewWork <- &this.Work
-					case *Cuckatoo:
-						if !dev.(*Cuckatoo).IsValid{
-							continue
-						}
-						dev.(*Cuckatoo).HasNewWork = true
-						dev.(*Cuckatoo).NewWork <- &this.Work
-					case *Blake2bD:
-						if !dev.(*Blake2bD).IsValid{
-							continue
-						}
-						dev.(*Blake2bD).HasNewWork = true
-						dev.(*Blake2bD).NewWork <- &this.Work
-					default:
-
+					if !dev.GetIsValid(){
+						continue
 					}
-
+					dev.SetNewWork(&this.Work)
 				}
-			} else{
-				//log.Println("not has work")
 			}
 		}
 		time.Sleep(1*time.Second)

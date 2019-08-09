@@ -222,7 +222,7 @@ func (this *Cuckaroo) Mine() {
 				}
 				powStruct := this.header.HeaderBlock.Pow.(*pow.Cuckaroo)
 				powStruct.SetCircleEdges(this.Nonces)
-				powStruct.SetEdgeBits(24)
+				powStruct.SetEdgeBits((this.Work.Block.Pow).(*pow.Cuckaroo).GetEdgeBits())
 				powStruct.SetScale(uint32(this.Work.Block.CuckarooScale))
 				powStruct.SetNonce(nonce)
 				err := powStruct.Verify(this.header.HeaderBlock.BlockData(),uint64(this.header.HeaderBlock.Difficulty))

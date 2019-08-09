@@ -224,7 +224,7 @@ func (this *Cuckatoo) Mine() {
 				powStruct.SetCircleEdges(this.Nonces)
 				powStruct.SetNonce(nonce)
 				powStruct.SetScale(uint32(this.Work.Block.CuckatooScale))
-				powStruct.SetEdgeBits(29)
+				powStruct.SetEdgeBits((this.Work.Block.Pow).(*pow.Cuckatoo).GetEdgeBits())
 				err := powStruct.Verify(this.header.HeaderBlock.BlockData(),uint64(this.header.HeaderBlock.Difficulty))
 				if err != nil{
 					log.Println("[error]",err)

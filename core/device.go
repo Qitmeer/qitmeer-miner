@@ -21,6 +21,8 @@ type BaseDevice interface {
 	Status()
 	Release()
 	SubmitShare(substr chan string)
+	GetIsValid() bool
+	SetNewWork(w BaseWork)
 }
 type Device struct{
 	Cfg *common.GlobalConfig  //must init
@@ -66,7 +68,13 @@ func (this *Device)Init(i int,device *cl.Device,pool bool,q chan os.Signal,cfg *
 	this.AllDiffOneShares = 0
 }
 
-func (this *Device)Mine()  {
+func (this *Device)GetIsValid() bool {
+	return this.IsValid
+}
+
+func (this *Device)SetNewWork(work BaseWork) {
+	this.HasNewWork = true
+	this.NewWork <- work
 }
 
 func (this *Device)Update()  {
