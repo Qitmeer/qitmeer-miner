@@ -6,10 +6,10 @@ package core
 
 import (
 	"github.com/HalalChain/go-opencl/cl"
-	"qitmeer-miner/common"
 	"log"
 	"math"
 	"os"
+	"qitmeer-miner/common"
 	"sync"
 	"time"
 )
@@ -40,7 +40,7 @@ type Device struct{
 	ClDevice         *cl.Device
 	Started          uint32
 	GlobalItemSize int
-	CurrentWorkID uint32
+	CurrentWorkID uint64
 	Quit chan os.Signal //must init
 	sync.Mutex
 	Wg sync.WaitGroup
@@ -70,7 +70,17 @@ func (this *Device)Mine()  {
 }
 
 func (this *Device)Update()  {
-	this.CurrentWorkID = <- common.RandGenerator(2<<32)
+	defer func() {
+		err := recover()
+		if err != nil {
+			log.Println("[error]",err)
+		}
+	}()
+	var err error
+	this.CurrentWorkID,err = common.RandUint64()
+	if err != nil{
+		this.CurrentWorkID++
+	}
 }
 
 func (this *Device)InitDevice()  {

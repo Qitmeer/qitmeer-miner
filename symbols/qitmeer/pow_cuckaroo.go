@@ -128,10 +128,16 @@ func (this *Cuckaroo) Mine() {
 			}
 			this.Update()
 			for nonce := 0;nonce <= 1 << 32 ;nonce++{
+				defer func() {
+					err := recover()
+					if err != nil {
+						log.Println("[error]",err)
+					}
+				}()
 				if this.HasNewWork {
 					break
 				}
-				xnonce := <- common.RandGenerator(2<<32)
+				xnonce,_ := common.RandUint64()
 				if this.Pool {
 					this.header.PackagePoolHeaderByNonce(this.Work,uint64(xnonce))
 				} else {
