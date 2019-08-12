@@ -137,7 +137,7 @@ func (this *Cuckaroo) Mine() {
 				if this.HasNewWork {
 					break
 				}
-				xnonce := <- common.RandGenerator(2<<32)
+				xnonce,_ := common.RandUint64()
 				if this.Pool {
 					this.header.PackagePoolHeaderByNonce(this.Work,uint64(xnonce))
 				} else {

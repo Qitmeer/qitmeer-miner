@@ -313,6 +313,14 @@ func GenerateRand(length int) uint32 {
 	return r
 }
 
+func RandUint64() (uint64, error) {
+	var b [8]byte
+	if _, err := rand.Read(b[:]); err != nil {
+		return 0, err
+	}
+	return uint64(binary.LittleEndian.Uint64(b[:])), nil
+}
+
 func RandGenerator(n int) chan uint32 {
 	rand.Seed(time.Now().UnixNano())
 	out := make(chan uint32)
