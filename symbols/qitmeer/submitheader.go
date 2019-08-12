@@ -65,11 +65,15 @@ func (this *MinerBlockData)PackagePoolHeaderByNonce(work *QitmeerWork,nonce uint
 
 //the solo work submit structure
 func (this *MinerBlockData)PackageRpcHeader(work *QitmeerWork)  {
-	//log.Println(work.Block.Blake2bDTarget)
 	bitesBy ,_:= hex.DecodeString(work.Block.Target)
 	bitesBy = common.Reverse(bitesBy[:8])
 	this.Parents = work.Block.Parents
-	this.Transactions = work.Block.Transactions
+	this.Transactions = make([]Transactions,0)
+	for i:=0;i<len(work.Block.Transactions);i++{
+		this.Transactions = append(this.Transactions,Transactions{
+			work.Block.Transactions[i].Hash,work.Block.Transactions[i].Data,work.Block.Transactions[i].Fee,
+		})
+	}
 	b1 , _ := hex.DecodeString(work.Block.Target)
 	var r [32]byte
 	copy(r[:],common.Reverse(b1)[:])
@@ -81,7 +85,6 @@ func (this *MinerBlockData)PackageRpcHeader(work *QitmeerWork)  {
 	this.HeaderBlock.TxRoot = work.Block.TxRoot
 	this.HeaderBlock.StateRoot = work.Block.StateRoot
 	this.HeaderBlock.Difficulty = work.Block.Difficulty
-	this.HeaderBlock.ExNonce = work.Block.Height
 	this.HeaderBlock.Timestamp = time.Unix(int64(work.Block.Curtime), 0)
 	this.HeaderBlock.Pow = pow.GetInstance(work.Block.Pow.GetPowType(),binary.LittleEndian.Uint64(bitesBy),[]byte{})
 

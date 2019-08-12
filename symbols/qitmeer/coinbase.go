@@ -129,6 +129,8 @@ func qitmeerCoinBase(coinbaseVal int, coinbaseScript []byte, opReturnPkScript []
 
 //calc coinbase
 func (h *BlockHeader) CalcCoinBase(coinbaseStr string,payAddress string) error{
+	h.Lock()
+	defer h.Unlock()
 	coinbaseScript := []byte{0x00, 0x00}
 	coinbaseScript = append(coinbaseScript, []byte(coinbaseStr)...)
 	rand, err := s.RandomUint64()

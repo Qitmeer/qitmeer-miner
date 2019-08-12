@@ -108,7 +108,7 @@ func (this *Cuckatoo) Update() {
 			log.Println("calc coinbase error :", err)
 			return
 		}
-		this.Work.Block.BuildMerkleTreeStore()
+		this.Work.Block.BuildMerkleTreeStore(int(this.MinerId))
 	}
 }
 

@@ -130,7 +130,8 @@ func (this *QitmeerRobot)ListenWork() {
 					if !dev.GetIsValid(){
 						continue
 					}
-					dev.SetNewWork(&this.Work)
+					newWork := this.Work
+					dev.SetNewWork(&newWork)
 				}
 			}
 		}

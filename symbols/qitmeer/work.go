@@ -83,7 +83,7 @@ func (this *QitmeerWork) Get () bool {
 
 	blockTemplate.Result.HasCoinbasePack = false
 	_ = blockTemplate.Result.CalcCoinBase(this.Cfg.SoloConfig.RandStr,this.Cfg.SoloConfig.MinerAddr)
-	blockTemplate.Result.BuildMerkleTreeStore()
+	blockTemplate.Result.BuildMerkleTreeStore(0)
 	this.Block = blockTemplate.Result
 	this.Started = uint32(time.Now().Unix())
 	return true

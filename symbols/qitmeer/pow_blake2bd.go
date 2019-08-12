@@ -50,7 +50,7 @@ func (this *Blake2bD) InitDevice() {
 		this.IsValid = false
 		return
 	}
-	this.BlockObj, err = this.Context.CreateEmptyBuffer(cl.MemReadOnly, 128)
+	this.BlockObj, err = this.Context.CreateEmptyBuffer(cl.MemReadOnly, 120)
 	if err != nil {
 		log.Println("-", this.MinerId, err)
 		this.IsValid = false
@@ -88,7 +88,11 @@ func (this *Blake2bD) Update() {
 		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepQitmeerWork()
 		this.header.PackagePoolHeader(this.Work,pow.BLAKE2BD)
 	} else {
-		this.header.HeaderBlock.ExNonce = uint64(this.CurrentWorkID)
+		randStr := fmt.Sprintf("%s%d",this.Cfg.SoloConfig.RandStr,this.CurrentWorkID)
+		_ = this.Work.Block.CalcCoinBase(randStr,this.Cfg.SoloConfig.MinerAddr)
+		txHash := this.Work.Block.BuildMerkleTreeStore(int(this.MinerId))
+		this.header.PackageRpcHeader(this.Work)
+		this.header.HeaderBlock.TxRoot = txHash
 	}
 }
 
@@ -120,9 +124,6 @@ func (this *Blake2bD) Mine() {
 			HeaderData:make([]byte,0),
 			TargetDiff:&big.Int{},
 			JobID:"",
-		}
-		if !this.Pool {
-			this.header.PackageRpcHeader(this.Work)
 		}
 		for {
 			// if has new work ,current calc stop
@@ -158,7 +159,7 @@ func (this *Blake2bD) Mine() {
 				h := this.header.HeaderBlock.BlockHash()
 
 				if HashToBig(&h).Cmp(this.header.TargetDiff) <= 0 {
-					log.Println("[Found Hash]",hex.EncodeToString(common.Reverse(h[:])))
+					log.Println("#",this.MinerId,this.DeviceName," [Found Hash]",hex.EncodeToString(common.Reverse(h[:])))
 					headerData := BlockDataWithProof(this.header.HeaderBlock)
 					subm := hex.EncodeToString(headerData)
 					if !this.Pool{

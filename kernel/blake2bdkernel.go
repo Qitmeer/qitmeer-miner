@@ -32,19 +32,20 @@ __constant static const uchar blake2b_sigma[12][16] = {
 
 // Blake2bDTarget is passed in via headerIn[120 - 128]
 __kernel void search(__global ulong *headerIn, __global ulong *nonceOut) {
-	ulong target = headerIn[15];
+	ulong target = headerIn[14];
 	ulong nonce = (ulong)get_global_id(0)+0x00FE00000F00000000;
 	//ulong nonce = target;
 	ulong m[16] = {	headerIn[0], headerIn[1],
 	                headerIn[2], headerIn[3],
 	                headerIn[4], headerIn[5],
 	                headerIn[6], headerIn[7],
-	                headerIn[8], headerIn[9], headerIn[10], headerIn[11], headerIn[12], headerIn[13], headerIn[14], nonce };
+	                headerIn[8], headerIn[9], headerIn[10], headerIn[11], headerIn[12], headerIn[13], nonce,0 };
 
 	ulong v[16] = { 0x6a09e667f2bdc928, 0xbb67ae8584caa73b, 0x3c6ef372fe94f82b, 0xa54ff53a5f1d36f1,
 	                0x510e527fade682d1, 0x9b05688c2b3e6c1f, 0x1f83d9abfb41bd6b, 0x5be0cd19137e2179,
 	                0x6a09e667f3bcc908, 0xbb67ae8584caa73b, 0x3c6ef372fe94f82b, 0xa54ff53a5f1d36f1,
-	                0x510e527fade68251, 0x9b05688c2b3e6c1f, 0xe07c265404be4294, 0x5be0cd19137e2179 };
+	                //0x510e527fade68251, 0x9b05688c2b3e6c1f, 0xe07c265404be4294, 0x5be0cd19137e2179 }; //128 bytes
+	                0x510e527fade682a9, 0x9b05688c2b3e6c1f, 0xe07c265404be4294, 0x5be0cd19137e2179 }; //120 bytes
 
 
 

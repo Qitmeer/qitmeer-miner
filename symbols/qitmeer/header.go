@@ -7,10 +7,12 @@ import (
 	"github.com/HalalChain/qitmeer-lib/core/types"
 	"github.com/HalalChain/qitmeer-lib/core/types/pow"
 	"io"
+	"sync"
 )
 
 //qitmeer block header
 type BlockHeader struct {
+	sync.Mutex
 	// block version
 	Version uint32 `json:"version"`
 	// The merkle root of the previous parent blocks (the dag layer)
@@ -59,7 +61,7 @@ func BlockDataWithProof(h *types.BlockHeader) []byte {
 func writeBlockHeaderWithProof(w io.Writer, pver uint32, bh *types.BlockHeader) error {
 	sec := bh.Timestamp.Unix()
 	return s.WriteElements(w, bh.Version, &bh.ParentRoot, &bh.TxRoot,
-		&bh.StateRoot, bh.Difficulty, bh.ExNonce, sec, bh.Pow)
+		&bh.StateRoot, bh.Difficulty, sec, bh.Pow)
 }
 
 // readBlockHeader reads a block header from io reader.  See Deserialize for
@@ -70,6 +72,6 @@ func ReadBlockHeader(b []byte,bh *types.BlockHeader) error {
 	r := bytes.NewReader(b)
 	// TODO fix time ambiguous
 	return s.ReadElements(r, &bh.Version, &bh.ParentRoot, &bh.TxRoot,
-		&bh.StateRoot, &bh.Difficulty, &bh.ExNonce, (*s.Int64Time)(&bh.Timestamp),
+		&bh.StateRoot, &bh.Difficulty,(*s.Int64Time)(&bh.Timestamp),
 		&bh.Pow)
 }

@@ -94,7 +94,11 @@ func (this *Cuckatoo) Update() {
 		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepQitmeerWork()
 		this.header.PackagePoolHeader(this.Work,pow.CUCKATOO)
 	} else {
-		this.header.HeaderBlock.ExNonce = uint64(this.CurrentWorkID)
+		randStr := fmt.Sprintf("%s%d",this.Cfg.SoloConfig.RandStr,this.CurrentWorkID)
+		_ = this.Work.Block.CalcCoinBase(randStr,this.Cfg.SoloConfig.MinerAddr)
+		txHash := this.Work.Block.BuildMerkleTreeStore(int(this.MinerId))
+		this.header.PackageRpcHeader(this.Work)
+		this.header.HeaderBlock.TxRoot = txHash
 	}
 }
 
@@ -131,9 +135,7 @@ func (this *Cuckatoo) Mine() {
 				TargetDiff:&big.Int{},
 				JobID:"",
 			}
-			if !this.Pool {
-				this.header.PackageRpcHeader(this.Work)
-			}
+
 			for {
 				if this.HasNewWork {
 					break
