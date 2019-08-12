@@ -4,13 +4,13 @@
 package qitmeer
 
 import (
+	"encoding/binary"
+	"encoding/hex"
 	"github.com/HalalChain/qitmeer-lib/common/hash"
 	"github.com/HalalChain/qitmeer-lib/core/address"
+	s "github.com/HalalChain/qitmeer-lib/core/serialization"
 	"github.com/HalalChain/qitmeer-lib/core/types"
 	"github.com/HalalChain/qitmeer-lib/engine/txscript"
-	"encoding/hex"
-	"encoding/binary"
-	s "github.com/HalalChain/qitmeer-lib/core/serialization"
 	"github.com/HalalChain/qitmeer-lib/params"
 	"log"
 	"qitmeer-miner/common"
@@ -38,7 +38,7 @@ func qitmeerCoinBase(coinbaseVal int, coinbaseScript []byte, opReturnPkScript []
 		PreviousOut: *types.NewOutPoint(&hash.Hash{},
 			types.MaxPrevOutIndex),
 		Sequence:    types.MaxTxInSequenceNum,
-		BlockHeight: types.NullBlockHeight,
+		BlockOrder: types.NullBlockOrder,
 		TxIndex:     types.NullTxIndex,
 		SignScript:  coinbaseScript,
 	})
@@ -169,15 +169,9 @@ func (h *BlockHeader) CalcCoinBase(coinbaseStr string,payAddress string) error{
 		log.Println(err)
 		return err
 	}
-	txBuf,err := coinbaseTx.Tx.Serialize(types.TxSerializeFull)
-	if err != nil {
-		context := "Failed to serialize transaction"
-		log.Println(context)
-		return err
-	}
+	transactions := make(Transactionses,0)
+	totalTxFee := int64(0)
 	if !h.HasCoinbasePack {
-
-		transactions := make(Transactionses,0)
 		for i:=0;i<len(h.Transactions);i++{
 			transactions = append(transactions,h.Transactions[i])
 		}
@@ -186,15 +180,29 @@ func (h *BlockHeader) CalcCoinBase(coinbaseStr string,payAddress string) error{
 			//max has 1000 trx
 			transactions = transactions[:999]
 		}
-		newtransactions := make(Transactionses,0)
-		newtransactions = append(newtransactions,Transactions{coinbaseTx.Tx.TxHashFull(),hex.EncodeToString(txBuf),h.Coinbasevalue})
 		for i:=0;i<len(transactions);i++{
-			newtransactions = append(newtransactions,transactions[i])
+			totalTxFee += transactions[i].Fee
 		}
+	} else{
+		for i:=1;i<len(h.Transactions);i++{
+			totalTxFee += h.Transactions[i].Fee
+		}
+	}
+	coinbaseTx.Tx.TxOut[2].Amount += uint64(totalTxFee)
+	txBuf,err := coinbaseTx.Tx.Serialize(types.TxSerializeFull)
+	if err != nil {
+		context := "Failed to serialize transaction"
+		log.Println(context)
+		return err
+	}
+	if !h.HasCoinbasePack {
+		newtransactions := make(Transactionses,0)
+		newtransactions = append(newtransactions,Transactions{coinbaseTx.Tx.TxHashFull(),hex.EncodeToString(txBuf),0})
+		newtransactions = append(newtransactions,transactions...)
 		h.Transactions = newtransactions
 		h.HasCoinbasePack = true
 	} else {
-		h.Transactions[0] = Transactions{coinbaseTx.Tx.TxHashFull(),hex.EncodeToString(txBuf),h.Coinbasevalue}
+		h.Transactions[0] = Transactions{coinbaseTx.Tx.TxHashFull(),hex.EncodeToString(txBuf),0}
 	}
 	return nil
 }

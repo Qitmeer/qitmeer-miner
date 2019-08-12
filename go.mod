@@ -4,8 +4,6 @@ go 1.12
 
 require (
 	github.com/HalalChain/go-opencl v0.0.0-20190704222003-c93200893312
-	github.com/HalalChain/qitmeer-lib v0.0.0-20190708060928-91b89dc718d2
-
 )
 
 replace (
