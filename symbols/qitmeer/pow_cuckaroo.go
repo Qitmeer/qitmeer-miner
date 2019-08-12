@@ -128,6 +128,12 @@ func (this *Cuckaroo) Mine() {
 			}
 			this.Update()
 			for nonce := 0;nonce <= 1 << 32 ;nonce++{
+				defer func() {
+					err := recover()
+					if err != nil {
+						log.Println("[error]",err)
+					}
+				}()
 				if this.HasNewWork {
 					break
 				}

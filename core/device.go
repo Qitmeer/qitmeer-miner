@@ -6,10 +6,10 @@ package core
 
 import (
 	"github.com/HalalChain/go-opencl/cl"
-	"qitmeer-miner/common"
 	"log"
 	"math"
 	"os"
+	"qitmeer-miner/common"
 	"sync"
 	"time"
 )
@@ -70,6 +70,12 @@ func (this *Device)Mine()  {
 }
 
 func (this *Device)Update()  {
+	defer func() {
+		err := recover()
+		if err != nil {
+			log.Println("[error]",err)
+		}
+	}()
 	this.CurrentWorkID = <- common.RandGenerator(2<<32)
 }
 
