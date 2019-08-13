@@ -87,5 +87,4 @@ func (this *MinerBlockData)PackageRpcHeader(work *QitmeerWork)  {
 	this.HeaderBlock.Difficulty = work.Block.Difficulty
 	this.HeaderBlock.Timestamp = time.Unix(int64(work.Block.Curtime), 0)
 	this.HeaderBlock.Pow = pow.GetInstance(work.Block.Pow.GetPowType(),binary.LittleEndian.Uint64(bitesBy),[]byte{})
-
 }

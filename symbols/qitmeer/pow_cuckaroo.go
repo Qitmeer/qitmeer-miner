@@ -14,12 +14,12 @@ import (
 	cuckaroo "github.com/HalalChain/qitmeer-lib/crypto/cuckoo"
 	"github.com/HalalChain/qitmeer-lib/crypto/cuckoo/siphash"
 	"github.com/HalalChain/qitmeer-lib/params"
+	"log"
+	"math/big"
 	"qitmeer-miner/common"
 	"qitmeer-miner/core"
 	"qitmeer-miner/cuckoo"
 	"qitmeer-miner/kernel"
-	"log"
-	"math/big"
 	"sort"
 	"sync/atomic"
 	"unsafe"
@@ -49,6 +49,8 @@ type Cuckaroo struct {
 	Work                  *QitmeerWork
 	header MinerBlockData
 }
+
+const EDGE_BITS = 24
 
 func (this *Cuckaroo) InitDevice() {
 	this.Device.InitDevice()
@@ -221,12 +223,16 @@ func (this *Cuckaroo) Mine() {
 				}
 				powStruct := this.header.HeaderBlock.Pow.(*pow.Cuckaroo)
 				powStruct.SetCircleEdges(this.Nonces)
-				powStruct.SetEdgeBits(24)
-				powStruct.SetScale(uint32(params.TestPowNetParams.PowConfig.CuckatooScale))
+				powStruct.SetEdgeBits(EDGE_BITS)
+				powStruct.SetScale(uint32(params.TestPowNetParams.PowConfig.CuckarooDiffScale))
 				powStruct.SetNonce(nonce)
-				err := powStruct.Verify(this.header.HeaderBlock.BlockData(),uint64(this.header.HeaderBlock.Difficulty))
+				err := cuckaroo.VerifyCuckaroo(hdrkey[:],this.Nonces[:],uint(EDGE_BITS))
 				if err != nil{
-					log.Println("[error]",err)
+					log.Println("[error]Verify Error!",err)
+					continue
+				}
+				if pow.CalcCuckooDiff(int64(params.TestPowNetParams.PowConfig.CuckarooDiffScale),powStruct.GetBlockHash([]byte{})) < this.header.HeaderBlock.Difficulty{
+					log.Println("difficulty is too easy!")
 					continue
 				}
 				log.Println("[Found Hash]",this.header.HeaderBlock.BlockHash())

@@ -3,6 +3,7 @@ package qitmeer
 import (
 	"bytes"
 	"github.com/HalalChain/qitmeer-lib/common/hash"
+	"github.com/HalalChain/qitmeer-lib/core/json"
 	s "github.com/HalalChain/qitmeer-lib/core/serialization"
 	"github.com/HalalChain/qitmeer-lib/core/types"
 	"github.com/HalalChain/qitmeer-lib/core/types/pow"
@@ -24,15 +25,13 @@ type BlockHeader struct {
 	// can all of the state data (stake, receipt, utxo) in state root?
 	StateRoot hash.Hash `json:"stateroot"`
 
-	// Difficulty target for tx
-	Difficulty   uint32         `json:"difficulty"`
 	Transactions []Transactions `json:"transactions"`
 	Parents []ParentItems `json:"parents"`
 	// Difficulty target for tx
-	Bits string `json:"blake2bd_bits"`
 
 	// block number
 	Height uint64 `json:"height"`
+	Difficulty uint64 `json:"difficulty"`
 
 	// TimeStamp
 	Curtime uint32 `json:"curtime"`
@@ -40,11 +39,9 @@ type BlockHeader struct {
 	Pow pow.IPow
 
 	// Nonce
-	Target string `json:"blake2bd_target"`
-	CuckarooTarget uint64 `json:"cuckaroo_target"`
-	CuckatooTarget uint64 `json:"cuckatoo_target"`
-	CuckarooScale uint64 `json:"cuckaroo_scale"`
-	CuckatooScale uint64 `json:"cuckatoo_scale"`
+	Target string `json:"target"`
+
+	PowDiffReference json.PowDiffReference `json:"pow_diff_reference"`
 
 	Coinbasevalue   int64 `json:"coinbasevalue"`
 	HasCoinbasePack bool
@@ -61,7 +58,7 @@ func BlockDataWithProof(h *types.BlockHeader) []byte {
 func writeBlockHeaderWithProof(w io.Writer, pver uint32, bh *types.BlockHeader) error {
 	sec := bh.Timestamp.Unix()
 	return s.WriteElements(w, bh.Version, &bh.ParentRoot, &bh.TxRoot,
-		&bh.StateRoot, bh.Difficulty, sec, bh.Pow)
+		&bh.StateRoot, bh.Difficulty, sec, &bh.Pow)
 }
 
 // readBlockHeader reads a block header from io reader.  See Deserialize for

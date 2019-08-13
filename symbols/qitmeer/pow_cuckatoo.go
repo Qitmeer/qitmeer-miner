@@ -17,6 +17,7 @@ import (
 	"github.com/HalalChain/go-opencl/cl"
 	"github.com/HalalChain/qitmeer-lib/common/hash"
 	"github.com/HalalChain/qitmeer-lib/core/types/pow"
+	"github.com/HalalChain/qitmeer-lib/crypto/cuckoo"
 	"github.com/HalalChain/qitmeer-lib/crypto/cuckoo/siphash"
 	"github.com/HalalChain/qitmeer-lib/params"
 	"log"
@@ -223,11 +224,15 @@ func (this *Cuckatoo) Mine() {
 				powStruct := this.header.HeaderBlock.Pow.(*pow.Cuckatoo)
 				powStruct.SetCircleEdges(this.Nonces)
 				powStruct.SetNonce(nonce)
-				powStruct.SetEdgeBits(29)
-				powStruct.SetScale(uint32(params.TestPowNetParams.PowConfig.CuckatooScale))
-				err := powStruct.Verify(this.header.HeaderBlock.BlockData(),uint64(this.header.HeaderBlock.Difficulty))
+				powStruct.SetEdgeBits(edges_bits)
+				powStruct.SetScale(uint32(params.TestPowNetParams.PowConfig.CuckatooDiffScale))
+				err := cuckoo.VerifyCuckatoo(hdrkey[:],this.Nonces[:],uint(edges_bits))
 				if err != nil{
-					log.Println("[error]",err)
+					log.Println("[error]Verify Error!",err)
+					continue
+				}
+				if pow.CalcCuckooDiff(int64(params.TestPowNetParams.PowConfig.CuckatooDiffScale),powStruct.GetBlockHash([]byte{})) < this.header.HeaderBlock.Difficulty{
+					log.Println("difficulty is too easy!")
 					continue
 				}
 				log.Println("[Found Hash]",this.header.HeaderBlock.BlockHash())

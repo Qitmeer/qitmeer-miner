@@ -50,7 +50,7 @@ func (this *Blake2bD) InitDevice() {
 		this.IsValid = false
 		return
 	}
-	this.BlockObj, err = this.Context.CreateEmptyBuffer(cl.MemReadOnly, 120)
+	this.BlockObj, err = this.Context.CreateEmptyBuffer(cl.MemReadOnly, 128)
 	if err != nil {
 		log.Println("-", this.MinerId, err)
 		this.IsValid = false

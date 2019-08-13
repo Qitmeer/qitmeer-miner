@@ -4,7 +4,6 @@
 package qitmeer
 
 import (
-	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -12,7 +11,6 @@ import (
 	"github.com/HalalChain/qitmeer-lib/core/types/pow"
 	"log"
 	"qitmeer-miner/core"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -63,22 +61,22 @@ func (this *QitmeerWork) Get () bool {
 	switch this.Cfg.NecessaryConfig.Pow {
 	case POW_DOUBLE_BLAKE2B:
 		blockTemplate.Result.Pow = pow.GetInstance(pow.BLAKE2BD,0,[]byte{})
-		diff, _ := strconv.ParseUint(blockTemplate.Result.Bits, 16, 32)
-		diffi := make([]byte,4)
-		binary.LittleEndian.PutUint32(diffi, uint32(diff))
-		blockTemplate.Result.Difficulty = binary.LittleEndian.Uint32(diffi)
+		target := blockTemplate.Result.PowDiffReference.Blake2bTarget
+		blockTemplate.Result.Difficulty = blockTemplate.Result.PowDiffReference.Blake2bDifficulty
+		blockTemplate.Result.Target = target
 	case POW_CUCKROO:
 		blockTemplate.Result.Pow = pow.GetInstance(pow.CUCKAROO,0,[]byte{})
 		powStruct := blockTemplate.Result.Pow.(*pow.Cuckaroo)
-		powStruct.SetScale(uint32(blockTemplate.Result.CuckarooScale))
+		powStruct.SetScale(uint32(blockTemplate.Result.PowDiffReference.CuckarooDiffScale))
 		powStruct.SetEdgeBits(24)
-		blockTemplate.Result.Difficulty = uint32(blockTemplate.Result.CuckarooTarget)
+		blockTemplate.Result.Difficulty = blockTemplate.Result.PowDiffReference.CuckarooMinDiff
+		log.Println(blockTemplate.Result.Difficulty)
 	case POW_CUCKTOO:
 		blockTemplate.Result.Pow = pow.GetInstance(pow.CUCKATOO,0,[]byte{})
 		powStruct := blockTemplate.Result.Pow.(*pow.Cuckatoo)
-		powStruct.SetScale(uint32(blockTemplate.Result.CuckatooScale))
+		powStruct.SetScale(uint32(blockTemplate.Result.PowDiffReference.CuckatooDiffScale))
 		powStruct.SetEdgeBits(29)
-		blockTemplate.Result.Difficulty = uint32(blockTemplate.Result.CuckatooTarget)
+		blockTemplate.Result.Difficulty = blockTemplate.Result.PowDiffReference.CuckatooMinDiff
 	}
 
 	blockTemplate.Result.HasCoinbasePack = false
