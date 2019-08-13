@@ -130,9 +130,7 @@ func (this *Cuckaroo) Mine() {
 				if this.HasNewWork {
 					break
 				}
-				xnonce1 := <- common.RandGenerator(2<<32)
-				xnonce2 := <- common.RandGenerator(2<<32)
-				nonce := uint64(xnonce1) + uint64(xnonce2) + 0x00FE00000F00000000
+				nonce ,_:= common.RandUint64()
 				this.header.HeaderBlock.Pow.SetNonce(nonce)
 				hdrkey := hash.HashH(this.header.HeaderBlock.BlockData())
 				if this.Cfg.OptionConfig.CPUMiner{

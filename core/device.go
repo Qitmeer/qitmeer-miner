@@ -42,7 +42,7 @@ type Device struct{
 	ClDevice         *cl.Device
 	Started          uint32
 	GlobalItemSize int
-	CurrentWorkID uint32
+	CurrentWorkID uint64
 	Quit chan os.Signal //must init
 	sync.Mutex
 	Wg sync.WaitGroup
@@ -77,8 +77,12 @@ func (this *Device)SetNewWork(work BaseWork) {
 	this.NewWork <- work
 }
 
-func (this *Device)Update()  {
-	this.CurrentWorkID = <- common.RandGenerator(2<<32)
+func (this *Device)Update() {
+	var err error
+	this.CurrentWorkID,err = common.RandUint64()
+	if err != nil{
+		this.CurrentWorkID++
+	}
 }
 
 func (this *Device)InitDevice()  {
