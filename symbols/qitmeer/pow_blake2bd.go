@@ -89,7 +89,7 @@ func (this *Blake2bD) Update() {
 		//randstr := fmt.Sprintf("%dqitmeerminer%d",this.CurrentWorkID,this.MinerId)
 		//byt := []byte(randstr)[:4]
 		//this.Work.PoolWork.ExtraNonce2 = hex.EncodeToString(byt)
-		this.Work.PoolWork.ExtraNonce2 = fmt.Sprintf("%08x", this.CurrentWorkID)
+		this.Work.PoolWork.ExtraNonce2 = fmt.Sprintf("%08x", uint32(this.CurrentWorkID))
 		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepQitmeerWork()
 	} else {
 		randStr := fmt.Sprintf("%s%d%d", this.Cfg.SoloConfig.RandStr, this.MinerId, this.CurrentWorkID)
