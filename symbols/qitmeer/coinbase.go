@@ -172,13 +172,23 @@ func (h *BlockHeader) CalcCoinBase(coinbaseStr string,payAddress string) error{
 	transactions := make(Transactionses,0)
 	totalTxFee := int64(0)
 	if !h.HasCoinbasePack {
+		tmpTrx := make(Transactionses,0)
 		for i:=0;i<len(h.Transactions);i++{
-			transactions = append(transactions,h.Transactions[i])
+			tmpTrx = append(transactions,h.Transactions[i])
 		}
 		sort.Sort(transactions)
-		if len(transactions) > 999{
-			//max has 1000 trx
-			transactions = transactions[:999]
+		allSigCount := 0
+		//every time pack max 1000 transactions and max 5000 sign scripts
+		txCount := len(tmpTrx)
+		if txCount>MAX_TX_COUNT{
+			txCount = MAX_TX_COUNT
+		}
+		for i:=0;i<txCount;i++{
+			if allSigCount > MAX_SIG_COUNT - 1{
+				break
+			}
+			transactions = append(transactions,tmpTrx[i])
+			allSigCount += tmpTrx[i].GetSigCount()
 		}
 		for i:=0;i<len(transactions);i++{
 			totalTxFee += transactions[i].Fee
