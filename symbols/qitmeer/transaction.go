@@ -34,8 +34,7 @@ func (p Transactionses) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
 
 func (this *Transactions) GetSigCount() int{
 	txBytes,_ := hex.DecodeString(this.Data)
-	var mtx *message.MsgTx
-	mtx = new(message.MsgTx)
+	var mtx = new(message.MsgTx)
 	_ = mtx.Decode(bytes.NewReader(txBytes),protocol.ProtocolVersion)
 	return len(mtx.Tx.TxOut)
 }
