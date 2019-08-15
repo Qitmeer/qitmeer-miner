@@ -105,6 +105,8 @@ func FormatHashRate(h float64) string {
 		return fmt.Sprintf("%.1fkH/s", h/1000)
 	} else if h == 0 {
 		return "0H/s"
+	} else if h > 1000000000000 {
+		return fmt.Sprintf("%.3fTH/s", h/1000000000000)
 	}
 
 	return fmt.Sprintf("%.1f GH/s", h)
