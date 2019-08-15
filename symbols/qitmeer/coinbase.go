@@ -174,7 +174,7 @@ func (h *BlockHeader) CalcCoinBase(coinbaseStr string,payAddress string) error{
 	if !h.HasCoinbasePack {
 		tmpTrx := make(Transactionses,0)
 		for i:=0;i<len(h.Transactions);i++{
-			tmpTrx = append(transactions,h.Transactions[i])
+			tmpTrx = append(tmpTrx,h.Transactions[i])
 		}
 		sort.Sort(transactions)
 		allSigCount := 0
