@@ -120,9 +120,11 @@ func (this *Device)Status()  {
 				return
 			}
 			secondsElapsed := uint32(time.Now().Unix()) - this.Started
-			diffOneShareHashesAvg := uint64(0x00000000FFFFFFFF)
-			averageHashRate := (float64(diffOneShareHashesAvg) *
-				float64(this.AllDiffOneShares)) /
+			//diffOneShareHashesAvg := uint64(0x00000000FFFFFFFF)
+			if this.AllDiffOneShares <= 0{
+				continue
+			}
+			averageHashRate := float64(this.AllDiffOneShares) /
 				float64(secondsElapsed)
 			log.Printf("DEVICE_ID #%d (%s) %v",
 				this.MinerId,
