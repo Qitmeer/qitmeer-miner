@@ -10,10 +10,11 @@ import (
 	"net"
 	"net/http"
 	"qitmeer-miner/common/socks"
+	"time"
 )
 const (
 	MaxIdleConnections int = 20
-	RequestTimeout     int = 5
+	RequestTimeout      = 60
 )
 
 type RpcClient struct {
@@ -62,8 +63,8 @@ func (rpc *RpcClient)newHTTPClient() (*http.Client, error) {
 			Dial:            dial,
 			TLSClientConfig: tlsConfig,
 			DialContext: (&net.Dialer{
-				//Timeout:   5 * time.Second,
-				//KeepAlive: 5 * time.Second,
+				Timeout:   RequestTimeout * time.Second,
+				KeepAlive: RequestTimeout * time.Second,
 				DualStack: true,
 			}).DialContext,
 		},
@@ -101,7 +102,7 @@ func (rpc *RpcClient)RpcResult(method string,params []interface{}) []byte{
 		log.Println("rpc auth faild",err)
 		return nil
 	}
-	//httpClient.Timeout = 5*time.Second
+	httpClient.Timeout = RequestTimeout*time.Second
 	httpResponse, err := httpClient.Do(httpRequest)
 
 	if err != nil {
