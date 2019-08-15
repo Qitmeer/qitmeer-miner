@@ -176,7 +176,7 @@ func (h *BlockHeader) CalcCoinBase(coinbaseStr string,payAddress string) error{
 		for i:=0;i<len(h.Transactions);i++{
 			tmpTrx = append(tmpTrx,h.Transactions[i])
 		}
-		sort.Sort(transactions)
+		sort.Sort(tmpTrx)
 		allSigCount := 0
 		//every time pack max 1000 transactions and max 5000 sign scripts
 		txCount := len(tmpTrx)
