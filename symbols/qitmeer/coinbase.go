@@ -183,6 +183,7 @@ func (h *BlockHeader) CalcCoinBase(coinbaseStr string,payAddress string) error{
 		if txCount>MAX_TX_COUNT{
 			txCount = MAX_TX_COUNT
 		}
+		log.Println("当前交易数:",len(tmpTrx))
 		for i:=0;i<txCount;i++{
 			if allSigCount > MAX_SIG_COUNT - 1{
 				break
@@ -190,6 +191,7 @@ func (h *BlockHeader) CalcCoinBase(coinbaseStr string,payAddress string) error{
 			transactions = append(transactions,tmpTrx[i])
 			allSigCount += tmpTrx[i].GetSigCount()
 		}
+		log.Println("当前打包签名数:",allSigCount)
 		for i:=0;i<len(transactions);i++{
 			totalTxFee += transactions[i].Fee
 		}
