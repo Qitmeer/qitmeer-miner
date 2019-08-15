@@ -1,15 +1,14 @@
 package common
 
 import (
-	"net/http"
-	"net"
+	"bytes"
 	"crypto/tls"
-	"io/ioutil"
 	"crypto/x509"
 	"encoding/json"
-	"bytes"
+	"io/ioutil"
 	"log"
-	"time"
+	"net"
+	"net/http"
 	"qitmeer-miner/common/socks"
 )
 const (
@@ -63,8 +62,8 @@ func (rpc *RpcClient)newHTTPClient() (*http.Client, error) {
 			Dial:            dial,
 			TLSClientConfig: tlsConfig,
 			DialContext: (&net.Dialer{
-				Timeout:   5 * time.Second,
-				KeepAlive: 5 * time.Second,
+				//Timeout:   5 * time.Second,
+				//KeepAlive: 5 * time.Second,
 				DualStack: true,
 			}).DialContext,
 		},
@@ -102,7 +101,7 @@ func (rpc *RpcClient)RpcResult(method string,params []interface{}) []byte{
 		log.Println("rpc auth faild",err)
 		return nil
 	}
-	httpClient.Timeout = 5*time.Second
+	//httpClient.Timeout = 5*time.Second
 	httpResponse, err := httpClient.Do(httpRequest)
 
 	if err != nil {
