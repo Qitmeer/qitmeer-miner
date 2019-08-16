@@ -354,6 +354,10 @@ func (s *QitmeerStratum) Unmarshal(blob []byte) (interface{}, error) {
 			return nil, err
 		}
 		var nres = NotifyRes{}
+		if len(resi) < 12 {
+			log.Println("[error pool notify data]",resi)
+			return nil, errors.New("data error")
+		}
 		jobID, ok := resi[0].(string)
 		if !ok {
 			return nil, core.ErrJsonType

@@ -26,7 +26,7 @@ var (
 	defaultIntensity = 24
 	defaultTrimmerCount = 40
 	defaultWorkSize = 256
-	minIntensity  = 8
+	minIntensity  = 1
 	defaultRpcMinerLog  = GetCurrentDir() + "/miner.log"
 	maxIntensity  = 31
 	maxWorkSize   = uint32(0xFFFFFFFF - 255)
