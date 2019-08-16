@@ -106,7 +106,6 @@ func (this *Blake2bD) Update() {
 func (this *Blake2bD) Mine() {
 	this.Transactions = make(map[int][]Transactions)
 	defer this.Release()
-	this.Started = uint32(time.Now().Unix())
 	for {
 		select {
 		case w := <-this.NewWork:
@@ -125,7 +124,8 @@ func (this *Blake2bD) Mine() {
 		if len(this.Work.PoolWork.WorkData) <= 0 && this.Work.Block.Height <= 0 {
 			continue
 		}
-
+		this.Started = uint32(time.Now().Unix())
+		this.AllDiffOneShares = 0
 		this.HasNewWork = false
 		offset := 0
 		this.CurrentWorkID = 0
