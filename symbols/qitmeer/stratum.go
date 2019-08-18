@@ -465,6 +465,7 @@ func (s *NotifyWork) PrepQitmeerWork() []byte {
 	coinbase := common.ConvertHashToString(qitmeer.DoubleHashH(coinbase1D)) + s.CB3
 	coinbaseD,_ := hex.DecodeString(coinbase)
 	coinbaseH := qitmeer.DoubleHashH(coinbaseD)
+	log.Println("coinbase hash:",coinbaseH)
 	coinbase_hash_bin := coinbaseH[:]
 	merkle_root := string(coinbase_hash_bin)
 	for _,h := range s.MerkleBranches {
