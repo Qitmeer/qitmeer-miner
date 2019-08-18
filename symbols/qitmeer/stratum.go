@@ -132,7 +132,7 @@ func (this *QitmeerStratum)HandleReply()  {
 		case StratumMsg:
 			this.handleStratumMsg(resp)
 		case NotifyRes:
-			log.Println("【notify message】: ", data)
+			log.Println("【pool notify message】: ", data)
 			this.handleNotifyRes(resp)
 		case *SubscribeReply:
 			this.handleSubscribeReply(resp)
@@ -234,8 +234,9 @@ func (s *QitmeerStratum) handleNotifyRes(resp interface{}) {
 	s.PoolWork.CB3 = nResp.CB3
 	s.PoolWork.Nbits = nResp.Nbits
 	s.PoolWork.Version = nResp.BlockVersion
-	s.PoolWork.Height = nResp.Height
-	s.PoolWork.StateRoot = nResp.StateRoot
+	s.PoolWork.Height = 0
+	stateRoot := make([]byte,32)
+	s.PoolWork.StateRoot = hex.EncodeToString(stateRoot)
 	s.PoolWork.NewWork = true
 	parsedNtime, err := strconv.ParseInt(nResp.Ntime, 16, 64)
 	if err != nil {
@@ -243,7 +244,7 @@ func (s *QitmeerStratum) handleNotifyRes(resp interface{}) {
 	}
 	//sync the pool base difficulty
 	s.Target, _ = common.DiffToTarget(s.Diff, s.CalcBasePowLimit())
-	log.Println(fmt.Sprintf("[Pool Base nbits]:%s\n[Pool diffculty]:%f\n[Pool target]:%064x",s.PoolWork.Nbits,s.Diff,s.Target))
+	log.Println(fmt.Sprintf("[Pool Base nbits]:%s\n[Pool diffculty]:%f ----- [Pool target]:%064x",s.PoolWork.Nbits,s.Diff,s.Target))
 	s.PoolWork.Ntime = nResp.Ntime
 	s.PoolWork.NtimeDelta = parsedNtime - time.Now().Unix()
 	log.Println("Notify Clean:",nResp.CleanJobs)
@@ -354,7 +355,7 @@ func (s *QitmeerStratum) Unmarshal(blob []byte) (interface{}, error) {
 			return nil, err
 		}
 		var nres = NotifyRes{}
-		if len(resi) < 12 {
+		if len(resi) < 9 {
 			log.Println("[error pool notify data]",resi)
 			return nil, errors.New("data error")
 		}
@@ -403,6 +404,9 @@ func (s *QitmeerStratum) Unmarshal(blob []byte) (interface{}, error) {
 			return nil, core.ErrJsonType
 		}
 		nres.CleanJobs = cleanJobs
+		if len(resi) < 10{
+			return nres, nil
+		}
 		stateRoot, ok := resi[9].(string)
 		if !ok {
 			return nil, core.ErrJsonType
@@ -461,6 +465,7 @@ func (s *NotifyWork) PrepQitmeerWork() []byte {
 	coinbase := common.ConvertHashToString(qitmeer.DoubleHashH(coinbase1D)) + s.CB3
 	coinbaseD,_ := hex.DecodeString(coinbase)
 	coinbaseH := qitmeer.DoubleHashH(coinbaseD)
+	log.Println("coinbase hash:",coinbaseH)
 	coinbase_hash_bin := coinbaseH[:]
 	merkle_root := string(coinbase_hash_bin)
 	for _,h := range s.MerkleBranches {
@@ -485,7 +490,7 @@ func (s *NotifyWork) PrepQitmeerWork() []byte {
 	copy(ntime[4:8],ctime1[:])
 	binary.LittleEndian.PutUint64(h,uint64(s.Height))
 	blockheader := s.Version + prevHash + merkleRootStr + s.StateRoot + s.Nbits + hex.EncodeToString(h) + hex.EncodeToString(ntime) + nonceStr
-	//fmt.Println("s.PoolWork.Version + prevHash + merkleRootStr + s.PoolWork.StateRoot + s.PoolWork.Nbits + hex.EncodeToString(h) + hex.EncodeToString(ntime) + nonceStr\n",s.Version,prevHash,merkleRootStr,s.StateRoot,s.Nbits,hex.EncodeToString(h),hex.EncodeToString(ntime),nonceStr)
+	fmt.Println("s.PoolWork.Version + prevHash + merkleRootStr + s.PoolWork.StateRoot + s.PoolWork.Nbits + hex.EncodeToString(h) + hex.EncodeToString(ntime) + nonceStr\n",s.Version,prevHash,merkleRootStr,s.StateRoot,s.Nbits,hex.EncodeToString(h),hex.EncodeToString(ntime),nonceStr)
 	workData ,_:= hex.DecodeString(blockheader)
 	return workData
 }
@@ -524,6 +529,6 @@ func (s *QitmeerStratum) PrepSubmit(data []byte,jobID string,ExtraNonce2 string)
 		return sub, ErrStratumStaleWork
 	}
 	sub.Params = []string{s.Cfg.PoolConfig.PoolUser, jobID, ExtraNonce2, timestampStr,nonceStr}
-	log.Println("【submit】",sub.Params)
+	log.Println("【submit】{PoolUser, jobID, ExtraNonce2, timestampStr,nonceStr}:",sub.Params)
 	return sub, nil
 }
