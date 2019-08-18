@@ -132,7 +132,7 @@ func (this *QitmeerStratum)HandleReply()  {
 		case StratumMsg:
 			this.handleStratumMsg(resp)
 		case NotifyRes:
-			log.Println("【notify message】: ", data)
+			log.Println("【pool notify message】: ", data)
 			this.handleNotifyRes(resp)
 		case *SubscribeReply:
 			this.handleSubscribeReply(resp)
@@ -244,7 +244,7 @@ func (s *QitmeerStratum) handleNotifyRes(resp interface{}) {
 	}
 	//sync the pool base difficulty
 	s.Target, _ = common.DiffToTarget(s.Diff, s.CalcBasePowLimit())
-	log.Println(fmt.Sprintf("[Pool Base nbits]:%s\n[Pool diffculty]:%f\n[Pool target]:%064x",s.PoolWork.Nbits,s.Diff,s.Target))
+	log.Println(fmt.Sprintf("[Pool Base nbits]:%s\n[Pool diffculty]:%f ----- [Pool target]:%064x",s.PoolWork.Nbits,s.Diff,s.Target))
 	s.PoolWork.Ntime = nResp.Ntime
 	s.PoolWork.NtimeDelta = parsedNtime - time.Now().Unix()
 	log.Println("Notify Clean:",nResp.CleanJobs)
@@ -489,7 +489,7 @@ func (s *NotifyWork) PrepQitmeerWork() []byte {
 	copy(ntime[4:8],ctime1[:])
 	binary.LittleEndian.PutUint64(h,uint64(s.Height))
 	blockheader := s.Version + prevHash + merkleRootStr + s.StateRoot + s.Nbits + hex.EncodeToString(h) + hex.EncodeToString(ntime) + nonceStr
-	//fmt.Println("s.PoolWork.Version + prevHash + merkleRootStr + s.PoolWork.StateRoot + s.PoolWork.Nbits + hex.EncodeToString(h) + hex.EncodeToString(ntime) + nonceStr\n",s.Version,prevHash,merkleRootStr,s.StateRoot,s.Nbits,hex.EncodeToString(h),hex.EncodeToString(ntime),nonceStr)
+	fmt.Println("s.PoolWork.Version + prevHash + merkleRootStr + s.PoolWork.StateRoot + s.PoolWork.Nbits + hex.EncodeToString(h) + hex.EncodeToString(ntime) + nonceStr\n",s.Version,prevHash,merkleRootStr,s.StateRoot,s.Nbits,hex.EncodeToString(h),hex.EncodeToString(ntime),nonceStr)
 	workData ,_:= hex.DecodeString(blockheader)
 	return workData
 }
@@ -528,6 +528,6 @@ func (s *QitmeerStratum) PrepSubmit(data []byte,jobID string,ExtraNonce2 string)
 		return sub, ErrStratumStaleWork
 	}
 	sub.Params = []string{s.Cfg.PoolConfig.PoolUser, jobID, ExtraNonce2, timestampStr,nonceStr}
-	log.Println("【submit】",sub.Params)
+	log.Println("【submit】{PoolUser, jobID, ExtraNonce2, timestampStr,nonceStr}:",sub.Params)
 	return sub, nil
 }
