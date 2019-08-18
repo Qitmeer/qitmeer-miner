@@ -234,8 +234,9 @@ func (s *QitmeerStratum) handleNotifyRes(resp interface{}) {
 	s.PoolWork.CB3 = nResp.CB3
 	s.PoolWork.Nbits = nResp.Nbits
 	s.PoolWork.Version = nResp.BlockVersion
-	s.PoolWork.Height = nResp.Height
-	s.PoolWork.StateRoot = nResp.StateRoot
+	s.PoolWork.Height = 0
+	stateRoot := make([]byte,32)
+	s.PoolWork.StateRoot = hex.EncodeToString(stateRoot)
 	s.PoolWork.NewWork = true
 	parsedNtime, err := strconv.ParseInt(nResp.Ntime, 16, 64)
 	if err != nil {
@@ -354,7 +355,7 @@ func (s *QitmeerStratum) Unmarshal(blob []byte) (interface{}, error) {
 			return nil, err
 		}
 		var nres = NotifyRes{}
-		if len(resi) < 12 {
+		if len(resi) < 9 {
 			log.Println("[error pool notify data]",resi)
 			return nil, errors.New("data error")
 		}
@@ -403,6 +404,9 @@ func (s *QitmeerStratum) Unmarshal(blob []byte) (interface{}, error) {
 			return nil, core.ErrJsonType
 		}
 		nres.CleanJobs = cleanJobs
+		if len(resi) < 10{
+			return nres, nil
+		}
 		stateRoot, ok := resi[9].(string)
 		if !ok {
 			return nil, core.ErrJsonType
