@@ -244,7 +244,7 @@ func (s *QitmeerStratum) handleNotifyRes(resp interface{}) {
 	}
 	//sync the pool base difficulty
 	s.Target, _ = common.DiffToTarget(s.Diff, s.CalcBasePowLimit())
-	log.Println(fmt.Sprintf("[Pool Base nbits]:%s\n[Pool diffculty]:%f ----- [Pool target]:%064x",s.PoolWork.Nbits,s.Diff,s.Target))
+	//log.Println(fmt.Sprintf("[Pool Base nbits]:%s\n[Pool diffculty]:%f ----- [Pool target]:%064x",s.PoolWork.Nbits,s.Diff,s.Target))
 	s.PoolWork.Ntime = nResp.Ntime
 	s.PoolWork.NtimeDelta = parsedNtime - time.Now().Unix()
 	log.Println("Notify Clean:",nResp.CleanJobs)
@@ -446,7 +446,7 @@ func (s *QitmeerStratum) Unmarshal(blob []byte) (interface{}, error) {
 		var param []string
 		param = append(param, diffStr)
 		nres.Params = param
-		log.Println("【pool reply】Stratum difficulty set to", difficulty)
+		//log.Println("【pool reply】Stratum difficulty set to", difficulty)
 		return nres, nil
 	default:
 		resp := &BasicReply{}
@@ -461,11 +461,17 @@ func (s *QitmeerStratum) Unmarshal(blob []byte) (interface{}, error) {
 
 func (s *NotifyWork) PrepQitmeerWork() []byte {
 	coinbase1 := s.CB1 + s.ExtraNonce1 + s.ExtraNonce2+ s.CB2
+	
+	 witness, _ := hex.DecodeString("0100020001000000000000000000000000FFFFFFFF0b00002f7169746d6565722f")
+		witnessHash := qitmeer.DoubleHashH(witness)
+
+		
+	
 	coinbase1D,_ := hex.DecodeString(coinbase1)
-	coinbase := common.ConvertHashToString(qitmeer.DoubleHashH(coinbase1D)) + s.CB3
+	coinbase := common.ConvertHashToString(qitmeer.DoubleHashH(coinbase1D)) + hex.EncodeToString(witnessHash[:])//+ s.CB3
 	coinbaseD,_ := hex.DecodeString(coinbase)
 	coinbaseH := qitmeer.DoubleHashH(coinbaseD)
-	log.Println("coinbase hash:",coinbaseH)
+	//log.Println("coinbase hash:",coinbaseH)
 	coinbase_hash_bin := coinbaseH[:]
 	merkle_root := string(coinbase_hash_bin)
 	for _,h := range s.MerkleBranches {
@@ -474,23 +480,36 @@ func (s *NotifyWork) PrepQitmeerWork() []byte {
 		merkle_root = string(qitmeer.DoubleHashB([]byte(bs)))
 	}
 	merkleRootStr := hex.EncodeToString([]byte(merkle_root))
-	d,_:=hex.DecodeString(merkleRootStr)
-	d = common.Reverse(d)
-	merkleRootStr = hex.EncodeToString(d)
+	ddd,_:=hex.DecodeString(merkleRootStr)
+	
+	ddd = common.Reverse(ddd)
+	merkleRootStr2 := hex.EncodeToString(ddd)
+	
+	//log.Println("x")
+	//log.Println("x")
+	//log.Println("x", "coinbase1", coinbase1, "merkleRootStr", merkleRootStr,merkleRootStr2)
+	//log.Println("x")
+	//log.Println("x")
+	
+	
+	
 	nonceStr := fmt.Sprintf("%016x",0)
 	//pool tx hash has converse every 4 bit
 	tmpHash := s.Hash
 	tmpBytes , _ := hex.DecodeString(tmpHash)
-	normalBytes := common.ReverseByWidth(tmpBytes,4)
+	normalBytes := common.ReverseByWidth(tmpBytes,1)
 	prevHash := hex.EncodeToString(normalBytes)
+	//prevHash :=s.Hash
 	h := make([]byte,8)
 	binary.LittleEndian.PutUint64(h,uint64(s.Height))
 	ctime1 ,_:= hex.DecodeString(s.Ntime)
 	ntime := make([]byte,8)
 	copy(ntime[4:8],ctime1[:])
 	binary.LittleEndian.PutUint64(h,uint64(s.Height))
-	blockheader := s.Version + prevHash + merkleRootStr + s.StateRoot + s.Nbits + hex.EncodeToString(h) + hex.EncodeToString(ntime) + nonceStr
-	fmt.Println("s.PoolWork.Version + prevHash + merkleRootStr + s.PoolWork.StateRoot + s.PoolWork.Nbits + hex.EncodeToString(h) + hex.EncodeToString(ntime) + nonceStr\n",s.Version,prevHash,merkleRootStr,s.StateRoot,s.Nbits,hex.EncodeToString(h),hex.EncodeToString(ntime),nonceStr)
+	blockheader := s.Version + prevHash + merkleRootStr2 + s.StateRoot + s.Nbits + hex.EncodeToString(h) + hex.EncodeToString(ntime) + nonceStr
+	//fmt.Println("s.PoolWork.Version + prevHash + merkleRootStr + s.PoolWork.StateRoot + s.PoolWork.Nbits + hex.EncodeToString(h) + hex.EncodeToString(ntime) + nonceStr\n",
+	
+	//fmt.Println(s.Version,prevHash,merkleRootStr2,s.StateRoot,s.Nbits,hex.EncodeToString(h),hex.EncodeToString(ntime),nonceStr)
 	workData ,_:= hex.DecodeString(blockheader)
 	return workData
 }
@@ -529,6 +548,7 @@ func (s *QitmeerStratum) PrepSubmit(data []byte,jobID string,ExtraNonce2 string)
 		return sub, ErrStratumStaleWork
 	}
 	sub.Params = []string{s.Cfg.PoolConfig.PoolUser, jobID, ExtraNonce2, timestampStr,nonceStr}
-	log.Println("【submit】{PoolUser, jobID, ExtraNonce2, timestampStr,nonceStr}:",sub.Params)
+	//log.Println("【submit】{PoolUser, jobID, ExtraNonce2, timestampStr,nonceStr}:",sub.Params)
+	//log.Println("【submit】", hex.EncodeToString(data), sub.Params)
 	return sub, nil
 }

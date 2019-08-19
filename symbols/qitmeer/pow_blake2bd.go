@@ -17,6 +17,7 @@ import (
 	"qitmeer-miner/kernel"
 	"sync/atomic"
 	"time"
+	//"strconv"
 )
 
 type Blake2bD struct {
@@ -183,8 +184,17 @@ func (this *Blake2bD) Mine() {
 				}
 				this.Work.Block.Nonce = binary.LittleEndian.Uint64(this.NonceOut)
 				h := hash.DoubleHashH(this.header.HeaderData)
-
+				
+				
+				
 				if HashToBig(&h).Cmp(this.header.TargetDiff) <= 0 {
+				
+				//log.Println("+")
+				//	log.Println("+")					
+				//	log.Println("+","[Found Hash]", this.Work.PoolWork.ExtraNonce2, "nonce>>>", strconv.FormatUint(this.Work.Block.Nonce, 16), "data", //hex.EncodeToString(this.header.HeaderData), "hash>>>>", hex.EncodeToString(common.Reverse(h[:])))
+				//	log.Println("+")
+				//	log.Println("+")
+					
 					log.Println("[Found Hash]",hex.EncodeToString(common.Reverse(h[:])))
 					subm := hex.EncodeToString(this.header.HeaderData)
 					if !this.Pool{
