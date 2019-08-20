@@ -263,9 +263,6 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 		preParser.WriteHelp(os.Stderr)
 		os.Exit(0)
 	}
-	if poolCfg.Pool != "" && !CheckBase58Addr(poolCfg.PoolUser,necessaryCfg.NetWork,necessaryCfg.Param){
-		os.Exit(0)
-	}
 	if poolCfg.Pool == "" && !CheckBase58Addr(soloCfg.MinerAddr,necessaryCfg.NetWork,necessaryCfg.Param){
 		os.Exit(0)
 	}
