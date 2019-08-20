@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	qitmeer "github.com/HalalChain/qitmeer-lib/common/hash"
+	"github.com/HalalChain/qitmeer-lib/params"
 	"qitmeer-miner/common"
 	"qitmeer-miner/core"
 	"log"
@@ -114,7 +115,7 @@ type QitmeerStratum struct {
 }
 
 func (s *QitmeerStratum) CalcBasePowLimit() *big.Int {
-	return s.Cfg.NecessaryConfig.Param.PowLimit
+	return params.MainNetParams.PowLimit
 }
 
 func (this *QitmeerStratum)HandleReply()  {
@@ -430,10 +431,7 @@ func (s *QitmeerStratum) Unmarshal(blob []byte) (interface{}, error) {
 		if !ok {
 			return nil, core.ErrJsonType
 		}
-		powLimit := s.Cfg.NecessaryConfig.Param.PowLimit
-		if s.PoolWork.JobID != ""{
-			powLimit = s.CalcBasePowLimit()
-		}
+		powLimit := params.MainNetParams.PowLimit
 		s.Target, err = common.DiffToTarget(difficulty, powLimit)
 		if err != nil {
 			return nil, err
