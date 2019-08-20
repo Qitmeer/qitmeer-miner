@@ -97,7 +97,9 @@ func BlockBitsToTarget(bits string,width int) []byte {
 
 // FormatHashRate sets the units properly when displaying a hashrate.
 func FormatHashRate(h float64) string {
-	if h > 1000000000 {
+	if h > 1000000000000 {
+		return fmt.Sprintf("%.3fTH/s", h/1000000000000)
+	} else if h > 1000000000 {
 		return fmt.Sprintf("%.3fGH/s", h/1000000000)
 	} else if h > 1000000 {
 		return fmt.Sprintf("%.0fMH/s", h/1000000)
@@ -105,11 +107,9 @@ func FormatHashRate(h float64) string {
 		return fmt.Sprintf("%.1fkH/s", h/1000)
 	} else if h == 0 {
 		return "0H/s"
-	} else if h > 1000000000000 {
-		return fmt.Sprintf("%.3fTH/s", h/1000000000000)
 	}
 
-	return fmt.Sprintf("%.1f GH/s", h)
+	return fmt.Sprintf("%.1f TH/s", h)
 }
 
 func ReverseByWidth(s []byte,width int ) []byte {

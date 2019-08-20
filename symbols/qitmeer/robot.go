@@ -216,6 +216,9 @@ func (this *QitmeerRobot)Status()  {
 		case <-this.Quit:
 			return
 		case <-t.C:
+			if this.Work.stra == nil && this.Work.Block.Height == 0{
+				continue
+			}
 			valid := atomic.LoadUint64(&this.ValidShares)
 			rejected := atomic.LoadUint64(&this.InvalidShares)
 			staleShares := atomic.LoadUint64(&this.StaleShares)

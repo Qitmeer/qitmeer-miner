@@ -17,6 +17,7 @@ import (
 	"qitmeer-miner/kernel"
 	"sync/atomic"
 	"time"
+	//"strconv"
 )
 
 type Blake2bD struct {
@@ -58,14 +59,14 @@ func (this *Blake2bD) InitDevice() {
 		this.IsValid = false
 		return
 	}
-	this.Kernel.SetArgBuffer(0, this.BlockObj)
+	_ = this.Kernel.SetArgBuffer(0, this.BlockObj)
 	this.NonceOutObj, err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, 8)
 	if err != nil {
 		log.Println("-", this.MinerId, err)
 		this.IsValid = false
 		return
 	}
-	this.Kernel.SetArgBuffer(1, this.NonceOutObj)
+	_ = this.Kernel.SetArgBuffer(1, this.NonceOutObj)
 	this.LocalItemSize, err = this.Kernel.WorkGroupSize(this.ClDevice)
 	this.LocalItemSize = this.Cfg.OptionConfig.WorkSize
 	if err != nil {
@@ -86,11 +87,8 @@ func (this *Blake2bD) Update() {
 	//update coinbase tx hash
 	this.Device.Update()
 	if this.Pool {
-		//this.CurrentWorkID = 0
-		//randstr := fmt.Sprintf("%dqitmeerminer%d",this.CurrentWorkID,this.MinerId)
-		//byt := []byte(randstr)[:4]
-		//this.Work.PoolWork.ExtraNonce2 = hex.EncodeToString(byt)
 		this.Work.PoolWork.ExtraNonce2 = fmt.Sprintf("%08x", uint32(this.CurrentWorkID))
+		this.header.Exnonce2 = this.Work.PoolWork.ExtraNonce2
 		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepQitmeerWork()
 	} else {
 		randStr := fmt.Sprintf("%s%d%d", this.Cfg.SoloConfig.RandStr, this.MinerId, this.CurrentWorkID)
@@ -117,9 +115,6 @@ func (this *Blake2bD) Mine() {
 		if !this.IsValid {
 			continue
 		}
-		//if !this.Work.StartWork{
-		//	continue
-		//}
 
 		if len(this.Work.PoolWork.WorkData) <= 0 && this.Work.Block.Height <= 0 {
 			continue
@@ -140,6 +135,7 @@ func (this *Blake2bD) Mine() {
 				HeaderData:make([]byte,0),
 				TargetDiff:&big.Int{},
 				JobID:"",
+				Exnonce2:"",
 			}
 			this.Update()
 			if this.Pool {
@@ -185,6 +181,7 @@ func (this *Blake2bD) Mine() {
 				h := hash.DoubleHashH(this.header.HeaderData)
 
 				if HashToBig(&h).Cmp(this.header.TargetDiff) <= 0 {
+				
 					log.Println("[Found Hash]",hex.EncodeToString(common.Reverse(h[:])))
 					subm := hex.EncodeToString(this.header.HeaderData)
 					if !this.Pool{
@@ -202,7 +199,7 @@ func (this *Blake2bD) Mine() {
 						txCount -= 1
 						subm += "-" + fmt.Sprintf("%d",txCount) + "-" + fmt.Sprintf("%d",this.Work.Block.Height)
 					} else {
-						subm += "-" + this.header.JobID + "-" + this.Work.PoolWork.ExtraNonce2
+						subm += "-" + this.header.JobID + "-" + this.header.Exnonce2
 					}
 					this.SubmitData <- subm
 					if !this.Pool{
