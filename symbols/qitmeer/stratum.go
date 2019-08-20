@@ -433,7 +433,11 @@ func (s *QitmeerStratum) Unmarshal(blob []byte) (interface{}, error) {
 		if !ok {
 			return nil, core.ErrJsonType
 		}
-		s.Target, err = common.DiffToTarget(difficulty, s.CalcBasePowLimit())
+		powLimit := big.NewInt(255)
+		if s.PoolWork.JobID != ""{
+			powLimit = s.CalcBasePowLimit()
+		}
+		s.Target, err = common.DiffToTarget(difficulty, powLimit)
 		if err != nil {
 			return nil, err
 		}
@@ -496,7 +500,6 @@ func (s *NotifyWork) PrepQitmeerWork() []byte {
 	binary.LittleEndian.PutUint64(h,uint64(s.Height))
 	blockheader := s.Version + prevHash + merkleRootStr2 + s.StateRoot + s.Nbits + hex.EncodeToString(h) + hex.EncodeToString(ntime) + nonceStr
 	//fmt.Println("s.PoolWork.Version + prevHash + merkleRootStr + s.PoolWork.StateRoot + s.PoolWork.Nbits + hex.EncodeToString(h) + hex.EncodeToString(ntime) + nonceStr\n",
-	
 	//fmt.Println(s.Version,prevHash,merkleRootStr2,s.StateRoot,s.Nbits,hex.EncodeToString(h),hex.EncodeToString(ntime),nonceStr)
 	workData ,_:= hex.DecodeString(blockheader)
 	return workData
