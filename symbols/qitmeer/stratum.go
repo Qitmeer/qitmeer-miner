@@ -433,7 +433,7 @@ func (s *QitmeerStratum) Unmarshal(blob []byte) (interface{}, error) {
 		if !ok {
 			return nil, core.ErrJsonType
 		}
-		powLimit := big.NewInt(255)
+		powLimit := s.Cfg.NecessaryConfig.Param.PowLimit
 		if s.PoolWork.JobID != ""{
 			powLimit = s.CalcBasePowLimit()
 		}

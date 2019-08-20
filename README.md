@@ -65,6 +65,7 @@ The Config File Options:
 The Necessary Config Options:
   -P, --pow=          blake2bd|cuckaroo|cuckatoo (blake2bd)
   -S, --symbol=       Symbol (PMEER)
+  -N, --network=      network privnet|testnet|mainnet (mainnet)
 
 The Solo Config Option:
   -M, --mineraddress= Miner Address (RmN4SADy42FKmN8ARKieX9iHh9icptdgYNn)

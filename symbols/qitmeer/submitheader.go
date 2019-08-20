@@ -14,6 +14,7 @@ type MinerBlockData struct {
 	Parents []ParentItems
 	HeaderData []byte
 	TargetDiff *big.Int
+	Exnonce2 string
 	JobID string
 }
 // Header structure of assembly pool

@@ -6,6 +6,8 @@ package common
 
 import (
 	"fmt"
+	"github.com/HalalChain/qitmeer-lib/core/address"
+	"github.com/HalalChain/qitmeer-lib/params"
 	"qitmeer-miner/common/go-flags"
 	"log"
 	"net"
@@ -77,6 +79,8 @@ type NecessaryConfig struct {
 	// Config / log options
 	Pow     string `short:"P" long:"pow" description:"blake2bd|cuckaroo|cuckatoo"`
 	Symbol      string   `short:"S" long:"symbol" description:"Symbol" default-mask:"PMEER"`
+	NetWork      string   `short:"N" long:"network" description:"network privnet|testnet|mainnet" default-mask:"mainnet"`
+	Param      *params.Params
 }
 
 type GlobalConfig struct {
@@ -259,6 +263,12 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 		preParser.WriteHelp(os.Stderr)
 		os.Exit(0)
 	}
+	if poolCfg.Pool != "" && !CheckBase58Addr(poolCfg.PoolUser,necessaryCfg.NetWork,necessaryCfg.Param){
+		os.Exit(0)
+	}
+	if poolCfg.Pool == "" && !CheckBase58Addr(soloCfg.MinerAddr,necessaryCfg.NetWork,necessaryCfg.Param){
+		os.Exit(0)
+	}
 	// Show the version and exit if the version flag was specified.
 
 	if optionalCfg.Intensity < minIntensity || optionalCfg.Intensity > maxIntensity{
@@ -285,4 +295,29 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 		poolCfg,
 		necessaryCfg,
 	}, remainingArgs, nil
+}
+
+func CheckBase58Addr(addr ,network string,p *params.Params) bool {
+	_,err := address.DecodeAddress(addr)
+	if err != nil{
+		log.Fatalln(network,"qitmeer address error!",err,addr)
+		return false
+	}
+	networkChar := addr[0:1]
+	switch networkChar {
+	case params.MainNetParams.NetworkAddressPrefix:
+		p = &params.MainNetParams
+	case params.TestNetParams.NetworkAddressPrefix:
+		p = &params.TestNetParams
+	case params.PrivNetParams.NetworkAddressPrefix:
+		p = &params.PrivNetParams
+	default:
+		log.Fatalln(network,"qitmeer address not match the network,please check your config network param!",addr)
+		return false
+	}
+	if p.Name != network{
+		log.Fatalln(network,"qitmeer address not match the network,please check your config network param!",addr)
+		return false
+	}
+	return true
 }

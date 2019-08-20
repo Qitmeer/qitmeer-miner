@@ -88,6 +88,7 @@ func (this *Blake2bD) Update() {
 	this.Device.Update()
 	if this.Pool {
 		this.Work.PoolWork.ExtraNonce2 = fmt.Sprintf("%08x", uint32(this.CurrentWorkID))
+		this.header.Exnonce2 = this.Work.PoolWork.ExtraNonce2
 		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepQitmeerWork()
 	} else {
 		randStr := fmt.Sprintf("%s%d%d", this.Cfg.SoloConfig.RandStr, this.MinerId, this.CurrentWorkID)
@@ -134,6 +135,7 @@ func (this *Blake2bD) Mine() {
 				HeaderData:make([]byte,0),
 				TargetDiff:&big.Int{},
 				JobID:"",
+				Exnonce2:"",
 			}
 			this.Update()
 			if this.Pool {
@@ -197,7 +199,7 @@ func (this *Blake2bD) Mine() {
 						txCount -= 1
 						subm += "-" + fmt.Sprintf("%d",txCount) + "-" + fmt.Sprintf("%d",this.Work.Block.Height)
 					} else {
-						subm += "-" + this.header.JobID + "-" + this.Work.PoolWork.ExtraNonce2
+						subm += "-" + this.header.JobID + "-" + this.header.Exnonce2
 					}
 					this.SubmitData <- subm
 					if !this.Pool{
