@@ -114,10 +114,7 @@ type QitmeerStratum struct {
 }
 
 func (s *QitmeerStratum) CalcBasePowLimit() *big.Int {
-	powLimitbytes := common.BlockBitsToTarget(s.PoolWork.Nbits,32)
-	powLimit := new(big.Int)
-	powLimit = powLimit.SetBytes(powLimitbytes)
-	return powLimit
+	return s.Cfg.NecessaryConfig.Param.PowLimit
 }
 
 func (this *QitmeerStratum)HandleReply()  {
