@@ -127,7 +127,6 @@ func (this *QitmeerStratum)HandleReply()  {
 			log.Println(err)
 			return
 		}
-		//log.Println(resp)
 		switch resp.(type) {
 		case StratumMsg:
 			this.handleStratumMsg(resp)
@@ -172,7 +171,6 @@ func (s *QitmeerStratum) HandleSubmitReply(resp interface{}) {
 
 func (s *QitmeerStratum) handleStratumMsg(resp interface{}) {
 	nResp := resp.(StratumMsg)
-	//fmt.Println(nResp)
 	// Too much is still handled in unmarshaler.  Need to
 	// move stuff other than unmarshalling here.
 	switch nResp.Method {
@@ -435,7 +433,7 @@ func (s *QitmeerStratum) Unmarshal(blob []byte) (interface{}, error) {
 		if !ok {
 			return nil, core.ErrJsonType
 		}
-		s.Target, err = common.DiffToTarget(difficulty, big.NewInt(1))
+		s.Target, err = common.DiffToTarget(difficulty, s.CalcBasePowLimit())
 		if err != nil {
 			return nil, err
 		}
@@ -446,7 +444,7 @@ func (s *QitmeerStratum) Unmarshal(blob []byte) (interface{}, error) {
 		var param []string
 		param = append(param, diffStr)
 		nres.Params = param
-		//log.Println("【pool reply】Stratum difficulty set to", difficulty)
+		log.Println("【pool reply】Stratum difficulty set to", difficulty)
 		return nres, nil
 	default:
 		resp := &BasicReply{}
@@ -465,8 +463,6 @@ func (s *NotifyWork) PrepQitmeerWork() []byte {
 	 witness, _ := hex.DecodeString("0100020001000000000000000000000000FFFFFFFF0b00002f7169746d6565722f")
 		witnessHash := qitmeer.DoubleHashH(witness)
 
-		
-	
 	coinbase1D,_ := hex.DecodeString(coinbase1)
 	coinbase := common.ConvertHashToString(qitmeer.DoubleHashH(coinbase1D)) + hex.EncodeToString(witnessHash[:])//+ s.CB3
 	coinbaseD,_ := hex.DecodeString(coinbase)
@@ -484,14 +480,6 @@ func (s *NotifyWork) PrepQitmeerWork() []byte {
 	
 	ddd = common.Reverse(ddd)
 	merkleRootStr2 := hex.EncodeToString(ddd)
-	
-	//log.Println("x")
-	//log.Println("x")
-	//log.Println("x", "coinbase1", coinbase1, "merkleRootStr", merkleRootStr,merkleRootStr2)
-	//log.Println("x")
-	//log.Println("x")
-	
-	
 	
 	nonceStr := fmt.Sprintf("%016x",0)
 	//pool tx hash has converse every 4 bit

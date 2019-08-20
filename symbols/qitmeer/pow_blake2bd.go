@@ -59,14 +59,14 @@ func (this *Blake2bD) InitDevice() {
 		this.IsValid = false
 		return
 	}
-	this.Kernel.SetArgBuffer(0, this.BlockObj)
+	_ = this.Kernel.SetArgBuffer(0, this.BlockObj)
 	this.NonceOutObj, err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, 8)
 	if err != nil {
 		log.Println("-", this.MinerId, err)
 		this.IsValid = false
 		return
 	}
-	this.Kernel.SetArgBuffer(1, this.NonceOutObj)
+	_ = this.Kernel.SetArgBuffer(1, this.NonceOutObj)
 	this.LocalItemSize, err = this.Kernel.WorkGroupSize(this.ClDevice)
 	this.LocalItemSize = this.Cfg.OptionConfig.WorkSize
 	if err != nil {
@@ -87,10 +87,6 @@ func (this *Blake2bD) Update() {
 	//update coinbase tx hash
 	this.Device.Update()
 	if this.Pool {
-		//this.CurrentWorkID = 0
-		//randstr := fmt.Sprintf("%dqitmeerminer%d",this.CurrentWorkID,this.MinerId)
-		//byt := []byte(randstr)[:4]
-		//this.Work.PoolWork.ExtraNonce2 = hex.EncodeToString(byt)
 		this.Work.PoolWork.ExtraNonce2 = fmt.Sprintf("%08x", uint32(this.CurrentWorkID))
 		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepQitmeerWork()
 	} else {
@@ -118,9 +114,6 @@ func (this *Blake2bD) Mine() {
 		if !this.IsValid {
 			continue
 		}
-		//if !this.Work.StartWork{
-		//	continue
-		//}
 
 		if len(this.Work.PoolWork.WorkData) <= 0 && this.Work.Block.Height <= 0 {
 			continue
@@ -184,17 +177,9 @@ func (this *Blake2bD) Mine() {
 				}
 				this.Work.Block.Nonce = binary.LittleEndian.Uint64(this.NonceOut)
 				h := hash.DoubleHashH(this.header.HeaderData)
-				
-				
-				
+
 				if HashToBig(&h).Cmp(this.header.TargetDiff) <= 0 {
 				
-				//log.Println("+")
-				//	log.Println("+")					
-				//	log.Println("+","[Found Hash]", this.Work.PoolWork.ExtraNonce2, "nonce>>>", strconv.FormatUint(this.Work.Block.Nonce, 16), "data", //hex.EncodeToString(this.header.HeaderData), "hash>>>>", hex.EncodeToString(common.Reverse(h[:])))
-				//	log.Println("+")
-				//	log.Println("+")
-					
 					log.Println("[Found Hash]",hex.EncodeToString(common.Reverse(h[:])))
 					subm := hex.EncodeToString(this.header.HeaderData)
 					if !this.Pool{

@@ -115,11 +115,6 @@ func (this *QitmeerWork) PoolGet () bool {
 
 //pool submit work
 func (this *QitmeerWork) PoolSubmit (subm string) error {
-		//log.Println("s")
-	//log.Println("s")
-	//log.Println("s", subm)
-	//log.Println("s")
-	//log.Println("s")
 	if this.LastSub == subm{
 		return ErrSameWork
 	}
