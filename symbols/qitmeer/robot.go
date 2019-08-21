@@ -1,11 +1,11 @@
-// Copyright (c) 2019 The halalchain developers
+// Copyright (c) 2019 The qitmeer developers
 // Use of this source code is governed by an ISC
 // license that can be found in the LICENSE file.
 package qitmeer
 
 import (
 	"fmt"
-	"github.com/HalalChain/go-opencl/cl"
+	"github.com/Qitmeer/go-opencl/cl"
 	"qitmeer-miner/common"
 	"qitmeer-miner/core"
 	"log"

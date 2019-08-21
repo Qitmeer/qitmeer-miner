@@ -10,7 +10,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
-	qitmeer "github.com/HalalChain/qitmeer-lib/common/hash"
+	qitmeer "github.com/Qitmeer/qitmeer-lib/common/hash"
 	"math"
 	"math/big"
 	"math/rand"

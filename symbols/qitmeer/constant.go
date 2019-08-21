@@ -1,6 +1,6 @@
 package qitmeer
 
-import "github.com/HalalChain/qitmeer-lib/common/hash"
+import "github.com/Qitmeer/qitmeer-lib/common/hash"
 
 const (
 	//128

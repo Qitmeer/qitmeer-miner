@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"log"
-	cuckaroo "github.com/HalalChain/qitmeer-lib/crypto/cuckoo"
+	cuckaroo "github.com/Qitmeer/qitmeer-lib/crypto/cuckoo"
 )
 
 type paths struct {

@@ -8,10 +8,10 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"github.com/HalalChain/go-opencl/cl"
-	"github.com/HalalChain/qitmeer-lib/common/hash"
-	cuckaroo "github.com/HalalChain/qitmeer-lib/crypto/cuckoo"
-	"github.com/HalalChain/qitmeer-lib/crypto/cuckoo/siphash"
+	"github.com/Qitmeer/go-opencl/cl"
+	"github.com/Qitmeer/qitmeer-lib/common/hash"
+	cuckaroo "github.com/Qitmeer/qitmeer-lib/crypto/cuckoo"
+	"github.com/Qitmeer/qitmeer-lib/crypto/cuckoo/siphash"
 	"qitmeer-miner/common"
 	"qitmeer-miner/core"
 	"qitmeer-miner/cuckoo"
@@ -81,8 +81,8 @@ func (this *Cuckaroo) Update() {
 		this.Work.PoolWork.ExtraNonce2 = fmt.Sprintf("%08x", this.CurrentWorkID)
 		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepQitmeerWork()
 	} else {
-		randStr := fmt.Sprintf("%s%d%d", this.Cfg.SoloConfig.RandStr, this.MinerId, this.CurrentWorkID)
-		err := this.Work.Block.CalcCoinBase(randStr, this.Cfg.SoloConfig.MinerAddr)
+		randStr := fmt.Sprintf("%s%d", this.Cfg.SoloConfig.RandStr, this.MinerId)
+		err := this.Work.Block.CalcCoinBase(this.Cfg,randStr, this.CurrentWorkID, this.Cfg.SoloConfig.MinerAddr)
 		if err != nil {
 			log.Println("calc coinbase error :", err)
 			return
