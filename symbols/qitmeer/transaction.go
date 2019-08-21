@@ -3,9 +3,9 @@ package qitmeer
 import (
 	"bytes"
 	"encoding/hex"
-	"github.com/HalalChain/qitmeer-lib/common/hash"
-	"github.com/HalalChain/qitmeer-lib/core/message"
-	"github.com/HalalChain/qitmeer-lib/core/protocol"
+	"github.com/Qitmeer/qitmeer-lib/common/hash"
+	"github.com/Qitmeer/qitmeer-lib/core/message"
+	"github.com/Qitmeer/qitmeer-lib/core/protocol"
 )
 
 const MAX_SIG_COUNT = 5000

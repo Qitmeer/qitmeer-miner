@@ -6,8 +6,8 @@ package common
 
 import (
 	"fmt"
-	"github.com/HalalChain/qitmeer-lib/core/address"
-	"github.com/HalalChain/qitmeer-lib/params"
+	"github.com/Qitmeer/qitmeer-lib/core/address"
+	"github.com/Qitmeer/qitmeer-lib/params"
 	"qitmeer-miner/common/go-flags"
 	"log"
 	"net"
@@ -263,6 +263,10 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 		preParser.WriteHelp(os.Stderr)
 		os.Exit(0)
 	}
+	necessaryCfg.Param = InitNet(necessaryCfg.NetWork,necessaryCfg.Param)
+	if necessaryCfg.Param == nil{
+		os.Exit(0)
+	}
 	if poolCfg.Pool == "" && !CheckBase58Addr(soloCfg.MinerAddr,necessaryCfg.NetWork,necessaryCfg.Param){
 		os.Exit(0)
 	}
@@ -301,20 +305,24 @@ func CheckBase58Addr(addr ,network string,p *params.Params) bool {
 		return false
 	}
 	networkChar := addr[0:1]
-	switch networkChar {
-	case params.MainNetParams.NetworkAddressPrefix:
-		p = &params.MainNetParams
-	case params.TestNetParams.NetworkAddressPrefix:
-		p = &params.TestNetParams
-	case params.PrivNetParams.NetworkAddressPrefix:
-		p = &params.PrivNetParams
-	default:
-		log.Fatalln(network,"qitmeer address not match the network,please check your config network param!",addr)
-		return false
-	}
-	if p.Name != network{
-		log.Fatalln(network,"qitmeer address not match the network,please check your config network param!",addr)
+	if p.NetworkAddressPrefix != networkChar{
+		log.Fatalln(network,"qitmeer address not match the network,please check your config network param!",p.NetworkAddressPrefix,networkChar)
 		return false
 	}
 	return true
+}
+
+func InitNet(network string,p *params.Params) *params.Params {
+	switch network {
+	case params.MainNetParams.Name:
+		p = &params.MainNetParams
+	case params.TestNetParams.Name:
+		p = &params.TestNetParams
+	case params.PrivNetParams.Name:
+		p = &params.PrivNetParams
+	default:
+		log.Fatalln(network,"qitmeer error!")
+		return nil
+	}
+	return p
 }

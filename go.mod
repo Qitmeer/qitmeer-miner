@@ -3,7 +3,7 @@ module qitmeer-miner
 go 1.12
 
 require (
-	github.com/HalalChain/go-opencl v0.0.0-20190704222003-c93200893312
+	github.com/Qitmeer/go-opencl v0.0.0-20190704222003-c93200893312
 )
 
 replace (

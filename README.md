@@ -1,7 +1,7 @@
 # Qitmeer Miner
 
     The Miner of Qitmeer
-[![Build Status](https://travis-ci.com/HalalChain/qitmeer-miner.svg?token=n9AoZUDqAJmhesf4MYUd&branch=master)](https://travis-ci.com/HalalChain/qitmeer-miner)
+[![Build Status](https://travis-ci.com/Qitmeer/qitmeer-miner.svg?token=n9AoZUDqAJmhesf4MYUd&branch=master)](https://travis-ci.com/Qitmeer/qitmeer-miner)
 ## Enviroment
 
 ```bash
@@ -11,7 +11,7 @@ $ go version >= 1.12
 ## Compile
 
 ```bash
-$ git clone git@github.com:HalalChain/qitmeer-miner.git
+$ git clone git@github.com:Qitmeer/qitmeer-miner.git
 ```
 
 * Ubuntu ENV
@@ -40,7 +40,7 @@ go build
 $ go build 
 ```
 
-###### Any questions see [issues](https://github.com/HalalChain/qitmeer-miner/issues?q=is%3Aissue+is%3Aclosed) or create
+###### Any questions see [issues](https://github.com/Qitmeer/qitmeer-miner/issues?q=is%3Aissue+is%3Aclosed) or create
         
     
 ## Run

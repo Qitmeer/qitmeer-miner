@@ -2,7 +2,7 @@ package common
 
 import (
 	"fmt"
-	"github.com/HalalChain/go-opencl/cl"
+	"github.com/Qitmeer/go-opencl/cl"
 	"log"
 )
 

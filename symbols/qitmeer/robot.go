@@ -5,7 +5,7 @@ package qitmeer
 
 import (
 	"fmt"
-	"github.com/HalalChain/go-opencl/cl"
+	"github.com/Qitmeer/go-opencl/cl"
 	"qitmeer-miner/common"
 	"qitmeer-miner/core"
 	"log"
