@@ -10,12 +10,11 @@ import (
 	"github.com/Qitmeer/qitmeer-lib/core/types"
 	"github.com/Qitmeer/qitmeer-lib/engine/txscript"
 	"github.com/Qitmeer/qitmeer-lib/params"
+	"github.com/google/uuid"
 	"log"
 	"qitmeer-miner/common"
 	"sort"
 )
-
-const MINER_DEVELOP_TEAM_FOR_TAX_ADDR = "TmaTi4yt947FXPcWTAkMNDqtRELKceEFBb5"
 
 // standardCoinbaseOpReturn creates a standard OP_RETURN output to insert into
 // coinbase to use as extranonces. The OP_RETURN pushes 32 bytes.
@@ -31,8 +30,9 @@ func standardCoinbaseOpReturn(enData []byte) ([]byte, error) {
 }
 
 func standardCoinbaseScript(randStr string,nextBlockHeight uint64, extraNonce uint64) ([]byte, error) {
+	uniqueStr := uuid.New()
 	return txscript.NewScriptBuilder().AddInt64(int64(nextBlockHeight)).
-		AddInt64(int64(extraNonce)).AddData([]byte(randStr)).
+		AddInt64(int64(extraNonce)).AddData([]byte(randStr)).AddData([]byte(uniqueStr.String())).
 		Script()
 }
 
@@ -81,7 +81,6 @@ func createCoinbaseTx(coinBaseVal uint64,coinbaseScript []byte, opReturnPkScript
 	})
 
 	hasTax:=false
-	params.OrganizationPkScript = []byte("wqewqrre")
 	if params.BlockTaxProportion > 0 &&
 		len(params.OrganizationPkScript) > 0{
 		hasTax=true
@@ -96,14 +95,6 @@ func createCoinbaseTx(coinBaseVal uint64,coinbaseScript []byte, opReturnPkScript
 	// redeemable by anyone.
 	var pksSubsidy []byte
 	var err error
-	mAddr ,err := address.DecodeAddress(MINER_DEVELOP_TEAM_FOR_TAX_ADDR)
-	if err != nil {
-		return nil, err
-	}
-	params.OrganizationPkScript, err = txscript.PayToAddrScript(mAddr)
-	if err != nil {
-		return nil, err
-	}
 	if addr != nil {
 		pksSubsidy, err = txscript.PayToAddrScript(addr)
 		if err != nil {

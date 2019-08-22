@@ -457,13 +457,9 @@ func (s *QitmeerStratum) Unmarshal(blob []byte) (interface{}, error) {
 }
 
 func (s *NotifyWork) PrepQitmeerWork() []byte {
-	coinbase1 := s.CB1 + s.ExtraNonce1 + s.ExtraNonce2+ s.CB2
-	
-	 witness, _ := hex.DecodeString("0100020001000000000000000000000000FFFFFFFF0b00002f7169746d6565722f")
-		witnessHash := qitmeer.DoubleHashH(witness)
-
-	coinbase1D,_ := hex.DecodeString(coinbase1)
-	coinbase := common.ConvertHashToString(qitmeer.DoubleHashH(coinbase1D)) + hex.EncodeToString(witnessHash[:])//+ s.CB3
+	witness , _ := hex.DecodeString( s.CB2 + s.ExtraNonce1 + s.ExtraNonce2)
+	witnessHash := qitmeer.DoubleHashH(witness)
+	coinbase:=s.CB1+hex.EncodeToString(witnessHash[:])
 	coinbaseD,_ := hex.DecodeString(coinbase)
 	coinbaseH := qitmeer.DoubleHashH(coinbaseD)
 	//log.Println("coinbase hash:",coinbaseH)
@@ -476,10 +472,10 @@ func (s *NotifyWork) PrepQitmeerWork() []byte {
 	}
 	merkleRootStr := hex.EncodeToString([]byte(merkle_root))
 	ddd,_:=hex.DecodeString(merkleRootStr)
-	
+
 	ddd = common.Reverse(ddd)
 	merkleRootStr2 := hex.EncodeToString(ddd)
-	
+
 	nonceStr := fmt.Sprintf("%016x",0)
 	//pool tx hash has converse every 4 bit
 	tmpHash := s.Hash
