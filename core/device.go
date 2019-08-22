@@ -19,6 +19,8 @@ type BaseDevice interface {
 	Update()
 	InitDevice()
 	Status()
+	GetIsValid() bool
+	SetNewWork(w BaseWork)
 	Release()
 	SubmitShare(substr chan string)
 }
@@ -96,6 +98,15 @@ func (this *Device)InitDevice()  {
 		this.IsValid = false
 		log.Println("-", this.MinerId,  err)
 	}
+}
+
+func (this *Device)SetNewWork(w BaseWork)  {
+	this.HasNewWork = true
+	this.NewWork <- w
+}
+
+func (this *Device)GetIsValid() bool {
+	return this.IsValid
 }
 
 func (d *Device)Release()  {

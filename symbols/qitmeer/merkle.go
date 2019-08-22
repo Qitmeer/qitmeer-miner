@@ -29,7 +29,7 @@ func hashMerkleBranches(left *hash.Hash, right *hash.Hash) *hash.Hash {
 	newHash := hash.DoubleHashH(h[:])
 	return &newHash
 }
-func (h *BlockHeader)BuildMerkleTreeStore() []*hash.Hash {
+func (h *BlockHeader)BuildMerkleTreeStore(index int) hash.Hash {
 	// If there's an empty stake tree, return totally zeroed out merkle tree root
 	// only.
 	transactions := make([]hash.Hash,0)
@@ -40,7 +40,7 @@ func (h *BlockHeader)BuildMerkleTreeStore() []*hash.Hash {
 		merkles := make([]*hash.Hash, 1)
 		merkles[0] = &hash.Hash{}
 		h.TxRoot = * merkles[len(merkles)-1]
-		return merkles
+		return h.TxRoot
 	}
 
 	// Calculate how many entries are required to hold the binary merkle
@@ -82,5 +82,5 @@ func (h *BlockHeader)BuildMerkleTreeStore() []*hash.Hash {
 		offset++
 	}
 	h.TxRoot = * merkles[len(merkles)-1]
-	return merkles
+	return h.TxRoot
 }

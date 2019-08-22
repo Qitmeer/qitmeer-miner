@@ -5,8 +5,10 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/Qitmeer/qitmeer-lib/common/hash"
+	"github.com/Qitmeer/qitmeer-lib/core/types"
 	"qitmeer-miner/common"
 	"math/big"
+	"time"
 )
 
 type MinerBlockData struct {
@@ -16,6 +18,7 @@ type MinerBlockData struct {
 	TargetDiff *big.Int
 	Exnonce2 string
 	JobID string
+	HeaderBlock *types.BlockHeader
 }
 // Header structure of assembly pool
 func BlockComputePoolData(b []byte) []byte{
@@ -44,6 +47,8 @@ func (this *MinerBlockData)PackagePoolHeader(work *QitmeerWork)  {
 	nbitesBy := common.Target2BlockBits(fmt.Sprintf("%064x",this.TargetDiff))
 	copy(this.HeaderData[NONCESTART:NONCEEND],nbitesBy[:])
 	this.JobID = work.PoolWork.JobID
+	this.HeaderBlock = &types.BlockHeader{}
+	_ = ReadBlockHeader(this.HeaderData,this.HeaderBlock)
 }
 //the pool work submit structure
 func (this *MinerBlockData)PackagePoolHeaderByNonce(work *QitmeerWork,nonce uint64)  {
@@ -57,19 +62,29 @@ func (this *MinerBlockData)PackagePoolHeaderByNonce(work *QitmeerWork,nonce uint
 
 //the solo work submit structure
 func (this *MinerBlockData)PackageRpcHeader(work *QitmeerWork)  {
-	//log.Println(work.Block.Blake2bDTarget)
 	bitesBy ,_:= hex.DecodeString(work.Block.Target)
 	bitesBy = common.Reverse(bitesBy[:8])
-	this.HeaderData = work.Block.BlockData()
-	this.Transactions = work.Block.Transactions
 	this.Parents = work.Block.Parents
-	copy(this.HeaderData[NONCESTART:NONCEEND],bitesBy[:])
-
+	this.Transactions = make([]Transactions,0)
+	for i:=0;i<len(work.Block.Transactions);i++{
+		this.Transactions = append(this.Transactions,Transactions{
+			work.Block.Transactions[i].Hash,work.Block.Transactions[i].Data,work.Block.Transactions[i].Fee,
+		})
+	}
 	b1 , _ := hex.DecodeString(work.Block.Target)
 	var r [32]byte
 	copy(r[:],common.Reverse(b1)[:])
 	r1 := hash.Hash(r)
 	this.TargetDiff = HashToBig(&r1)
+	this.HeaderBlock = &types.BlockHeader{}
+	this.HeaderBlock.Version = work.Block.Version
+	this.HeaderBlock.ParentRoot = work.Block.ParentRoot
+	this.HeaderBlock.TxRoot = work.Block.TxRoot
+	this.HeaderBlock.StateRoot = work.Block.StateRoot
+	this.HeaderBlock.Difficulty = work.Block.Difficulty
+	this.HeaderBlock.Timestamp = time.Unix(int64(work.Block.Curtime), 0)
+	this.HeaderBlock.Nonce = binary.LittleEndian.Uint64(bitesBy)
+	this.HeaderBlock.ExNonce = work.Block.Height
 }
 
 //the solo work submit structure
