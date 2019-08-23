@@ -36,13 +36,6 @@ func standardCoinbaseScript(randStr string,nextBlockHeight uint64, extraNonce ui
 		Script()
 }
 
-// CalcBlockWorkSubsidy calculates the proof of work subsidy for a block as a
-// proportion of the total subsidy. (aka, the coinbase subsidy)
-func CalcBlockWorkSubsidy(coinbaseVal uint64,  params *params.Params) uint64 {
-	work,_,_:=calcBlockProportion(coinbaseVal,params)
-	return work
-}
-
 // CalcBlockTaxSubsidy calculates the subsidy for the organization address in the
 // coinbase.
 func CalcBlockTaxSubsidy(coinbaseVal uint64, params *params.Params) uint64 {
@@ -50,8 +43,15 @@ func CalcBlockTaxSubsidy(coinbaseVal uint64, params *params.Params) uint64 {
 	return tax
 }
 
+func calcSubsidyByCoinBase(coinbaseVal uint64, params *params.Params) uint64{
+	workPro := float64(params.WorkRewardProportion)
+	proportions := float64(params.TotalSubsidyProportions())
+	subsidy := float64(coinbaseVal) * proportions / workPro
+	return uint64(subsidy)
+}
+
 func calcBlockProportion(coinbaseVal uint64, params *params.Params) (uint64,uint64,uint64) {
-	subsidy := coinbaseVal
+	subsidy := calcSubsidyByCoinBase(coinbaseVal,params)
 	workPro := float64(params.WorkRewardProportion)
 	stakePro:= float64(params.StakeRewardProportion)
 	proportions := float64(params.TotalSubsidyProportions())
@@ -84,9 +84,8 @@ func createCoinbaseTx(coinBaseVal uint64,coinbaseScript []byte, opReturnPkScript
 		hasTax=true
 	}
 	// Create a coinbase with correct block subsidy and extranonce.
-	subsidy := CalcBlockWorkSubsidy(coinBaseVal, params)
+	subsidy := coinBaseVal
 	tax := CalcBlockTaxSubsidy(coinBaseVal, params)
-
 	// output
 	// Create the script to pay to the provided payment address if one was
 	// specified.  Otherwise create a script that allows the coinbase to be

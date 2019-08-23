@@ -89,6 +89,7 @@ func (this *QitmeerWork) Submit (subm string) error {
 		if strings.Contains(res.Result,"The tips of block is expired"){
 			return ErrSameWork
 		}
+		fmt.Println("【submit error】",string(body))
 		return errors.New("【submit data failed】"+res.Result)
 	}
 	return nil
