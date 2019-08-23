@@ -4,8 +4,10 @@
 package qitmeer
 
 import (
+	"encoding/hex"
 	"fmt"
 	"github.com/Qitmeer/go-opencl/cl"
+	"github.com/Qitmeer/qitmeer-lib/common/hash"
 	"qitmeer-miner/common"
 	"qitmeer-miner/core"
 	"log"
@@ -152,8 +154,10 @@ func (this *QitmeerRobot)SubmitWork() {
 					continue
 				}
 				var err error
-				var height ,txCount string
+				var height ,txCount ,block string
 				if this.Pool {
+					arr := strings.Split(str,"-")
+					block = arr[0]
 					err = this.Work.PoolSubmit(str)
 				} else {
 					//solo miner
@@ -161,7 +165,8 @@ func (this *QitmeerRobot)SubmitWork() {
 					txCount = arr[1]
 
 					height = arr[2]
-					err = this.Work.Submit(arr[0])
+					block = arr[0]
+					err = this.Work.Submit(block)
 				}
 				if err != nil{
 					if err != ErrSameWork{
@@ -173,6 +178,8 @@ func (this *QitmeerRobot)SubmitWork() {
 						}
 					}
 				} else {
+					byt ,_:= hex.DecodeString(block)
+					log.Println("[Found hash and submit]",hash.DoubleHashH(byt[0:128]))
 					atomic.AddUint64(&this.ValidShares, 1)
 					count ,_ := strconv.Atoi(txCount)
 					this.AllTransactionsCount += int64(count)
@@ -192,7 +199,7 @@ func (this *QitmeerRobot)SubmitWork() {
 
 // stats the submit result
 func (this *QitmeerRobot)Status()  {
-	t := time.NewTicker(time.Second * 5)
+	t := time.NewTicker(time.Second * 30)
 	defer t.Stop()
 	for {
 		select {

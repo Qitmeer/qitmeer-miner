@@ -40,7 +40,7 @@ type Device struct{
 	Kernel     *cl.Kernel
 	Program     	*cl.Program
 	ClDevice         *cl.Device
-	Started          uint32
+	Started          int64
 	GlobalItemSize int
 	CurrentWorkID uint64
 	Quit chan os.Signal //must init
@@ -62,7 +62,7 @@ func (this *Device)Init(i int,device *cl.Device,pool bool,q chan os.Signal,cfg *
 	this.IsValid=true
 	this.Pool=pool
 	this.SubmitData=make(chan string)
-	this.Started=uint32(time.Now().Unix())
+	this.Started=time.Now().Unix()
 	this.GlobalItemSize= int(math.Exp2(float64(this.Cfg.OptionConfig.Intensity)))
 	this.Quit=q
 	this.AllDiffOneShares = 0
@@ -130,17 +130,19 @@ func (this *Device)Status()  {
 			if !this.IsValid{
 				return
 			}
-			secondsElapsed := uint32(time.Now().Unix()) - this.Started
+			secondsElapsed := time.Now().Unix() - this.Started
 			//diffOneShareHashesAvg := uint64(0x00000000FFFFFFFF)
 			if this.AllDiffOneShares <= 0 || secondsElapsed <= 0{
+				log.Println(this.AllDiffOneShares,secondsElapsed)
 				continue
 			}
 			averageHashRate := float64(this.AllDiffOneShares) /
 				float64(secondsElapsed)
+			this.AverageHashRate = (this.AverageHashRate+averageHashRate)/2
 			log.Printf("DEVICE_ID #%d (%s) %v",
 				this.MinerId,
 				this.ClDevice.Name(),
-				common.FormatHashRate(averageHashRate),
+				common.FormatHashRate(this.AverageHashRate),
 			)
 		}
 	}

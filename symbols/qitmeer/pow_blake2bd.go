@@ -14,7 +14,6 @@ import (
 	"qitmeer-miner/common"
 	"qitmeer-miner/core"
 	"qitmeer-miner/kernel"
-	"sync/atomic"
 	"time"
 	//"strconv"
 )
@@ -115,7 +114,7 @@ func (this *Blake2bD) Mine() {
 		if len(this.Work.PoolWork.WorkData) <= 0 && this.Work.Block.Height <= 0 {
 			continue
 		}
-		this.Started = uint32(time.Now().Unix())
+		this.Started = time.Now().Unix()
 		this.AllDiffOneShares = 0
 		this.HasNewWork = false
 		offset := 0
@@ -153,14 +152,13 @@ func (this *Blake2bD) Mine() {
 				this.IsValid = false
 				break
 			}
-			atomic.AddUint64(&this.AllDiffOneShares, 1*uint64(this.GlobalItemSize))
+			this.AllDiffOneShares += uint64(this.GlobalItemSize)
 			if this.NonceOut[0] != 0 || this.NonceOut[1] != 0 || this.NonceOut[2] != 0 || this.NonceOut[3] != 0 ||
 				this.NonceOut[4] != 0 || this.NonceOut[5] != 0 || this.NonceOut[6] != 0 || this.NonceOut[7] != 0 {
 				//Found Hash
 				this.header.HeaderBlock.Nonce = binary.LittleEndian.Uint64(this.NonceOut)
 				h := this.header.HeaderBlock.BlockHash()
 				if HashToBig(&h).Cmp(this.header.TargetDiff) <= 0 {
-					log.Println("#",this.MinerId,"[Found hash and submit]",h)
 					subm := hex.EncodeToString(BlockData(this.header.HeaderBlock))
 					if !this.Pool{
 						subm += common.Int2varinthex(int64(len(this.header.Parents)))
@@ -194,16 +192,4 @@ func (this *Blake2bD) Mine() {
 			}
 		}
 	}
-}
-
-func (this *Blake2bD) SubmitShare(substr chan string) {
-	this.Device.SubmitShare(substr)
-}
-
-func (this *Blake2bD)Status()  {
-	this.Device.Status()
-}
-
-func (this *Blake2bD)Release()  {
-	this.Device.Release()
 }
