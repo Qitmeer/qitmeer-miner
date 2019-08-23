@@ -126,8 +126,7 @@ func (this *QitmeerRobot)ListenWork() {
 					if !dev.GetIsValid(){
 						continue
 					}
-					newWork := this.Work
-					dev.SetNewWork(&newWork)
+					dev.SetNewWork(&this.Work)
 				}
 			} else{
 				this.Work.Block.Height = 0
