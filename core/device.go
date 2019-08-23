@@ -132,7 +132,7 @@ func (this *Device)Status()  {
 			}
 			secondsElapsed := uint32(time.Now().Unix()) - this.Started
 			//diffOneShareHashesAvg := uint64(0x00000000FFFFFFFF)
-			if this.AllDiffOneShares <= 0{
+			if this.AllDiffOneShares <= 0 || secondsElapsed <= 0{
 				continue
 			}
 			averageHashRate := float64(this.AllDiffOneShares) /
