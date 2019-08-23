@@ -289,10 +289,6 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 	// Handle environment variable expansion in the RPC certificate path.
 	soloCfg.RPCCert = cleanAndExpandPath(soloCfg.RPCCert)
 
-	// Add default port to RPC server based on --testnet flag
-	// if needed.
-	soloCfg.RPCServer = soloCfg.RPCServer
-
 	return &GlobalConfig{
 		optionalCfg,
 		fileCfg,
