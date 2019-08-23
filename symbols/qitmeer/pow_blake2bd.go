@@ -160,7 +160,7 @@ func (this *Blake2bD) Mine() {
 				this.header.HeaderBlock.Nonce = binary.LittleEndian.Uint64(this.NonceOut)
 				h := this.header.HeaderBlock.BlockHash()
 				if HashToBig(&h).Cmp(this.header.TargetDiff) <= 0 {
-					log.Println("[Found Hash]",h)
+					log.Println("#",this.MinerId,"[Found hash and submit]",h)
 					subm := hex.EncodeToString(BlockData(this.header.HeaderBlock))
 					if !this.Pool{
 						subm += common.Int2varinthex(int64(len(this.header.Parents)))
