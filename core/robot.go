@@ -8,6 +8,8 @@ import (
 	"qitmeer-miner/common"
 	"log"
 	"os"
+	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -45,9 +47,27 @@ func (this *MinerRobot)InitDevice()  {
 	if this.Cfg.OptionConfig.CPUMiner{
 		typ = common.DevicesTypesForCPUMining
 	}
-	this.ClDevices = common.GetDevices(typ)
-	if this.ClDevices == nil{
+	clDs := common.GetDevices(typ)
+	if clDs == nil{
 		log.Println("some error occurs!")
+		return
+	}
+	useDevices := []string{}
+	if this.Cfg.OptionConfig.UseDevices != ""{
+		useDevices = strings.Split(this.Cfg.OptionConfig.UseDevices,",")
+	}
+	if len(useDevices) > 0{
+		for k := range clDs{
+			if common.InArray(strconv.Itoa(k),useDevices){
+				log.Println("【Select mining Devices】",k,clDs[k].Name())
+				this.ClDevices = append(this.ClDevices,clDs[k])
+			}
+		}
+	} else{
+		this.ClDevices = clDs
+	}
+	if len(this.ClDevices) < 1{
+		log.Fatalln("You Don't select any GPU devices to mining!")
 		return
 	}
 }

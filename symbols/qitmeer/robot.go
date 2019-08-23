@@ -128,8 +128,6 @@ func (this *QitmeerRobot)ListenWork() {
 					}
 					dev.SetNewWork(&this.Work)
 				}
-			} else{
-				this.Work.Block.Height = 0
 			}
 		}
 		time.Sleep(1*time.Second)

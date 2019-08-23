@@ -90,6 +90,9 @@ The Optional Config Option:
                       separated list. (24)
       --worksize=     The explicitly declared sizes of the work to do per device (overrides intensity). Single
                       global value or a comma separated list. (256)
+      --timeout=      rpc timeout. (60)
+      --use_devices=  all gpu devices,you can use ./qitmeer-miner -l to see. examples:0,1 means select the #0 device
+                      and #1 device to mining | 0 means only select the #0 device to mining
 
 Help Options:
   -h, --help          Show this help message

@@ -24,8 +24,8 @@ func GetDevices(t cl.DeviceType) []*cl.Device {
 		}
 		for _, device := range platormDevices {
 			clDevices = append(clDevices, device)
-			log.Println(platform.Name(),fmt.Sprintf("Found Device : %d | name: %s | MaxGroupSize: %d | MaxAllocMemory: %.2f MB | MaxGlobalMemory: %.2f MB",i,device.Name(),
-				device.MaxWorkGroupSize(),float64(device.MaxMemAllocSize())/1024.00/1024.00 ,float64(device.GlobalMemSize())/1024.00/1024.00 ))
+			log.Println(platform.Name(),fmt.Sprintf("Found Device : %d | name: %s | MaxGroupSize: %d | MaxAllocMemory: %.2f MB",i,device.Name(),
+				device.MaxWorkGroupSize(),float64(device.MaxMemAllocSize())/1024.00/1024.00 ))
 
 			i++
 		}

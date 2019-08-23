@@ -41,6 +41,7 @@ func (this *QitmeerWork) Get () bool {
 	body := this.Rpc.RpcResult("getBlockTemplate",[]interface{}{})
 	if body == nil{
 		log.Println("network failed")
+		this.Block.Height = 0
 		return false
 	}
 	var blockTemplate getResponseJson
