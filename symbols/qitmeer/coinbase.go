@@ -75,8 +75,6 @@ func createCoinbaseTx(coinBaseVal uint64,coinbaseScript []byte, opReturnPkScript
 		PreviousOut: *types.NewOutPoint(&hash.Hash{},
 			types.MaxPrevOutIndex ),
 		Sequence:        types.MaxTxInSequenceNum,
-		BlockOrder:      types.NullBlockOrder,
-		TxIndex:         types.NullTxIndex,
 		SignScript:      coinbaseScript,
 	})
 
@@ -132,7 +130,7 @@ func createCoinbaseTx(coinBaseVal uint64,coinbaseScript []byte, opReturnPkScript
 		})
 	}
 	// AmountIn.
-	tx.TxIn[0].AmountIn = subsidy + uint64(tax)  //TODO, remove type conversion
+	//tx.TxIn[0].AmountIn = subsidy + uint64(tax)  //TODO, remove type conversion
 	return types.NewTx(tx), nil
 }
 
@@ -191,7 +189,7 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, 
 	}
 	// miner get tx tax
 	coinbaseTx.Tx.TxOut[0].Amount += uint64(totalTxFee)
-	txBuf,err := coinbaseTx.Tx.Serialize(types.TxSerializeFull)
+	txBuf,err := coinbaseTx.Tx.Serialize()
 	if err != nil {
 		context := "Failed to serialize transaction"
 		log.Println(context)
@@ -199,12 +197,12 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, 
 	}
 	if !h.HasCoinbasePack {
 		newtransactions := make(Transactionses,0)
-		newtransactions = append(newtransactions,Transactions{coinbaseTx.Tx.TxHashFull(),hex.EncodeToString(txBuf),0})
+		newtransactions = append(newtransactions,Transactions{coinbaseTx.Tx.TxHash(),hex.EncodeToString(txBuf),0})
 		newtransactions = append(newtransactions,transactions...)
 		h.Transactions = newtransactions
 		h.HasCoinbasePack = true
 	} else {
-		h.Transactions[0] = Transactions{coinbaseTx.Tx.TxHashFull(),hex.EncodeToString(txBuf),0}
+		h.Transactions[0] = Transactions{coinbaseTx.Tx.TxHash(),hex.EncodeToString(txBuf),0}
 	}
 	return nil
 }
