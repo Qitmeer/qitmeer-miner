@@ -135,6 +135,21 @@ func createCoinbaseTx(coinBaseVal uint64,coinbaseScript []byte, opReturnPkScript
 
 //calc coinbase
 func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, extraNonce uint64,payAddressS string) error{
+	transactions := make(Transactionses,0)
+	totalTxFee := int64(0)
+	if !h.HasCoinbasePack {
+		for i:=0;i<len(h.Transactions);i++{
+			transactions = append(transactions,h.Transactions[i])
+		}
+		sort.Sort(transactions)
+		for i:=0;i<len(transactions);i++{
+			totalTxFee += transactions[i].Fee
+		}
+	} else{
+		for i:=1;i<len(h.Transactions);i++{
+			totalTxFee += h.Transactions[i].Fee
+		}
+	}
 	payToAddress,err := address.DecodeAddress(payAddressS)
 	if err != nil {
 		return err
@@ -148,7 +163,7 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, 
 		return err
 	}
 	//uit := 100000000
-	coinbaseTx, err := createCoinbaseTx(uint64(h.Coinbasevalue),
+	coinbaseTx, err := createCoinbaseTx(uint64(h.Coinbasevalue)-uint64(totalTxFee),
 		coinbaseScript,
 		opReturnPkScript,
 		payToAddress,
@@ -157,35 +172,7 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, 
 		log.Println(err)
 		return err
 	}
-	transactions := make(Transactionses,0)
-	totalTxFee := int64(0)
-	if !h.HasCoinbasePack {
-		tmpTrx := make(Transactionses,0)
-		for i:=0;i<len(h.Transactions);i++{
-			tmpTrx = append(tmpTrx,h.Transactions[i])
-		}
-		sort.Sort(tmpTrx)
-		allSigCount := 0
-		//every time pack max 1000 transactions and max 5000 sign scripts
-		txCount := len(tmpTrx)
-		if txCount>MAX_TX_COUNT{
-			txCount = MAX_TX_COUNT
-		}
-		for i:=0;i<txCount;i++{
-			if allSigCount > MAX_SIG_COUNT - 1{
-				break
-			}
-			transactions = append(transactions,tmpTrx[i])
-			allSigCount += tmpTrx[i].GetSigCount()
-		}
-		for i:=0;i<len(transactions);i++{
-			totalTxFee += transactions[i].Fee
-		}
-	} else{
-		for i:=1;i<len(h.Transactions);i++{
-			totalTxFee += h.Transactions[i].Fee
-		}
-	}
+
 	// miner get tx tax
 	coinbaseTx.Tx.TxOut[0].Amount += uint64(totalTxFee)
 	txBuf,err := coinbaseTx.Tx.Serialize()
