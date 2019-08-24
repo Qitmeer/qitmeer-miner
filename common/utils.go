@@ -333,3 +333,22 @@ func RandGenerator(n int) chan uint32 {
 	}(n)
 	return out
 }
+
+func InArray( val interface{},arr interface{}) bool {
+	switch arr.(type) {
+	case []string:
+		for _,v := range arr.([]string){
+			if v == val{
+				return true
+			}
+		}
+	case []int:
+		for _,v := range arr.([]int){
+			if v == val{
+				return true
+			}
+		}
+	}
+
+	return false
+}

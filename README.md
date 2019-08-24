@@ -56,10 +56,9 @@ Usage:
 
 Debug Command:
   -l, --listdevices   List number of devices.
-  -T, --testpow=      test pow blake2bd|cuckaroo|cuckatoo
 
 The Config File Options:
-  -C, --configfile=   Path to configuration file (/Users/fanxu/www/go/src/qitmeer-miner/qitmeer.conf)
+  -C, --configfile=   Path to configuration file
       --minerlog=     Write miner log file (/Users/fanxu/www/go/src/qitmeer-miner/miner.log)
 
 The Necessary Config Options:
@@ -68,13 +67,13 @@ The Necessary Config Options:
   -N, --network=      network privnet|testnet|mainnet (mainnet)
 
 The Solo Config Option:
-  -M, --mineraddress= Miner Address (RmN4SADy42FKmN8ARKieX9iHh9icptdgYNn)
-  -s, --rpcserver=    RPC server to connect to (127.0.0.1:1234)
-  -u, --rpcuser=      RPC username (test)
+  -M, --mineraddress= Miner Address
+  -s, --rpcserver=    RPC server to connect to (127.0.0.1)
+  -u, --rpcuser=      RPC username
   -p, --rpcpass=      RPC password
-      --randstr=      Rand String,Your Unique Marking. (Come from qitmeer!)
+      --randstr=      Rand String,Your Unique Marking. (Come from Qitmeer!)
       --notls         Do not verify tls certificates (true)
-      --rpccert=      RPC server certificate chain for validation (CA.cert)
+      --rpccert=      RPC server certificate chain for validation
 
 The pool Config Option:
   -o, --pool=         Pool to connect to (e.g.stratum+tcp://pool:port)
@@ -82,15 +81,19 @@ The pool Config Option:
   -n, --poolpass=     Pool password
 
 The Optional Config Option:
-      --trimmerTimes= the cuckaroo trimmer times (40)
+      --cpuminer      CPUMiner (false)
       --proxy=        Connect via SOCKS5 proxy (eg. 127.0.0.1:9050)
       --proxyuser=    Username for proxy server
       --proxypass=    Password for proxy server
-      --intensity=    Intensities (the work size is 2^intensity) per device. Single global value or a comma
-                      separated list. (24)
-      --worksize=     The explicitly declared sizes of the work to do per device (overrides intensity). Single
-                      global value or a comma separated list. (256)
+      --trimmerTimes= the cuckaroo trimmer times (40)
+      --intensity=    Intensities (the work size is 2^intensity) per device. Single global value or a comma separated list.
+                      (24)
+      --worksize=     The explicitly declared sizes of the work to do per device (overrides intensity). Single global value
+                      or a comma separated list. (256)
+      --timeout=      rpc timeout. (60)
+      --use_devices=  all gpu devices,you can use ./qitmeer-miner -l to see. examples:0,1 use the #0 device and #1 device
 
 Help Options:
   -h, --help          Show this help message
+Usage to see  ./qitmeer-miner -h
 ```

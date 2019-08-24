@@ -10,12 +10,11 @@ import (
 	"github.com/Qitmeer/qitmeer-lib/core/types"
 	"github.com/Qitmeer/qitmeer-lib/engine/txscript"
 	"github.com/Qitmeer/qitmeer-lib/params"
+	"github.com/google/uuid"
 	"log"
 	"qitmeer-miner/common"
 	"sort"
 )
-
-const MINER_DEVELOP_TEAM_FOR_TAX_ADDR = "TmaTi4yt947FXPcWTAkMNDqtRELKceEFBb5"
 
 // standardCoinbaseOpReturn creates a standard OP_RETURN output to insert into
 // coinbase to use as extranonces. The OP_RETURN pushes 32 bytes.
@@ -31,16 +30,10 @@ func standardCoinbaseOpReturn(enData []byte) ([]byte, error) {
 }
 
 func standardCoinbaseScript(randStr string,nextBlockHeight uint64, extraNonce uint64) ([]byte, error) {
+	uniqueStr := uuid.New()
 	return txscript.NewScriptBuilder().AddInt64(int64(nextBlockHeight)).
-		AddInt64(int64(extraNonce)).AddData([]byte(randStr)).
+		AddInt64(int64(extraNonce)).AddData([]byte(randStr)).AddData([]byte(uniqueStr.String())).
 		Script()
-}
-
-// CalcBlockWorkSubsidy calculates the proof of work subsidy for a block as a
-// proportion of the total subsidy. (aka, the coinbase subsidy)
-func CalcBlockWorkSubsidy(coinbaseVal uint64,  params *params.Params) uint64 {
-	work,_,_:=calcBlockProportion(coinbaseVal,params)
-	return work
 }
 
 // CalcBlockTaxSubsidy calculates the subsidy for the organization address in the
@@ -50,8 +43,15 @@ func CalcBlockTaxSubsidy(coinbaseVal uint64, params *params.Params) uint64 {
 	return tax
 }
 
+func calcSubsidyByCoinBase(coinbaseVal uint64, params *params.Params) uint64{
+	workPro := float64(params.WorkRewardProportion)
+	proportions := float64(params.TotalSubsidyProportions())
+	subsidy := float64(coinbaseVal) * proportions / workPro
+	return uint64(subsidy)
+}
+
 func calcBlockProportion(coinbaseVal uint64, params *params.Params) (uint64,uint64,uint64) {
-	subsidy := coinbaseVal
+	subsidy := calcSubsidyByCoinBase(coinbaseVal,params)
 	workPro := float64(params.WorkRewardProportion)
 	stakePro:= float64(params.StakeRewardProportion)
 	proportions := float64(params.TotalSubsidyProportions())
@@ -75,35 +75,23 @@ func createCoinbaseTx(coinBaseVal uint64,coinbaseScript []byte, opReturnPkScript
 		PreviousOut: *types.NewOutPoint(&hash.Hash{},
 			types.MaxPrevOutIndex ),
 		Sequence:        types.MaxTxInSequenceNum,
-		BlockOrder:      types.NullBlockOrder,
-		TxIndex:         types.NullTxIndex,
 		SignScript:      coinbaseScript,
 	})
 
 	hasTax:=false
-	params.OrganizationPkScript = []byte("wqewqrre")
 	if params.BlockTaxProportion > 0 &&
 		len(params.OrganizationPkScript) > 0{
 		hasTax=true
 	}
 	// Create a coinbase with correct block subsidy and extranonce.
-	subsidy := CalcBlockWorkSubsidy(coinBaseVal, params)
+	subsidy := coinBaseVal
 	tax := CalcBlockTaxSubsidy(coinBaseVal, params)
-
 	// output
 	// Create the script to pay to the provided payment address if one was
 	// specified.  Otherwise create a script that allows the coinbase to be
 	// redeemable by anyone.
 	var pksSubsidy []byte
 	var err error
-	mAddr ,err := address.DecodeAddress(MINER_DEVELOP_TEAM_FOR_TAX_ADDR)
-	if err != nil {
-		return nil, err
-	}
-	params.OrganizationPkScript, err = txscript.PayToAddrScript(mAddr)
-	if err != nil {
-		return nil, err
-	}
 	if addr != nil {
 		pksSubsidy, err = txscript.PayToAddrScript(addr)
 		if err != nil {
@@ -141,12 +129,27 @@ func createCoinbaseTx(coinBaseVal uint64,coinbaseScript []byte, opReturnPkScript
 		})
 	}
 	// AmountIn.
-	tx.TxIn[0].AmountIn = subsidy + uint64(tax)  //TODO, remove type conversion
+	//tx.TxIn[0].AmountIn = subsidy + uint64(tax)  //TODO, remove type conversion
 	return types.NewTx(tx), nil
 }
 
 //calc coinbase
 func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, extraNonce uint64,payAddressS string) error{
+	transactions := make(Transactionses,0)
+	totalTxFee := int64(0)
+	if !h.HasCoinbasePack {
+		for i:=0;i<len(h.Transactions);i++{
+			transactions = append(transactions,h.Transactions[i])
+		}
+		sort.Sort(transactions)
+		for i:=0;i<len(transactions);i++{
+			totalTxFee += transactions[i].Fee
+		}
+	} else{
+		for i:=1;i<len(h.Transactions);i++{
+			totalTxFee += h.Transactions[i].Fee
+		}
+	}
 	payToAddress,err := address.DecodeAddress(payAddressS)
 	if err != nil {
 		return err
@@ -160,7 +163,7 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, 
 		return err
 	}
 	//uit := 100000000
-	coinbaseTx, err := createCoinbaseTx(uint64(h.Coinbasevalue),
+	coinbaseTx, err := createCoinbaseTx(uint64(h.Coinbasevalue)-uint64(totalTxFee),
 		coinbaseScript,
 		opReturnPkScript,
 		payToAddress,
@@ -169,38 +172,10 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, 
 		log.Println(err)
 		return err
 	}
-	transactions := make(Transactionses,0)
-	totalTxFee := int64(0)
-	if !h.HasCoinbasePack {
-		tmpTrx := make(Transactionses,0)
-		for i:=0;i<len(h.Transactions);i++{
-			tmpTrx = append(tmpTrx,h.Transactions[i])
-		}
-		sort.Sort(tmpTrx)
-		allSigCount := 0
-		//every time pack max 1000 transactions and max 5000 sign scripts
-		txCount := len(tmpTrx)
-		if txCount>MAX_TX_COUNT{
-			txCount = MAX_TX_COUNT
-		}
-		for i:=0;i<txCount;i++{
-			if allSigCount > MAX_SIG_COUNT - 1{
-				break
-			}
-			transactions = append(transactions,tmpTrx[i])
-			allSigCount += tmpTrx[i].GetSigCount()
-		}
-		for i:=0;i<len(transactions);i++{
-			totalTxFee += transactions[i].Fee
-		}
-	} else{
-		for i:=1;i<len(h.Transactions);i++{
-			totalTxFee += h.Transactions[i].Fee
-		}
-	}
+
 	// miner get tx tax
 	coinbaseTx.Tx.TxOut[0].Amount += uint64(totalTxFee)
-	txBuf,err := coinbaseTx.Tx.Serialize(types.TxSerializeFull)
+	txBuf,err := coinbaseTx.Tx.Serialize()
 	if err != nil {
 		context := "Failed to serialize transaction"
 		log.Println(context)
@@ -208,12 +183,12 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, 
 	}
 	if !h.HasCoinbasePack {
 		newtransactions := make(Transactionses,0)
-		newtransactions = append(newtransactions,Transactions{coinbaseTx.Tx.TxHashFull(),hex.EncodeToString(txBuf),0})
+		newtransactions = append(newtransactions,Transactions{coinbaseTx.Tx.TxHash(),hex.EncodeToString(txBuf),0})
 		newtransactions = append(newtransactions,transactions...)
 		h.Transactions = newtransactions
 		h.HasCoinbasePack = true
 	} else {
-		h.Transactions[0] = Transactions{coinbaseTx.Tx.TxHashFull(),hex.EncodeToString(txBuf),0}
+		h.Transactions[0] = Transactions{coinbaseTx.Tx.TxHash(),hex.EncodeToString(txBuf),0}
 	}
 	return nil
 }

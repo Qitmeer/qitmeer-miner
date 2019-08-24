@@ -41,6 +41,7 @@ func (this *QitmeerWork) Get () bool {
 	body := this.Rpc.RpcResult("getBlockTemplate",[]interface{}{})
 	if body == nil{
 		log.Println("network failed")
+		this.Block.Height = 0
 		return false
 	}
 	var blockTemplate getResponseJson
@@ -89,6 +90,7 @@ func (this *QitmeerWork) Submit (subm string) error {
 		if strings.Contains(res.Result,"The tips of block is expired"){
 			return ErrSameWork
 		}
+		fmt.Println("【submit error】",string(body))
 		return errors.New("【submit data failed】"+res.Result)
 	}
 	return nil

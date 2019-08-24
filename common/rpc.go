@@ -10,11 +10,8 @@ import (
 	"net"
 	"net/http"
 	"qitmeer-miner/common/socks"
+	"strings"
 	"time"
-)
-const (
-	MaxIdleConnections int = 20
-	RequestTimeout      = 60
 )
 
 type RpcClient struct {
@@ -54,6 +51,10 @@ func (rpc *RpcClient)newHTTPClient() (*http.Client, error) {
 			RootCAs:            pool,
 			InsecureSkipVerify: rpc.Cfg.SoloConfig.NoTLS,
 		}
+	} else {
+		tlsConfig = &tls.Config{
+			InsecureSkipVerify: rpc.Cfg.SoloConfig.NoTLS,
+		}
 	}
 
 	// Create and return the new HTTP client potentially configured with a
@@ -63,8 +64,8 @@ func (rpc *RpcClient)newHTTPClient() (*http.Client, error) {
 			Dial:            dial,
 			TLSClientConfig: tlsConfig,
 			DialContext: (&net.Dialer{
-				Timeout:   RequestTimeout * time.Second,
-				KeepAlive: RequestTimeout * time.Second,
+				Timeout:   time.Duration(rpc.Cfg.OptionConfig.Timeout) * time.Second,
+				KeepAlive: time.Duration(rpc.Cfg.OptionConfig.Timeout) * time.Second,
 				DualStack: true,
 			}).DialContext,
 		},
@@ -82,7 +83,10 @@ func (rpc *RpcClient)RpcResult(method string,params []interface{}) []byte{
 		log.Println("rpc params error:",err)
 		return nil
 	}
-	url := protocol + "://" + rpc.Cfg.SoloConfig.RPCServer
+	url := rpc.Cfg.SoloConfig.RPCServer
+	if !strings.Contains(rpc.Cfg.SoloConfig.RPCServer,"://"){
+		url = protocol + "://" + url
+	}
 	jsonStr := []byte(`{"jsonrpc": "2.0", "method": "`+method+`", "params": `+string(paramStr)+`, "id": 1}`)
 	bodyBuff := bytes.NewBuffer(jsonStr)
 	httpRequest, err := http.NewRequest("POST", url, bodyBuff)
@@ -102,7 +106,7 @@ func (rpc *RpcClient)RpcResult(method string,params []interface{}) []byte{
 		log.Println("rpc auth faild",err)
 		return nil
 	}
-	httpClient.Timeout = RequestTimeout*time.Second
+	httpClient.Timeout = time.Duration(rpc.Cfg.OptionConfig.Timeout) * time.Second
 	httpResponse, err := httpClient.Do(httpRequest)
 
 	if err != nil {

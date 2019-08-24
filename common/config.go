@@ -34,6 +34,7 @@ var (
 	maxWorkSize   = uint32(0xFFFFFFFF - 255)
 	defaultPow  ="blake2bd"
 	defaultSymbol  ="PMEER"
+	defaultTimeout  = 60
 )
 
 type DeviceConfig struct {
@@ -55,6 +56,8 @@ type OptionalConfig struct {
 	TrimmerCount     int `long:"trimmerTimes" description:"the cuckaroo trimmer times"`
 	Intensity         int `long:"intensity" description:"Intensities (the work size is 2^intensity) per device. Single global value or a comma separated list."`
 	WorkSize          int `long:"worksize" description:"The explicitly declared sizes of the work to do per device (overrides intensity). Single global value or a comma separated list."`
+	Timeout          int `long:"timeout" description:"rpc timeout." default-mask:"60"`
+	UseDevices       string `long:"use_devices" description:"all gpu devices,you can use ./qitmeer-miner -l to see. examples:0,1 use the #0 device and #1 device"`
 }
 
 type PoolConfig struct {
@@ -175,12 +178,14 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 		WorkSize:  defaultWorkSize,
 		TrimmerCount:  defaultTrimmerCount,
 		CPUMiner:  false,
+		Timeout:  defaultTimeout,
+		UseDevices:  "",
 	}
 
 	// Create the home directory if it doesn't already exist.
 	err := os.MkdirAll(minerHomeDir, 0700)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
+		_,_ = fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(-1)
 	}
 	appName := filepath.Base(os.Args[0])
@@ -283,10 +288,6 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 
 	// Handle environment variable expansion in the RPC certificate path.
 	soloCfg.RPCCert = cleanAndExpandPath(soloCfg.RPCCert)
-
-	// Add default port to RPC server based on --testnet flag
-	// if needed.
-	soloCfg.RPCServer = normalizeAddress(soloCfg.RPCServer, defaultRPCPort)
 
 	return &GlobalConfig{
 		optionalCfg,
