@@ -137,7 +137,7 @@ func (this *Device)Status()  {
 			averageHashRate := float64(this.AllDiffOneShares) /
 				float64(secondsElapsed)
 			this.AverageHashRate = (this.AverageHashRate+averageHashRate)/2
-			common.MinerLoger.Infof("DEVICE_ID #%d (%s) %v",
+			common.MinerLoger.Debugf("DEVICE_ID #%d (%s) %v",
 				this.MinerId,
 				this.ClDevice.Name(),
 				common.FormatHashRate(this.AverageHashRate),

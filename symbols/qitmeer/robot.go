@@ -110,7 +110,7 @@ func (this *QitmeerRobot)Run() {
 
 // ListenWork
 func (this *QitmeerRobot)ListenWork() {
-	common.MinerLoger.Infof("listen new work server")
+	common.MinerLoger.Debugf("listen new work server")
 	time.Sleep(1*time.Second)
 	for {
 		select {
@@ -138,7 +138,7 @@ func (this *QitmeerRobot)ListenWork() {
 
 // ListenWork
 func (this *QitmeerRobot)SubmitWork() {
-	common.MinerLoger.Infof("listen submit block server")
+	common.MinerLoger.Debugf("listen submit block server")
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
@@ -178,7 +178,7 @@ func (this *QitmeerRobot)SubmitWork() {
 					}
 				} else {
 					byt ,_:= hex.DecodeString(block)
-					common.MinerLoger.Infof("[Found hash and submit]%s",hash.DoubleHashH(byt[0:Blake2bBlockLength]))
+					common.MinerLoger.Debugf("[Found hash and submit]%s",hash.DoubleHashH(byt[0:Blake2bBlockLength]))
 					atomic.AddUint64(&this.ValidShares, 1)
 					if !this.Pool{
 						count ,_ := strconv.Atoi(txCount)
@@ -219,7 +219,7 @@ func (this *QitmeerRobot)Status()  {
 				staleShares = atomic.LoadUint64(&this.Stratu.StaleShares)
 			}
 			total := valid + rejected + staleShares
-			common.MinerLoger.Infof("Global stats: Accepted: %v,Stale: %v, Rejected: %v, Total: %v",
+			common.MinerLoger.Debugf("Global stats: Accepted: %v,Stale: %v, Rejected: %v, Total: %v",
 				valid,
 				staleShares,
 				rejected,

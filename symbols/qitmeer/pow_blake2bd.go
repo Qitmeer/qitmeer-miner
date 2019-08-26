@@ -70,7 +70,7 @@ func (this *Blake2bD) InitDevice() {
 		this.IsValid = false
 		return
 	}
-	common.MinerLoger.Infof("- Device ID:%d- Global item size:%d(Intensity:%d)- Local item size:%d",this.MinerId, this.GlobalItemSize,this.Cfg.OptionConfig.Intensity, this.LocalItemSize)
+	common.MinerLoger.Debugf("- Device ID:%d- Global item size:%d(Intensity:%d)- Local item size:%d",this.MinerId, this.GlobalItemSize,this.Cfg.OptionConfig.Intensity, this.LocalItemSize)
 	this.NonceOut = make([]byte, 8)
 	if _, err = this.CommandQueue.EnqueueWriteBufferByte(this.NonceOutObj, true, 0, this.NonceOut, nil); err != nil {
 		common.MinerLoger.Infof("-", this.MinerId, err)
