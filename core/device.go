@@ -6,7 +6,6 @@ package core
 
 import (
 	"github.com/Qitmeer/go-opencl/cl"
-	"log"
 	"math"
 	"os"
 	"qitmeer-miner/common"
@@ -75,7 +74,7 @@ func (this *Device)Update()  {
 	defer func() {
 		err := recover()
 		if err != nil {
-			log.Println("[error]",err)
+			common.MinerLoger.Infof("[error]",err)
 		}
 	}()
 	var err error
@@ -90,13 +89,13 @@ func (this *Device)InitDevice()  {
 	this.Context, err = cl.CreateContext([]*cl.Device{this.ClDevice})
 	if err != nil {
 		this.IsValid = false
-		log.Println("-", this.MinerId, err)
+		common.MinerLoger.Infof("-", this.MinerId, err)
 		return
 	}
 	this.CommandQueue, err = this.Context.CreateCommandQueue(this.ClDevice, 0)
 	if err != nil {
 		this.IsValid = false
-		log.Println("-", this.MinerId,  err)
+		common.MinerLoger.Infof("-", this.MinerId,  err)
 	}
 }
 
@@ -138,7 +137,7 @@ func (this *Device)Status()  {
 			averageHashRate := float64(this.AllDiffOneShares) /
 				float64(secondsElapsed)
 			this.AverageHashRate = (this.AverageHashRate+averageHashRate)/2
-			log.Printf("DEVICE_ID #%d (%s) %v",
+			common.MinerLoger.Infof("DEVICE_ID #%d (%s) %v",
 				this.MinerId,
 				this.ClDevice.Name(),
 				common.FormatHashRate(this.AverageHashRate),

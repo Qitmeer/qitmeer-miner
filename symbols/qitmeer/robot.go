@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"github.com/Qitmeer/go-opencl/cl"
 	"github.com/Qitmeer/qitmeer-lib/common/hash"
+	"log"
 	"qitmeer-miner/common"
 	"qitmeer-miner/core"
-	"log"
 	"strconv"
 	"strings"
 	"sync"
@@ -69,13 +69,13 @@ func (this *QitmeerRobot)Run() {
 		this.Stratu = &QitmeerStratum{}
 		err := this.Stratu.StratumConn(this.Cfg)
 		if err != nil {
-			log.Fatalln(err)
+			common.MinerLoger.Error(err.Error())
 			return
 		}
 		go this.Stratu.HandleReply()
 		this.Pool = true
 	}
-	log.Println(connectName,"miner start")
+	common.MinerLoger.Debugf("%s miner start",connectName)
 	this.Work = QitmeerWork{}
 	this.Work.Cfg = this.Cfg
 	this.Work.Rpc = this.Rpc
@@ -110,7 +110,7 @@ func (this *QitmeerRobot)Run() {
 
 // ListenWork
 func (this *QitmeerRobot)ListenWork() {
-	log.Println("listen new work server")
+	common.MinerLoger.Infof("listen new work server")
 	time.Sleep(1*time.Second)
 	for {
 		select {
@@ -138,7 +138,7 @@ func (this *QitmeerRobot)ListenWork() {
 
 // ListenWork
 func (this *QitmeerRobot)SubmitWork() {
-	log.Println("listen submit block server")
+	common.MinerLoger.Infof("listen submit block server")
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
@@ -163,14 +163,13 @@ func (this *QitmeerRobot)SubmitWork() {
 					//solo miner
 					arr := strings.Split(str,"-")
 					txCount = arr[1]
-
 					height = arr[2]
 					block = arr[0]
 					err = this.Work.Submit(block)
 				}
 				if err != nil{
 					if err != ErrSameWork{
-						//log.Println("【submit error】:",err)
+						//common.MinerLoger.Infof("【submit error】:",err)
 						if err == ErrStratumStaleWork{
 							atomic.AddUint64(&this.StaleShares, 1)
 						} else{
@@ -179,13 +178,15 @@ func (this *QitmeerRobot)SubmitWork() {
 					}
 				} else {
 					byt ,_:= hex.DecodeString(block)
-					log.Println("[Found hash and submit]",hash.DoubleHashH(byt[0:128]))
+					common.MinerLoger.Infof("[Found hash and submit]%s",hash.DoubleHashH(byt[0:Blake2bBlockLength]))
 					atomic.AddUint64(&this.ValidShares, 1)
-					count ,_ := strconv.Atoi(txCount)
-					this.AllTransactionsCount += int64(count)
-					logContent := fmt.Sprintf("%s,receive block, block height = %s,Including %s transactions; Received Total transactions = %d\n",
-						time.Now().Format("2006-01-02 03:04:05 PM"),height,txCount,this.AllTransactionsCount)
-					_ = common.AppendToFile(this.Cfg.LogConfig.MinerLogFile,logContent)
+					if !this.Pool{
+						count ,_ := strconv.Atoi(txCount)
+						this.AllTransactionsCount += int64(count)
+						logContent := fmt.Sprintf("%s,receive block, block height = %s,Including %s transactions; Received Total transactions = %d\n",
+							time.Now().Format("2006-01-02 03:04:05 PM"),height,txCount,this.AllTransactionsCount)
+						common.MinerLoger.Debug(logContent)
+					}
 				}
 			}
 		}
@@ -218,7 +219,7 @@ func (this *QitmeerRobot)Status()  {
 				staleShares = atomic.LoadUint64(&this.Stratu.StaleShares)
 			}
 			total := valid + rejected + staleShares
-			log.Printf("Global stats: Accepted: %v,Stale: %v, Rejected: %v, Total: %v",
+			common.MinerLoger.Infof("Global stats: Accepted: %v,Stale: %v, Rejected: %v, Total: %v",
 				valid,
 				staleShares,
 				rejected,

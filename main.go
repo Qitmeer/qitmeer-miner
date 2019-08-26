@@ -4,6 +4,7 @@
 package main
 
 import (
+	go_logger "github.com/phachon/go-logger"
 	"runtime"
 	"qitmeer-miner/core"
 	"qitmeer-miner/common"
@@ -18,12 +19,12 @@ var robotminer core.Robot
 
 //init the config file
 func init(){
+	common.MinerLoger = go_logger.NewLogger()
 	cfg, _, err := common.LoadConfig()
 	if err != nil {
-		log.Fatal("Config file error,please check it.【",err,"】")
+		log.Fatal("[error] config error,please check it.【",err,"】")
 		return
 	}
-	//test config
 	//init miner robot
 	robotminer = GetRobot(cfg)
 }
@@ -35,11 +36,11 @@ func main()  {
 	signal.Notify(c, os.Interrupt)
 	go func() {
 		<-c
-		log.Println("Got Control+C, exiting...")
+		common.MinerLoger.Info("Got Control+C, exiting...")
 		os.Exit(0)
 	}()
 	if robotminer == nil{
-		log.Fatalln("[error] Please check the coin in the README.md! if this coin is supported -S ")
+		common.MinerLoger.Error("[error] Please check the coin in the README.md! if this coin is supported, use -S to set")
 		return
 	}
 	robotminer.Run()

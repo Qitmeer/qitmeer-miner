@@ -89,7 +89,7 @@ func (this *MinerBlockData)PackageRpcHeader(work *QitmeerWork)  {
 
 //the solo work submit structure
 func (this *MinerBlockData)PackageRpcHeaderByNonce(work *QitmeerWork,nonce uint64)  {
-	//log.Println(work.Block.Blake2bDTarget)
+	//common.MinerLoger.Infof(work.Block.Blake2bDTarget)
 	bitesBy := make([]byte,8)
 	binary.LittleEndian.PutUint64(bitesBy,nonce)
 	this.HeaderData = work.Block.BlockData()

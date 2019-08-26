@@ -9,8 +9,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"qitmeer-miner/common"
 	"qitmeer-miner/core"
-	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -40,7 +40,7 @@ type QitmeerWork struct {
 func (this *QitmeerWork) Get () bool {
 	body := this.Rpc.RpcResult("getBlockTemplate",[]interface{}{})
 	if body == nil{
-		log.Println("network failed")
+		common.MinerLoger.Infof("network failed")
 		this.Block.Height = 0
 		return false
 	}
@@ -50,10 +50,10 @@ func (this *QitmeerWork) Get () bool {
 		var r map[string]interface{}
 		_ = json.Unmarshal(body,&r)
 		if _,ok := r["error"];ok{
-			log.Println("[node reply]",r["error"])
+			common.MinerLoger.Infof("[node reply]",r["error"])
 			return false
 		}
-		log.Println("[node reply]",string(body))
+		common.MinerLoger.Infof("[node reply]",string(body))
 		return false
 	}
 	if this.Block.Height > 0 && this.Block.Height == blockTemplate.Result.Height{
@@ -83,14 +83,14 @@ func (this *QitmeerWork) Submit (subm string) error {
 	var res getSubmitResponseJson
 	err := json.Unmarshal(body, &res)
 	if err != nil {
-		fmt.Println("【submit error】",string(body))
+		common.MinerLoger.Debugf("【submit error】%s",string(body))
 		return err
 	}
 	if !strings.Contains(res.Result,"Block submitted accepted") {
 		if strings.Contains(res.Result,"The tips of block is expired"){
 			return ErrSameWork
 		}
-		fmt.Println("【submit error】",string(body))
+		common.MinerLoger.Debugf("【submit error】%s",string(body))
 		return errors.New("【submit data failed】"+res.Result)
 	}
 	return nil
@@ -103,7 +103,7 @@ func (this *QitmeerWork) PoolGet () bool {
 	}
 	err := this.stra.PoolWork.PrepWork()
 	if err != nil {
-		log.Println(err)
+		common.MinerLoger.Error(err.Error())
 		return false
 	}
 
@@ -136,12 +136,12 @@ func (this *QitmeerWork) PoolSubmit (subm string) error {
 	}
 	_, err = this.stra.Conn.Write(m)
 	if err != nil {
-		log.Println("【submit error】【pool connect error】",err)
+		common.MinerLoger.Debugf("【submit error】【pool connect error】%s",err)
 		return err
 	}
 	_, err = this.stra.Conn.Write([]byte("\n"))
 	if err != nil {
-		fmt.Println(err)
+		common.MinerLoger.Debug(err.Error())
 		return err
 	}
 
