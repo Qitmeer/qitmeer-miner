@@ -11,7 +11,7 @@ var DevicesTypesForCPUMining = cl.DeviceTypeCPU
 func GetDevices(t cl.DeviceType) []*cl.Device {
 	platforms, err := cl.GetPlatforms()
 	if err != nil {
-		log.Fatalln("Get Graphics card platforms error,please check!【",err,"】")
+		log.Println("Get Graphics card platforms error,please check!【",err.Error(),"】")
 		return nil
 	}
 	clDevices := make([]*cl.Device, 0)
@@ -19,7 +19,7 @@ func GetDevices(t cl.DeviceType) []*cl.Device {
 	for _, platform := range platforms {
 		platormDevices, err := cl.GetDevices(platform, t)
 		if err != nil {
-			log.Println(platform.Name(),"Don't had Any GPU devices!")
+			log.Println(platform.Name(),"Get Devices Error:",err.Error())
 			continue
 		}
 		for _, device := range platormDevices {
@@ -31,7 +31,7 @@ func GetDevices(t cl.DeviceType) []*cl.Device {
 		}
 	}
 	if len(clDevices) < 1{
-		log.Fatalln("Don't had GPU devices to mining,please check your PC!")
+		log.Println("Don't had devices to mining,please check your PC!")
 		return nil
 	}
 	return clDevices
