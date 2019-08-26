@@ -50,10 +50,10 @@ func (this *QitmeerWork) Get () bool {
 		var r map[string]interface{}
 		_ = json.Unmarshal(body,&r)
 		if _,ok := r["error"];ok{
-			common.MinerLoger.Infof("[node reply]",r["error"])
+			common.MinerLoger.Debugf("[node reply]%v",r["error"])
 			return false
 		}
-		common.MinerLoger.Infof("[node reply]",string(body))
+		common.MinerLoger.Debugf("[node reply]%v",string(body))
 		return false
 	}
 	if this.Block.Height > 0 && this.Block.Height == blockTemplate.Result.Height{
