@@ -262,7 +262,7 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 	}
 	_ = MinerLoger.Detach("console")
 	consoleConfig := &go_logger.ConsoleConfig{
-		Color: true, //
+		Color: false, //
 		JsonFormat: false, //
 		Format: "", //
 	}
