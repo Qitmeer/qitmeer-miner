@@ -57,7 +57,7 @@ func (this *QitmeerWork) Get () bool {
 		return false
 	}
 	if this.Block.Height > 0 && this.Block.Height == blockTemplate.Result.Height &&
-		len(this.Block.Transactions) == len(blockTemplate.Result.Transactions) &&
+		len(this.Block.Transactions) == (len(blockTemplate.Result.Transactions)+1) &&
 		time.Now().Unix() - this.GetWorkTime < 120{
 		//not has new work
 		return false
