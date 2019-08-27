@@ -136,7 +136,6 @@ func (this *Blake2bD) Mine() {
 		for {
 			// if has new work ,current calc stop
 			if this.HasNewWork {
-				fmt.Println("stewrtewterterwt========")
 				break
 			}
 			this.Update()
