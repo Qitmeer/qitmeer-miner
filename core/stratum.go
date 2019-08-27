@@ -43,7 +43,7 @@ type Stratum struct {
 func (this *Stratum)StratumConn(cfg *common.GlobalConfig) error {
 	this.Cfg = cfg
 	pool := cfg.PoolConfig.Pool
-	common.MinerLoger.Infof("【Connect pool】:", pool)
+	common.MinerLoger.Debugf("【Connect pool】:%v", pool)
 	proto := "stratum+tcp://"
 	if strings.HasPrefix(this.Cfg.PoolConfig.Pool, proto) {
 		pool = strings.Replace(pool, proto, "", 1)
