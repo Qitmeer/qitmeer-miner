@@ -24,5 +24,6 @@ type Work struct {
 	sync.Mutex
 	Quit chan os.Signal
 	Started uint32
+	GetWorkTime int64
 	LastSub string //last submit string
 }

@@ -56,7 +56,9 @@ func (this *QitmeerWork) Get () bool {
 		common.MinerLoger.Debugf("[node reply]%v",string(body))
 		return false
 	}
-	if this.Block.Height > 0 && this.Block.Height == blockTemplate.Result.Height{
+	if this.Block.Height > 0 && this.Block.Height == blockTemplate.Result.Height &&
+		len(this.Block.Transactions) == (len(blockTemplate.Result.Transactions)+1) &&
+		time.Now().Unix() - this.GetWorkTime < 120{
 		//not has new work
 		return false
 	}
@@ -68,6 +70,7 @@ func (this *QitmeerWork) Get () bool {
 	_ = blockTemplate.Result.CalcCoinBase(this.Cfg,this.Cfg.SoloConfig.RandStr,uint64(0),this.Cfg.SoloConfig.MinerAddr)
 	this.Block = blockTemplate.Result
 	this.Started = uint32(time.Now().Unix())
+	this.GetWorkTime = time.Now().Unix()
 	return true
 }
 
@@ -87,10 +90,10 @@ func (this *QitmeerWork) Submit (subm string) error {
 		return err
 	}
 	if !strings.Contains(res.Result,"Block submitted accepted") {
+		common.MinerLoger.Debugf("【submit error】%s",string(body))
 		if strings.Contains(res.Result,"The tips of block is expired"){
 			return ErrSameWork
 		}
-		common.MinerLoger.Debugf("【submit error】%s",string(body))
 		return errors.New("【submit data failed】"+res.Result)
 	}
 	return nil
