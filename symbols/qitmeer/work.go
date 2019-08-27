@@ -38,7 +38,7 @@ type QitmeerWork struct {
 
 //GetBlockTemplate
 func (this *QitmeerWork) Get () bool {
-	body := this.Rpc.RpcResult("getBlockTemplate",[]interface{}{})
+	body := this.Rpc.RpcResult("getBlockTemplate",[]interface{}{[]string{}})
 	if body == nil{
 		common.MinerLoger.Infof("network failed")
 		this.Block.Height = 0
