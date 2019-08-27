@@ -31,8 +31,9 @@ __constant static const uchar blake2b_sigma[12][16] = {
 	{ 14, 10, 4,  8,  9,  15, 13, 6,  1,  12, 0,  2,  11, 7,  5,  3  } };
 
 // Blake2bDTarget is passed in via headerIn[120 - 128]
-__kernel void search(__global ulong *headerIn, __global ulong *nonceOut,__global ulong *randNonce) {
-	ulong target = headerIn[15];
+__kernel void search(__global ulong *headerIn, __global ulong *nonceOut,__global ulong *randNonce,__global ulong *targetd2) {
+	ulong target = targetd2[3];
+	ulong target2 = targetd2[2];
 	ulong nonce = (ulong)get_global_id(0)+randNonce[0];
 	//ulong nonce = target;
 	ulong m[16] = {	headerIn[0], headerIn[1],
@@ -2817,13 +2818,24 @@ __kernel void search(__global ulong *headerIn, __global ulong *nonceOut,__global
 		v[10] += v[15];
 		v[5] ^= v[10];
 		v[5] = v[5]<<(64-63) | v[5]>>63;
-		
+	
 	//if (as_ulong(as_uchar8(0x6a09e667f2bdc928 ^ v[0] ^ v[8]).s76543210) <= target) {
 	ulong res = 0xa54ff53a5f1d36f1 ^ v[3] ^ v[11];
 	uchar *a = (uchar *) &res;
 	uchar b[8] = {a[7],a[6],a[5],a[4],a[3],a[2],a[1],a[0]};
 	ulong *res1 = (ulong *) b;
-	if (as_ulong(as_uchar8(*res1).s76543210) <= target) {
+	ulong hash0 = as_ulong(as_uchar8(*res1).s76543210);
+	
+	if (target > 0 && hash0 <= target) {
+		*nonceOut = nonce;
+		return;
+	}
+
+	ulong res2 = 0x3c6ef372fe94f82b ^ v[2] ^ v[10];
+	uchar *c = (uchar *) &res2;
+	uchar d[8] = {c[7],c[6],c[5],c[4],c[3],c[2],c[1],c[0]};
+	ulong *res3 = (ulong *) d;
+	if (hash0 == target && as_ulong(as_uchar8(*res3).s76543210) <= target2) {
 		*nonceOut = nonce;
 		return;
 	}

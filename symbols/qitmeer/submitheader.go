@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"github.com/Qitmeer/qitmeer-lib/common/hash"
 	"github.com/Qitmeer/qitmeer-lib/core/types"
-	"qitmeer-miner/common"
 	"math/big"
+	"qitmeer-miner/common"
 	"time"
 )
 
@@ -16,6 +16,7 @@ type MinerBlockData struct {
 	Parents []ParentItems
 	HeaderData []byte
 	TargetDiff *big.Int
+	Target2 []byte
 	Exnonce2 string
 	JobID string
 	HeaderBlock *types.BlockHeader
@@ -44,8 +45,11 @@ func BlockComputePoolData(b []byte) []byte{
 func (this *MinerBlockData)PackagePoolHeader(work *QitmeerWork)  {
 	this.HeaderData = BlockComputePoolData(work.PoolWork.WorkData)
 	this.TargetDiff = work.stra.Target
-	nbitesBy := common.Target2BlockBits(fmt.Sprintf("%064x",this.TargetDiff))
-	copy(this.HeaderData[NONCESTART:NONCEEND],nbitesBy[:])
+	bitesBy ,_:= hex.DecodeString(fmt.Sprintf("%064x",this.TargetDiff))
+	this.Target2 = common.Reverse(bitesBy[0:32])
+	bitesBy = common.Reverse(bitesBy[:8])
+	this.Parents = work.Block.Parents
+	copy(this.HeaderData[NONCESTART:NONCEEND],bitesBy[:])
 	this.JobID = work.PoolWork.JobID
 	this.HeaderBlock = &types.BlockHeader{}
 	_ = ReadBlockHeader(this.HeaderData,this.HeaderBlock)
@@ -63,6 +67,7 @@ func (this *MinerBlockData)PackagePoolHeaderByNonce(work *QitmeerWork,nonce uint
 //the solo work submit structure
 func (this *MinerBlockData)PackageRpcHeader(work *QitmeerWork)  {
 	bitesBy ,_:= hex.DecodeString(work.Block.Target)
+	this.Target2 = common.Reverse(bitesBy[0:32])
 	bitesBy = common.Reverse(bitesBy[:8])
 	this.Parents = work.Block.Parents
 	this.Transactions = make([]Transactions,0)

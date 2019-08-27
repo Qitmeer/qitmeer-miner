@@ -14,7 +14,6 @@ import (
 	"qitmeer-miner/core"
 	"qitmeer-miner/kernel"
 	"time"
-	//"strconv"
 )
 
 type Blake2bD struct {
@@ -68,6 +67,12 @@ func (this *Blake2bD) InitDevice() {
 		this.IsValid = false
 		return
 	}
+	this.Target2Obj, err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, 32)
+	if err != nil {
+		common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
+		this.IsValid = false
+		return
+	}
 	_ = this.Kernel.SetArgBuffer(1, this.NonceOutObj)
 	this.LocalItemSize, err = this.Kernel.WorkGroupSize(this.ClDevice)
 	this.LocalItemSize = this.Cfg.OptionConfig.WorkSize
@@ -77,6 +82,7 @@ func (this *Blake2bD) InitDevice() {
 		return
 	}
 	_ = this.Kernel.SetArgBuffer(2, this.NonceRandObj)
+	_ = this.Kernel.SetArgBuffer(3, this.Target2Obj)
 	common.MinerLoger.Debugf("- Device ID:%d- Global item size:%d(Intensity:%d)- Local item size:%d",this.MinerId, this.GlobalItemSize,this.Cfg.OptionConfig.Intensity, this.LocalItemSize)
 	this.NonceOut = make([]byte, 8)
 	if _, err = this.CommandQueue.EnqueueWriteBufferByte(this.NonceOutObj, true, 0, this.NonceOut, nil); err != nil {
@@ -153,6 +159,11 @@ func (this *Blake2bD) Mine() {
 				this.IsValid = false
 				break
 			}
+			if _, err = this.CommandQueue.EnqueueWriteBufferByte(this.Target2Obj, true, 0, this.header.Target2, nil); err != nil {
+				common.MinerLoger.Infof("-%d %v", this.MinerId, err)
+				this.IsValid = false
+				break
+			}
 			//Run the kernel
 			if _, err = this.CommandQueue.EnqueueNDRangeKernel(this.Kernel, []int{int(offset)}, []int{this.GlobalItemSize}, []int{this.LocalItemSize}, nil); err != nil {
 				common.MinerLoger.Infof("-%d %v", this.MinerId, err)
@@ -167,11 +178,12 @@ func (this *Blake2bD) Mine() {
 				break
 			}
 			this.AllDiffOneShares += uint64(this.GlobalItemSize)
-			if this.NonceOut[0] != 0 || this.NonceOut[1] != 0 || this.NonceOut[2] != 0 || this.NonceOut[3] != 0 ||
-				this.NonceOut[4] != 0 || this.NonceOut[5] != 0 || this.NonceOut[6] != 0 || this.NonceOut[7] != 0 {
+			xnonce := binary.LittleEndian.Uint64(this.NonceOut)
+			if xnonce >0 {
 				//Found Hash
-				this.header.HeaderBlock.Nonce = binary.LittleEndian.Uint64(this.NonceOut)
+				this.header.HeaderBlock.Nonce = xnonce
 				h := this.header.HeaderBlock.BlockHash()
+				common.MinerLoger.Debugf("# %d found hash:064x%",this.MinerId,h)
 				if HashToBig(&h).Cmp(this.header.TargetDiff) <= 0 {
 					subm := hex.EncodeToString(BlockData(this.header.HeaderBlock))
 					if !this.Pool{
@@ -194,16 +206,21 @@ func (this *Blake2bD) Mine() {
 					this.SubmitData <- subm
 					if !this.Pool{
 						//solo wait new task
+						this.ClearNonceData()
 						break
 					}
 				}
 			}
-			this.NonceOut = make([]byte, 8)
-			if _, err = this.CommandQueue.EnqueueWriteBufferByte(this.NonceOutObj, true, 0, this.NonceOut, nil); err != nil {
-				common.MinerLoger.Infof("-%d %v", this.MinerId, err)
-				this.IsValid = false
-				return
-			}
+			this.ClearNonceData()
 		}
+	}
+}
+
+func (this* Blake2bD) ClearNonceData()  {
+	this.NonceOut = make([]byte, 8)
+	if _, err := this.CommandQueue.EnqueueWriteBufferByte(this.NonceOutObj, true, 0, this.NonceOut, nil); err != nil {
+		common.MinerLoger.Infof("-%d %v", this.MinerId, err)
+		this.IsValid = false
+		return
 	}
 }
