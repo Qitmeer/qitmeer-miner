@@ -6,7 +6,6 @@ package core
 
 import (
 	"github.com/Qitmeer/go-opencl/cl"
-	"log"
 	"math"
 	"os"
 	"qitmeer-miner/common"
@@ -37,6 +36,7 @@ type Device struct{
 	NonceOut     []byte
 	BlockObj     *cl.MemObject
 	NonceOutObj     *cl.MemObject
+	NonceRandObj     *cl.MemObject
 	Kernel     *cl.Kernel
 	Program     	*cl.Program
 	ClDevice         *cl.Device
@@ -75,7 +75,7 @@ func (this *Device)Update()  {
 	defer func() {
 		err := recover()
 		if err != nil {
-			log.Println("[error]",err)
+			common.MinerLoger.Errorf("[error]%v",err)
 		}
 	}()
 	var err error
@@ -90,13 +90,13 @@ func (this *Device)InitDevice()  {
 	this.Context, err = cl.CreateContext([]*cl.Device{this.ClDevice})
 	if err != nil {
 		this.IsValid = false
-		log.Println("-", this.MinerId, err)
+		common.MinerLoger.Infof("-%d %v", this.MinerId, err)
 		return
 	}
 	this.CommandQueue, err = this.Context.CreateCommandQueue(this.ClDevice, 0)
 	if err != nil {
 		this.IsValid = false
-		log.Println("-", this.MinerId,  err)
+		common.MinerLoger.Infof("-%d %v", this.MinerId,  err)
 	}
 }
 
@@ -137,12 +137,22 @@ func (this *Device)Status()  {
 			}
 			averageHashRate := float64(this.AllDiffOneShares) /
 				float64(secondsElapsed)
-			this.AverageHashRate = (this.AverageHashRate+averageHashRate)/2
-			log.Printf("DEVICE_ID #%d (%s) %v",
+			if this.AverageHashRate <= 0{
+				this.AverageHashRate = averageHashRate
+			}
+			//recent stats 95% percent
+			this.AverageHashRate = (this.AverageHashRate*50+averageHashRate*950)/1000
+			common.MinerLoger.Debugf("DEVICE_ID #%d (%s) %v",
 				this.MinerId,
 				this.ClDevice.Name(),
 				common.FormatHashRate(this.AverageHashRate),
 			)
+			// restats every 2min
+			// Prevention this.AllDiffOneShares was to large
+			if secondsElapsed > 120{
+				this.Started = time.Now().Unix()
+				this.AllDiffOneShares = 0
+			}
 		}
 	}
 }

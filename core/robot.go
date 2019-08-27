@@ -49,7 +49,7 @@ func (this *MinerRobot)InitDevice()  {
 	}
 	clDs := common.GetDevices(typ)
 	if clDs == nil{
-		log.Println("some error occurs!")
+		common.MinerLoger.Infof("some error occurs!")
 		return
 	}
 	useDevices := []string{}
@@ -59,7 +59,7 @@ func (this *MinerRobot)InitDevice()  {
 	if len(useDevices) > 0{
 		for k := range clDs{
 			if common.InArray(strconv.Itoa(k),useDevices){
-				log.Println("【Select mining Devices】",k,clDs[k].Name())
+				common.MinerLoger.Infof("【Select mining Devices】%d %s",k,clDs[k].Name())
 				this.ClDevices = append(this.ClDevices,clDs[k])
 			}
 		}

@@ -11,10 +11,10 @@ import (
 	"github.com/Qitmeer/qitmeer-lib/engine/txscript"
 	"github.com/Qitmeer/qitmeer-lib/params"
 	"github.com/google/uuid"
-	"log"
 	"qitmeer-miner/common"
 	"sort"
 )
+
 
 // standardCoinbaseOpReturn creates a standard OP_RETURN output to insert into
 // coinbase to use as extranonces. The OP_RETURN pushes 32 bytes.
@@ -169,8 +169,38 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, 
 		payToAddress,
 		cfg.NecessaryConfig.Param)
 	if err != nil{
-		log.Println(err)
+		common.MinerLoger.Info(err.Error())
 		return err
+	}
+
+	transactions = make(Transactionses,0)
+	totalTxFee = int64(0)
+	if !h.HasCoinbasePack {
+		tmpTrx := make(Transactionses,0)
+		for i:=0;i<len(h.Transactions);i++{
+			tmpTrx = append(tmpTrx,h.Transactions[i])
+		}
+		sort.Sort(tmpTrx)
+		allSigCount := 0
+		//every time pack max 1000 transactions and max 5000 sign scripts
+		txCount := len(tmpTrx)
+		if txCount>(cfg.OptionConfig.MaxTxCount - 1){
+			txCount = cfg.OptionConfig.MaxTxCount - 1
+		}
+		for i:=0;i<txCount;i++{
+			if allSigCount > (cfg.OptionConfig.MaxSigCount - 1){
+				break
+			}
+			transactions = append(transactions,tmpTrx[i])
+			allSigCount += tmpTrx[i].GetSigCount()
+		}
+		for i:=0;i<len(transactions);i++{
+			totalTxFee += transactions[i].Fee
+		}
+	} else{
+		for i:=1;i<len(h.Transactions);i++{
+			totalTxFee += h.Transactions[i].Fee
+		}
 	}
 
 	// miner get tx tax
@@ -178,7 +208,7 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, 
 	txBuf,err := coinbaseTx.Tx.Serialize()
 	if err != nil {
 		context := "Failed to serialize transaction"
-		log.Println(context)
+		common.MinerLoger.Infof(context)
 		return err
 	}
 	if !h.HasCoinbasePack {

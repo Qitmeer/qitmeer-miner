@@ -1,17 +1,15 @@
 package core
 
 import (
-	"fmt"
-	"sync"
-	"net"
 	"bufio"
-	"qitmeer-miner/common"
-	"strings"
-	"time"
-	"errors"
 	"encoding/json"
+	"errors"
+	"net"
+	"qitmeer-miner/common"
 	"qitmeer-miner/common/socks"
-	"log"
+	"strings"
+	"sync"
+	"time"
 )
 // ErrJsonType is an error for json that we do not expect.
 var ErrJsonType = errors.New("Unexpected type in json.")
@@ -45,7 +43,7 @@ type Stratum struct {
 func (this *Stratum)StratumConn(cfg *common.GlobalConfig) error {
 	this.Cfg = cfg
 	pool := cfg.PoolConfig.Pool
-	log.Println("【Connect pool】:", pool)
+	common.MinerLoger.Debugf("【Connect pool】:%v", pool)
 	proto := "stratum+tcp://"
 	if strings.HasPrefix(this.Cfg.PoolConfig.Pool, proto) {
 		pool = strings.Replace(pool, proto, "", 1)
@@ -59,7 +57,7 @@ func (this *Stratum)StratumConn(cfg *common.GlobalConfig) error {
 
 	go func() {
 		if uint32(time.Now().Unix()) - this.Timeout > 30{
-			log.Println("【timeout】reconnect")
+			common.MinerLoger.Debug("【timeout】reconnect")
 			_ = this.Reconnect()
 		}
 	}()
@@ -67,7 +65,7 @@ func (this *Stratum)StratumConn(cfg *common.GlobalConfig) error {
 }
 
 func (this *Stratum)Listen(handle func(data string))  {
-	log.Println("Starting Stratum Listener")
+	common.MinerLoger.Debug("Starting Stratum Listener")
 	for {
 		//s.Conn.SetReadDeadline(time.Now().Add(time.Second * 10))
 		var data string
@@ -80,10 +78,10 @@ func (this *Stratum)Listen(handle func(data string))  {
 
 		if err != nil {
 			for{
-				log.Println("【Connection lost!  Reconnecting...】")
+				common.MinerLoger.Debug("【Connection lost!  Reconnecting...】")
 				err = this.Reconnect()
 				if err != nil {
-					fmt.Println("【Reconnect failed sleep 2s】.",err)
+					common.MinerLoger.Debugf("【Reconnect failed sleep 2s】.%s",err.Error())
 					time.Sleep(2*time.Second)
 					continue
 				}
@@ -110,14 +108,14 @@ func (s *Stratum) Reconnect() error {
 		conn, err = net.Dial("tcp", s.Cfg.PoolConfig.Pool)
 	}
 	if err != nil {
-		log.Println("【init reconnect error】",err)
+		common.MinerLoger.Debugf("【init reconnect error】%v",err)
 		return err
 	}
 	s.Conn = conn
 	s.Reader = bufio.NewReader(s.Conn)
 	err = s.Subscribe()
 	if err != nil {
-		log.Println("【subscribe reconnect】",err)
+		common.MinerLoger.Debugf("【subscribe reconnect】%v",err)
 		return nil
 	}
 	// Should NOT need this.
@@ -125,7 +123,7 @@ func (s *Stratum) Reconnect() error {
 	// XXX Do I really need to re-auth here?
 	err = s.Auth()
 	if err != nil {
-		log.Println("【auth reconnect】",err)
+		common.MinerLoger.Debugf("【auth reconnect】%v",err)
 		return nil
 	}
 	// If we were able to reconnect, restart counter
@@ -155,7 +153,7 @@ func (s *Stratum) Auth() error {
 	}
 	_, err = s.Conn.Write(m)
 	if err != nil {
-		log.Println("【auth connect】",err)
+		common.MinerLoger.Debugf("【auth connect】%v",err)
 		return err
 	}
 	_, err = s.Conn.Write([]byte("\n"))
@@ -180,7 +178,7 @@ func (s *Stratum) Subscribe() error {
 	}
 	_, err = s.Conn.Write(m)
 	if err != nil {
-		log.Println("【subscribe connect】",err)
+		common.MinerLoger.Debugf("【subscribe connect】%v",err)
 		return err
 	}
 	_, err = s.Conn.Write([]byte("\n"))

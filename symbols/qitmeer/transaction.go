@@ -8,8 +8,6 @@ import (
 	"github.com/Qitmeer/qitmeer-lib/core/protocol"
 )
 
-const MAX_SIG_COUNT = 5000
-const MAX_TX_COUNT = 1000
 type ParentItems struct {
 	Hash hash.Hash `json:"hash"`
 	Data string    `json:"data"`

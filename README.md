@@ -92,6 +92,9 @@ The Optional Config Option:
                       or a comma separated list. (256)
       --timeout=      rpc timeout. (60)
       --use_devices=  all gpu devices,you can use ./qitmeer-miner -l to see. examples:0,1 use the #0 device and #1 device
+      --max_tx_count=  max pack tx count (1000)
+      --max_sig_count= max sign tx count (5000)
+      --log_level=     info|debug|error|warn (debug)
 
 Help Options:
   -h, --help          Show this help message
