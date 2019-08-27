@@ -136,8 +136,11 @@ func (this *Device)Status()  {
 			}
 			averageHashRate := float64(this.AllDiffOneShares) /
 				float64(secondsElapsed)
+			if this.AverageHashRate <= 0{
+				this.AverageHashRate = averageHashRate
+			}
 			//recent stats 95% percent
-			this.AverageHashRate = (this.AverageHashRate*950+averageHashRate*50)/1000
+			this.AverageHashRate = (this.AverageHashRate*50+averageHashRate*950)/1000
 			common.MinerLoger.Debugf("DEVICE_ID #%d (%s) %v",
 				this.MinerId,
 				this.ClDevice.Name(),

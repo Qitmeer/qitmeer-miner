@@ -128,7 +128,7 @@ func (this *Blake2bD) Mine() {
 		}
 		for {
 			// if has new work ,current calc stop
-			if this.HasNewWork || (!this.Pool && this.Work.Block.Height <= 0) {
+			if this.HasNewWork {
 				break
 			}
 			this.Update()
