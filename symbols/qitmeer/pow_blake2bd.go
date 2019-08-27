@@ -62,6 +62,12 @@ func (this *Blake2bD) InitDevice() {
 		this.IsValid = false
 		return
 	}
+	this.NonceRandObj, err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, 8)
+	if err != nil {
+		common.MinerLoger.Infof("-", this.MinerId, err)
+		this.IsValid = false
+		return
+	}
 	_ = this.Kernel.SetArgBuffer(1, this.NonceOutObj)
 	this.LocalItemSize, err = this.Kernel.WorkGroupSize(this.ClDevice)
 	this.LocalItemSize = this.Cfg.OptionConfig.WorkSize
@@ -70,6 +76,7 @@ func (this *Blake2bD) InitDevice() {
 		this.IsValid = false
 		return
 	}
+	_ = this.Kernel.SetArgBuffer(2, this.NonceRandObj)
 	common.MinerLoger.Debugf("- Device ID:%d- Global item size:%d(Intensity:%d)- Local item size:%d",this.MinerId, this.GlobalItemSize,this.Cfg.OptionConfig.Intensity, this.LocalItemSize)
 	this.NonceOut = make([]byte, 8)
 	if _, err = this.CommandQueue.EnqueueWriteBufferByte(this.NonceOutObj, true, 0, this.NonceOut, nil); err != nil {
@@ -134,6 +141,14 @@ func (this *Blake2bD) Mine() {
 			this.Update()
 			var err error
 			if _, err = this.CommandQueue.EnqueueWriteBufferByte(this.BlockObj, true, 0, BlockData(this.header.HeaderBlock), nil); err != nil {
+				common.MinerLoger.Infof("-", this.MinerId, err)
+				this.IsValid = false
+				break
+			}
+			randNonceBase,_ := common.RandUint64()
+			randNonceBytes := make([]byte,8)
+			binary.LittleEndian.PutUint64(randNonceBytes,randNonceBase)
+			if _, err = this.CommandQueue.EnqueueWriteBufferByte(this.NonceRandObj, true, 0, randNonceBytes, nil); err != nil {
 				common.MinerLoger.Infof("-", this.MinerId, err)
 				this.IsValid = false
 				break

@@ -124,11 +124,12 @@ func (this *QitmeerRobot)ListenWork() {
 				r = this.Work.Get() // get new work
 			}
 			if r {
-				for _, dev := range this.Devices {
+				for k, dev := range this.Devices {
 					if !dev.GetIsValid(){
 						continue
 					}
 					dev.SetNewWork(&this.Work)
+					common.MinerLoger.Debugf("device #%d has new block template height:%d",k,this.Work.Block.Height)
 				}
 			}
 		}

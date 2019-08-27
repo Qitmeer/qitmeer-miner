@@ -36,6 +36,7 @@ type Device struct{
 	NonceOut     []byte
 	BlockObj     *cl.MemObject
 	NonceOutObj     *cl.MemObject
+	NonceRandObj     *cl.MemObject
 	Kernel     *cl.Kernel
 	Program     	*cl.Program
 	ClDevice         *cl.Device
@@ -146,6 +147,12 @@ func (this *Device)Status()  {
 				this.ClDevice.Name(),
 				common.FormatHashRate(this.AverageHashRate),
 			)
+			// restats every 2min
+			// Prevention this.AllDiffOneShares was to large
+			if secondsElapsed > 120{
+				this.Started = time.Now().Unix()
+				this.AllDiffOneShares = 0
+			}
 		}
 	}
 }
