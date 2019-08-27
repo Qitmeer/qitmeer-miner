@@ -161,7 +161,7 @@ func (s *QitmeerStratum) HandleSubmitReply(resp interface{}) {
 			common.MinerLoger.Infof("【pool reply】Share accepted")
 		} else {
 			atomic.AddUint64(&s.InvalidShares, 1)
-			common.MinerLoger.Infof("【pool reply】Share rejected: ", aResp.Error)
+			common.MinerLoger.Infof("【pool reply】Share rejected:%v ", aResp.Error)
 		}
 	}
 }

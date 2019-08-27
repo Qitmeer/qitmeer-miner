@@ -59,7 +59,7 @@ func (this *MinerRobot)InitDevice()  {
 	if len(useDevices) > 0{
 		for k := range clDs{
 			if common.InArray(strconv.Itoa(k),useDevices){
-				common.MinerLoger.Infof("【Select mining Devices】",k,clDs[k].Name())
+				common.MinerLoger.Infof("【Select mining Devices】%d %s",k,clDs[k].Name())
 				this.ClDevices = append(this.ClDevices,clDs[k])
 			}
 		}

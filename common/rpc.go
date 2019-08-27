@@ -120,7 +120,7 @@ func (rpc *RpcClient)RpcResult(method string,params []interface{}) []byte{
 	}
 
 	if httpResponse.Status != "200 OK" {
-		MinerLoger.Errorf("error http response :%v",  httpResponse.Status, string(body))
+		MinerLoger.Errorf("error http response :%s %s",  httpResponse.Status, string(body))
 		return nil
 	}
 	return body

@@ -75,7 +75,7 @@ func (this *Device)Update()  {
 	defer func() {
 		err := recover()
 		if err != nil {
-			common.MinerLoger.Infof("[error]",err)
+			common.MinerLoger.Errorf("[error]%v",err)
 		}
 	}()
 	var err error
@@ -90,13 +90,13 @@ func (this *Device)InitDevice()  {
 	this.Context, err = cl.CreateContext([]*cl.Device{this.ClDevice})
 	if err != nil {
 		this.IsValid = false
-		common.MinerLoger.Infof("-", this.MinerId, err)
+		common.MinerLoger.Infof("-%d %v", this.MinerId, err)
 		return
 	}
 	this.CommandQueue, err = this.Context.CreateCommandQueue(this.ClDevice, 0)
 	if err != nil {
 		this.IsValid = false
-		common.MinerLoger.Infof("-", this.MinerId,  err)
+		common.MinerLoger.Infof("-%d %v", this.MinerId,  err)
 	}
 }
 

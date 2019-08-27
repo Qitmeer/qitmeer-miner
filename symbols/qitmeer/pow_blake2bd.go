@@ -31,40 +31,40 @@ func (this *Blake2bD) InitDevice() {
 	var err error
 	this.Program, err = this.Context.CreateProgramWithSource([]string{kernel.DoubleBlake2bKernelSource})
 	if err != nil {
-		common.MinerLoger.Infof("-", this.MinerId, this.DeviceName, err)
+		common.MinerLoger.Infof("-%d,%s,%v", this.MinerId, this.DeviceName, err)
 		this.IsValid = false
 		return
 	}
 
 	err = this.Program.BuildProgram([]*cl.Device{this.ClDevice}, "")
 	if err != nil {
-		common.MinerLoger.Infof("-", this.MinerId, err)
+		common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
 		this.IsValid = false
 		return
 	}
 
 	this.Kernel, err = this.Program.CreateKernel("search")
 	if err != nil {
-		common.MinerLoger.Infof("-", this.MinerId, err)
+		common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
 		this.IsValid = false
 		return
 	}
 	this.BlockObj, err = this.Context.CreateEmptyBuffer(cl.MemReadOnly, 128)
 	if err != nil {
-		common.MinerLoger.Infof("-", this.MinerId, err)
+		common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
 		this.IsValid = false
 		return
 	}
 	_ = this.Kernel.SetArgBuffer(0, this.BlockObj)
 	this.NonceOutObj, err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, 8)
 	if err != nil {
-		common.MinerLoger.Infof("-", this.MinerId, err)
+		common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
 		this.IsValid = false
 		return
 	}
 	this.NonceRandObj, err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, 8)
 	if err != nil {
-		common.MinerLoger.Infof("-", this.MinerId, err)
+		common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
 		this.IsValid = false
 		return
 	}
@@ -80,7 +80,7 @@ func (this *Blake2bD) InitDevice() {
 	common.MinerLoger.Debugf("- Device ID:%d- Global item size:%d(Intensity:%d)- Local item size:%d",this.MinerId, this.GlobalItemSize,this.Cfg.OptionConfig.Intensity, this.LocalItemSize)
 	this.NonceOut = make([]byte, 8)
 	if _, err = this.CommandQueue.EnqueueWriteBufferByte(this.NonceOutObj, true, 0, this.NonceOut, nil); err != nil {
-		common.MinerLoger.Infof("-", this.MinerId, err)
+		common.MinerLoger.Infof("-%d %v", this.MinerId, err)
 		this.IsValid = false
 		return
 	}
@@ -141,7 +141,7 @@ func (this *Blake2bD) Mine() {
 			this.Update()
 			var err error
 			if _, err = this.CommandQueue.EnqueueWriteBufferByte(this.BlockObj, true, 0, BlockData(this.header.HeaderBlock), nil); err != nil {
-				common.MinerLoger.Infof("-", this.MinerId, err)
+				common.MinerLoger.Infof("-%d %v", this.MinerId, err)
 				this.IsValid = false
 				break
 			}
@@ -149,20 +149,20 @@ func (this *Blake2bD) Mine() {
 			randNonceBytes := make([]byte,8)
 			binary.LittleEndian.PutUint64(randNonceBytes,randNonceBase)
 			if _, err = this.CommandQueue.EnqueueWriteBufferByte(this.NonceRandObj, true, 0, randNonceBytes, nil); err != nil {
-				common.MinerLoger.Infof("-", this.MinerId, err)
+				common.MinerLoger.Infof("-%d %v", this.MinerId, err)
 				this.IsValid = false
 				break
 			}
 			//Run the kernel
 			if _, err = this.CommandQueue.EnqueueNDRangeKernel(this.Kernel, []int{int(offset)}, []int{this.GlobalItemSize}, []int{this.LocalItemSize}, nil); err != nil {
-				common.MinerLoger.Infof("-", this.MinerId, err)
+				common.MinerLoger.Infof("-%d %v", this.MinerId, err)
 				this.IsValid = false
 				break
 			}
 			//offset++
 			//Get output
 			if _, err = this.CommandQueue.EnqueueReadBufferByte(this.NonceOutObj, true, 0, this.NonceOut, nil); err != nil {
-				common.MinerLoger.Infof("-", this.MinerId, err)
+				common.MinerLoger.Infof("-%d %v", this.MinerId, err)
 				this.IsValid = false
 				break
 			}
@@ -200,7 +200,7 @@ func (this *Blake2bD) Mine() {
 			}
 			this.NonceOut = make([]byte, 8)
 			if _, err = this.CommandQueue.EnqueueWriteBufferByte(this.NonceOutObj, true, 0, this.NonceOut, nil); err != nil {
-				common.MinerLoger.Infof("-", this.MinerId, err)
+				common.MinerLoger.Infof("-%d %v", this.MinerId, err)
 				this.IsValid = false
 				return
 			}
