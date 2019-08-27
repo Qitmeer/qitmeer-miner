@@ -129,7 +129,7 @@ func (this *QitmeerRobot)ListenWork() {
 						continue
 					}
 					dev.SetNewWork(&this.Work)
-					common.MinerLoger.Debugf("device #%d has new block template height:%d",k,this.Work.Block.Height)
+					common.MinerLoger.Debugf("device #%d has new block template height:%d , target :%s",k,this.Work.Block.Height,this.Work.Block.Target)
 				}
 			}
 		}
