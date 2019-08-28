@@ -168,13 +168,10 @@ func (this *QitmeerRobot)SubmitWork() {
 					err = this.Work.Submit(block)
 				}
 				if err != nil{
-					if err != ErrSameWork{
-						//common.MinerLoger.Infof("【submit error】:",err)
-						if err == ErrStratumStaleWork{
-							atomic.AddUint64(&this.StaleShares, 1)
-						} else{
-							atomic.AddUint64(&this.InvalidShares, 1)
-						}
+					if err == ErrStratumStaleWork{
+						atomic.AddUint64(&this.StaleShares, 1)
+					} else{
+						atomic.AddUint64(&this.InvalidShares, 1)
 					}
 				} else {
 					byt ,_:= hex.DecodeString(block)
