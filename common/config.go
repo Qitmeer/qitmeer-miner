@@ -347,7 +347,7 @@ func InitNet(network string,p *params.Params) *params.Params {
 	case params.PrivNetParams.Name:
 		p = &params.PrivNetParams
 	default:
-		log.Fatalln(network,"qitmeer error!")
+		log.Fatalln(network, "Please define the network parameter for qitmeer!")
 		return nil
 	}
 	return p
