@@ -37,6 +37,7 @@ type Device struct{
 	BlockObj     *cl.MemObject
 	NonceOutObj     *cl.MemObject
 	NonceRandObj     *cl.MemObject
+	Target2Obj     *cl.MemObject
 	Kernel     *cl.Kernel
 	Program     	*cl.Program
 	ClDevice         *cl.Device

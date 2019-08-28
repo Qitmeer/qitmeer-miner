@@ -71,6 +71,7 @@ func (this *QitmeerWork) Get () bool {
 	this.Block = blockTemplate.Result
 	this.Started = uint32(time.Now().Unix())
 	this.GetWorkTime = time.Now().Unix()
+	common.MinerLoger.Debugf("getBlockTemplate height:%d , target :%s",this.Block.Height,this.Block.Target)
 	return true
 }
 

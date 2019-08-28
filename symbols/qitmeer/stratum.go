@@ -454,12 +454,9 @@ func (s *QitmeerStratum) Unmarshal(blob []byte) (interface{}, error) {
 }
 
 func (s *NotifyWork) PrepQitmeerWork() []byte {
-	witness , _ := hex.DecodeString( s.CB2 + s.ExtraNonce1 + s.ExtraNonce2)
-	witnessHash := qitmeer.DoubleHashH(witness)
-	coinbase:=s.CB1+hex.EncodeToString(witnessHash[:])
+	coinbase:=s.CB1+s.ExtraNonce1 + s.ExtraNonce2+s.CB2
 	coinbaseD,_ := hex.DecodeString(coinbase)
 	coinbaseH := qitmeer.DoubleHashH(coinbaseD)
-	//common.MinerLoger.Infof("coinbase hash:",coinbaseH)
 	coinbase_hash_bin := coinbaseH[:]
 	merkle_root := string(coinbase_hash_bin)
 	for _,h := range s.MerkleBranches {

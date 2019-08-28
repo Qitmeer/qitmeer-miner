@@ -124,12 +124,11 @@ func (this *QitmeerRobot)ListenWork() {
 				r = this.Work.Get() // get new work
 			}
 			if r {
-				for k, dev := range this.Devices {
+				for _, dev := range this.Devices {
 					if !dev.GetIsValid(){
 						continue
 					}
 					dev.SetNewWork(&this.Work)
-					common.MinerLoger.Debugf("device #%d has new block template height:%d , target :%s",k,this.Work.Block.Height,this.Work.Block.Target)
 				}
 			}
 		}
@@ -169,13 +168,10 @@ func (this *QitmeerRobot)SubmitWork() {
 					err = this.Work.Submit(block)
 				}
 				if err != nil{
-					if err != ErrSameWork{
-						//common.MinerLoger.Infof("【submit error】:",err)
-						if err == ErrStratumStaleWork{
-							atomic.AddUint64(&this.StaleShares, 1)
-						} else{
-							atomic.AddUint64(&this.InvalidShares, 1)
-						}
+					if err == ErrStratumStaleWork{
+						atomic.AddUint64(&this.StaleShares, 1)
+					} else{
+						atomic.AddUint64(&this.InvalidShares, 1)
 					}
 				} else {
 					byt ,_:= hex.DecodeString(block)
