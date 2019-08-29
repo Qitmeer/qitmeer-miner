@@ -175,14 +175,14 @@ func (this *QitmeerRobot)SubmitWork() {
 					}
 				} else {
 					byt ,_:= hex.DecodeString(block)
-					common.MinerLoger.Debugf("[Found hash and submit]%s",hash.DoubleHashH(byt[0:Blake2bBlockLength]))
+					common.MinerLoger.Infof("[Found hash and submit]%s",hash.DoubleHashH(byt[0:Blake2bBlockLength]))
 					atomic.AddUint64(&this.ValidShares, 1)
 					if !this.Pool{
 						count ,_ := strconv.Atoi(txCount)
 						this.AllTransactionsCount += int64(count)
-						logContent := fmt.Sprintf("%s,receive block, block height = %s,Including %s transactions; Received Total transactions = %d\n",
+						logContent := fmt.Sprintf("%s,receive block, block height = %s,Including %s transactions(not contain coinbase tx); Received Total transactions = %d\n",
 							time.Now().Format("2006-01-02 03:04:05 PM"),height,txCount,this.AllTransactionsCount)
-						common.MinerLoger.Debug(logContent)
+						common.MinerLoger.Info(logContent)
 					}
 				}
 			}

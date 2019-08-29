@@ -40,7 +40,7 @@ type QitmeerWork struct {
 func (this *QitmeerWork) Get () bool {
 	body := this.Rpc.RpcResult("getBlockTemplate",[]interface{}{[]string{}})
 	if body == nil{
-		common.MinerLoger.Infof("network failed")
+		common.MinerLoger.Error("network failed")
 		this.Block.Height = 0
 		return false
 	}
@@ -50,10 +50,10 @@ func (this *QitmeerWork) Get () bool {
 		var r map[string]interface{}
 		_ = json.Unmarshal(body,&r)
 		if _,ok := r["error"];ok{
-			common.MinerLoger.Debugf("[node reply]%v",r["error"])
+			common.MinerLoger.Debugf("[getBlockTemplate error]%v",r["error"])
 			return false
 		}
-		common.MinerLoger.Debugf("[node reply]%v",string(body))
+		common.MinerLoger.Debugf("[getBlockTemplate error]%v",string(body))
 		return false
 	}
 	if this.Block.Height > 0 && this.Block.Height == blockTemplate.Result.Height &&
@@ -83,13 +83,22 @@ func (this *QitmeerWork) Submit (subm string) error {
 		return ErrSameWork
 	}
 	this.LastSub = subm
-	body := this.Rpc.RpcResult("submitBlock",[]interface{}{subm})
+	var body []byte
 	var res getSubmitResponseJson
-	err := json.Unmarshal(body, &res)
-	if err != nil {
-		common.MinerLoger.Debugf("【submit error】%s",string(body))
-		return err
+	for{
+		// if the reason of submit error is network failed
+		// to keep the work
+		// then retry submit
+		body = this.Rpc.RpcResult("submitBlock",[]interface{}{subm})
+		err := json.Unmarshal(body, &res)
+		if err != nil {
+			common.MinerLoger.Debugf("【submit error】%s",string(body),err.Error())
+			time.Sleep(1*time.Second)
+			continue
+		}
+		break
 	}
+
 	if !strings.Contains(res.Result,"Block submitted accepted") {
 		common.MinerLoger.Debugf("【submit error】%s",string(body))
 		if strings.Contains(res.Result,"The tips of block is expired"){
