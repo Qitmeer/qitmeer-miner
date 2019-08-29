@@ -520,7 +520,7 @@ func (s *QitmeerStratum) PrepSubmit(data []byte,jobID string,ExtraNonce2 string)
 		return sub, ErrStratumStaleWork
 	}
 	sub.Params = []string{s.Cfg.PoolConfig.PoolUser, jobID, ExtraNonce2, timestampStr,nonceStr}
-	//common.MinerLoger.Infof("【submit】{PoolUser, jobID, ExtraNonce2, timestampStr,nonceStr}:",sub.Params)
+	common.MinerLoger.Infof("【submit】{PoolUser, jobID, ExtraNonce2, timestampStr,nonceStr}:%v",sub.Params)
 	//common.MinerLoger.Infof("【submit】", hex.EncodeToString(data), sub.Params)
 	return sub, nil
 }

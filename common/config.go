@@ -25,12 +25,10 @@ var (
 	minerHomeDir          = GetCurrentDir()
 	defaultConfigFile     = filepath.Join(minerHomeDir, defaultConfigFilename)
 	defaultRPCServer      = "127.0.0.1"
-	defaultRPCPort      = "1234"
 	defaultIntensity = 24
 	defaultTrimmerCount = 40
 	defaultWorkSize = 256
 	minIntensity  = 1
-	defaultRpcMinerLog  = GetCurrentDir() + "/miner.log"
 	maxIntensity  = 31
 	maxWorkSize   = uint32(0xFFFFFFFF - 255)
 	defaultPow  ="blake2bd"
@@ -173,7 +171,6 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 	// Default config.
 	fileCfg := FileConfig{
 		//ConfigFile:defaultConfigFile,
-		MinerLogFile:  defaultRpcMinerLog,
 	}
 	necessaryCfg := NecessaryConfig{
 		Pow:defaultPow,
@@ -267,21 +264,21 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 		Format: "", //
 	}
 	_ = MinerLoger.Attach("console", ConvertLogLevel(optionalCfg.LogLevel), consoleConfig)
-
-	fileConfig := &go_logger.FileConfig {
-		Filename : fileCfg.MinerLogFile,
-		LevelFileName : map[int]string {
-			MinerLoger.LoggerLevel("error"): fileCfg.MinerLogFile,
-			MinerLoger.LoggerLevel("info"): fileCfg.MinerLogFile,
-			MinerLoger.LoggerLevel("debug"): fileCfg.MinerLogFile,
-		},
-		MaxSize : 1024 * 1024,
-		MaxLine : 100000,
-		DateSlice : "d",
-		JsonFormat: false,
-		Format: "",
+	if fileCfg.MinerLogFile != ""{
+		fileConfig := &go_logger.FileConfig {
+			Filename : fileCfg.MinerLogFile,
+			LevelFileName : map[int]string {
+				MinerLoger.LoggerLevel("debug"): fileCfg.MinerLogFile,
+			},
+			MaxSize : 1024 * 1024 * 1024 ,
+			MaxLine : 10000000,
+			DateSlice : "d",
+			JsonFormat: false,
+			Format: "",
+		}
+		_ = MinerLoger.Attach("file", go_logger.LOGGER_LEVEL_DEBUG, fileConfig)
 	}
-	_ = MinerLoger.Attach("file", go_logger.LOGGER_LEVEL_DEBUG, fileConfig)
+
 	if deviceCfg.ListDevices{
 		MinerLoger.Info("【CPU Devices List】:")
 		GetDevices(DevicesTypesForCPUMining)
