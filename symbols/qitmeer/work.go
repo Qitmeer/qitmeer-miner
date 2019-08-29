@@ -92,7 +92,7 @@ func (this *QitmeerWork) Submit (subm string) error {
 		body = this.Rpc.RpcResult("submitBlock",[]interface{}{subm})
 		err := json.Unmarshal(body, &res)
 		if err != nil {
-			common.MinerLoger.Debugf("【submit error】%s",string(body),err.Error())
+			common.MinerLoger.Debugf("【submit error】%s %s",string(body),err.Error())
 			time.Sleep(1*time.Second)
 			continue
 		}
