@@ -120,12 +120,12 @@ func (this *QitmeerWork) PoolGet () bool {
 		return false
 	}
 
-	if (this.stra.PoolWork.JobID != "" && !this.stra.PoolWork.Clean) || this.PoolWork.JobID == this.stra.PoolWork.JobID{
-		return false
+	if (this.stra.PoolWork.JobID != "" && this.stra.PoolWork.Clean) || this.PoolWork.JobID != this.stra.PoolWork.JobID{
+		this.PoolWork = this.stra.PoolWork
+		return true
 	}
 
-	this.PoolWork = this.stra.PoolWork
-	return true
+	return false
 }
 
 //pool submit work
