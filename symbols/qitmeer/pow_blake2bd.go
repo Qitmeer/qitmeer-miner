@@ -183,7 +183,7 @@ func (this *Blake2bD) Mine() {
 				//Found Hash
 				this.header.HeaderBlock.Nonce = xnonce
 				h := this.header.HeaderBlock.BlockHash()
-				common.MinerLoger.Debugf("device #%d found hash:%s nonce:%d",this.MinerId,h,xnonce)
+				common.MinerLoger.Debugf("device #%d found hash:%s nonce:%d target:%064x",this.MinerId,h,xnonce,this.header.TargetDiff)
 				if HashToBig(&h).Cmp(this.header.TargetDiff) <= 0 {
 					subm := hex.EncodeToString(BlockData(this.header.HeaderBlock))
 					if !this.Pool{
