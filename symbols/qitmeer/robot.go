@@ -94,20 +94,18 @@ func (this *QitmeerRobot)Run() {
 				}()
 				this.Pool = true
 			}
-			common.MinerLoger.Debugf("%s miner start",connectName)
+			common.MinerLoger.Infof("%s miner start",connectName)
 			this.Work = QitmeerWork{}
 			this.Work.Cfg = this.Cfg
 			this.Work.Rpc = this.Rpc
 			this.Work.stra = this.Stratu
 			// Device Miner
-			fmt.Println(len(this.Devices))
 			for _,dev := range this.Devices{
 				dev.SetIsValid(true)
 				dev.InitDevice()
 				if this.Cfg.OptionConfig.UseDevices != ""{
 					this.UseDevices = strings.Split(this.Cfg.OptionConfig.UseDevices,",")
 				}
-				common.MinerLoger.Debug(this.Cfg.OptionConfig.UseDevices)
 				if len(this.UseDevices) > 0 && !common.InArray(strconv.Itoa(dev.GetMinerId()),this.UseDevices){
 					dev.SetIsValid(false)
 				}
@@ -271,7 +269,7 @@ func (this *QitmeerRobot)Status()  {
 			this.Cfg.OptionConfig.Reject = int(rejected)
 			this.Cfg.OptionConfig.Stale = int(staleShares)
 			total := valid + rejected + staleShares
-			common.MinerLoger.Debugf("Global stats: Accepted: %v,Stale: %v, Rejected: %v, Total: %v",
+			common.MinerLoger.Infof("Global stats: Accepted: %v,Stale: %v, Rejected: %v, Total: %v",
 				valid,
 				staleShares,
 				rejected,
