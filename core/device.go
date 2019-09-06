@@ -19,6 +19,14 @@ type BaseDevice interface {
 	InitDevice()
 	Status()
 	GetIsValid() bool
+	SetIsValid(valid bool)
+	GetMinerId() int
+	GetName() string
+	GetStart() uint64
+	GetIntensity() int
+	GetWorkSize() int
+	SetIntensity(inter int)
+	SetWorkSize(lsize int)
 	SetNewWork(w BaseWork)
 	Release()
 	SubmitShare(substr chan string)
@@ -63,7 +71,6 @@ func (this *Device)Init(i int,device *cl.Device,pool bool,q chan os.Signal,cfg *
 	this.IsValid=true
 	this.Pool=pool
 	this.SubmitData=make(chan string)
-	this.Started=time.Now().Unix()
 	this.GlobalItemSize= int(math.Exp2(float64(this.Cfg.OptionConfig.Intensity)))
 	this.Quit=q
 	this.AllDiffOneShares = 0
@@ -91,13 +98,13 @@ func (this *Device)InitDevice()  {
 	this.Context, err = cl.CreateContext([]*cl.Device{this.ClDevice})
 	if err != nil {
 		this.IsValid = false
-		common.MinerLoger.Infof("-%d %v", this.MinerId, err)
+		common.MinerLoger.Infof("-%d %v CreateContext", this.MinerId, err)
 		return
 	}
 	this.CommandQueue, err = this.Context.CreateCommandQueue(this.ClDevice, 0)
 	if err != nil {
 		this.IsValid = false
-		common.MinerLoger.Infof("-%d %v", this.MinerId,  err)
+		common.MinerLoger.Infof("-%d %v CreateCommandQueue", this.MinerId,  err)
 	}
 }
 
@@ -110,12 +117,46 @@ func (this *Device)GetIsValid() bool {
 	return this.IsValid
 }
 
+func (this *Device)SetIsValid(valid bool) {
+	this.IsValid = valid
+}
+
+func (this *Device)GetMinerId() int {
+	return int(this.MinerId)
+}
+
+func (this *Device)GetIntensity() int {
+	return int(math.Log2(float64(this.GlobalItemSize)))
+}
+
+func (this *Device)GetWorkSize() int {
+	return this.LocalItemSize
+}
+
+func (this *Device)SetIntensity(inter int) {
+	this.GlobalItemSize = int(math.Exp2(float64(this.Cfg.OptionConfig.Intensity)))
+}
+
+func (this *Device)SetWorkSize(size int) {
+	this.LocalItemSize = size
+}
+
+func (this *Device)GetName() string {
+	return this.DeviceName
+}
+
+func (this *Device)GetStart() uint64 {
+	return uint64(this.Started)
+}
+
 func (d *Device)Release()  {
 	d.Kernel.Release()
 	d.Context.Release()
 	d.BlockObj.Release()
 	d.NonceOutObj.Release()
 	d.Program.Release()
+	d.NonceRandObj.Release()
+	d.Target2Obj.Release()
 	d.CommandQueue.Release()
 }
 
@@ -123,13 +164,17 @@ func (this *Device)Status()  {
 	t := time.NewTicker(time.Second * 5)
 	defer t.Stop()
 	for {
-
+		if this.Cfg.OptionConfig.Restart == 1{
+			common.MinerLoger.Debugf("device # %d status restart",this.GetMinerId())
+			return
+		}
 		select{
 		case <- this.Quit:
 			return
 		case <- t.C:
 			if !this.IsValid{
-				return
+				time.Sleep(2*time.Second)
+				continue
 			}
 			secondsElapsed := time.Now().Unix() - this.Started
 			//diffOneShareHashesAvg := uint64(0x00000000FFFFFFFF)
@@ -154,6 +199,8 @@ func (this *Device)Status()  {
 				this.Started = time.Now().Unix()
 				this.AllDiffOneShares = 0
 			}
+		default:
+
 		}
 	}
 }
