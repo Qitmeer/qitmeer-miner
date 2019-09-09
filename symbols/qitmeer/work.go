@@ -85,6 +85,7 @@ func (this *QitmeerWork) Submit (subm string) error {
 	this.LastSub = subm
 	var body []byte
 	var res getSubmitResponseJson
+	startTime := time.Now().Unix()
 	for{
 		// if the reason of submit error is network failed
 		// to keep the work
@@ -92,6 +93,10 @@ func (this *QitmeerWork) Submit (subm string) error {
 		body = this.Rpc.RpcResult("submitBlock",[]interface{}{subm})
 		err := json.Unmarshal(body, &res)
 		if err != nil {
+			// 2min timeout
+			if time.Now().Unix() - startTime >= 120{
+				break
+			}
 			common.MinerLoger.Debugf("【submit error】%s %s",string(body),err.Error())
 			time.Sleep(1*time.Second)
 			continue
@@ -120,12 +125,12 @@ func (this *QitmeerWork) PoolGet () bool {
 		return false
 	}
 
-	if (this.stra.PoolWork.JobID != "" && !this.stra.PoolWork.Clean) || this.PoolWork.JobID == this.stra.PoolWork.JobID{
-		return false
+	if (this.stra.PoolWork.JobID != "" && this.stra.PoolWork.Clean) || this.PoolWork.JobID != this.stra.PoolWork.JobID{
+		this.PoolWork = this.stra.PoolWork
+		return true
 	}
 
-	this.PoolWork = this.stra.PoolWork
-	return true
+	return false
 }
 
 //pool submit work

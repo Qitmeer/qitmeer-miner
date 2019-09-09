@@ -36,6 +36,7 @@ var (
 	defaultTimeout  = 60
 	defaultMaxTxCount = 1000
 	defaultMaxSigCount = 5000
+	defaultStatsServer = "127.0.0.1:1235"
 )
 
 type DeviceConfig struct {
@@ -61,7 +62,13 @@ type OptionalConfig struct {
 	UseDevices       string `long:"use_devices" description:"all gpu devices,you can use ./qitmeer-miner -l to see. examples:0,1 use the #0 device and #1 device"`
 	MaxTxCount       int `long:"max_tx_count" description:"max pack tx count" default-mask:"1000"`
 	MaxSigCount       int `long:"max_sig_count" description:"max sign tx count" default-mask:"5000"`
-	LogLevel       string `long:"log_level" description:"info|debug|error|warn" default-mask:"debug"`
+	LogLevel       string `long:"log_level" description:"info|debug|error|warn|trace" default-mask:"debug"`
+	StatsServer       string `long:"stats_server" description:"stats web server" default-mask:"127.0.0.1:1235"`
+	Restart       int ` description:"restart server" default-mask:"0"`
+	Accept       int ` description:"Accept count" default-mask:"0"`
+	Reject       int ` description:"Reject count" default-mask:"0"`
+	Stale       int ` description:"Stale count" default-mask:"0"`
+
 }
 
 type PoolConfig struct {
@@ -185,6 +192,7 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 		UseDevices:  "",
 		MaxTxCount:defaultMaxTxCount,
 		MaxSigCount:defaultMaxSigCount,
+		StatsServer:defaultStatsServer,
 	}
 
 	// Create the home directory if it doesn't already exist.
@@ -257,11 +265,15 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 		preParser.WriteHelp(os.Stderr)
 		os.Exit(0)
 	}
+	logFormat := "[%timestamp_format%][%level_string%]%body%"
+	if optionalCfg.LogLevel == "trace"{
+		logFormat = "[%timestamp_format%][%level_string%][%file%][%line%][%function%]%body%"
+	}
 	_ = MinerLoger.Detach("console")
 	consoleConfig := &go_logger.ConsoleConfig{
 		Color: false, //
 		JsonFormat: false, //
-		Format: "", //
+		Format: logFormat, //
 	}
 	_ = MinerLoger.Attach("console", ConvertLogLevel(optionalCfg.LogLevel), consoleConfig)
 	if fileCfg.MinerLogFile != ""{

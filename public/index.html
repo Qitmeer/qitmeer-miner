@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Qitmeer Miner</title>
+    <link href="css/base.css?v=1" rel="stylesheet" type="text/css">
+    <script src="js/jquery.js"></script>
+    <script src="js/echarts.js"></script>
+</head>
+<body>
+<header><h1>Qitmeer Miner Stats Platform</h1></header>
+<section>
+    <div class="title"><h4>一、Mining Stats</h4></div>
+    <ol style="height: 400px">
+        <div id="stats" style="width: 50%;height:400px;float: left"></div>
+        <div id="stats1" style="width: 50%;height:400px;float: right"></div>
+    </ol>
+</section>
+<section>
+    <div class="title"><h4>二、Available GPU Devices Settings(the selected will be used to mining)</h4></div>
+    <ol id="devices">
+    </ol>
+    <p><button onclick="changeDeviceStatus(this.id)">Modify Settings</button></p>
+</section>
+<section>
+    <div class="title"><h4>三、Config Params</h4></div>
+    <ol>
+        <div class="title"><h4>Solo Config</h4></div>
+        <div class="choice">
+            <span class="all">qitmeer address：</span><input type="text" value="" id="miner_addr"><br/>
+            <span class="all">qitmeer rpc server：</span><input type="text" value="" id="rpc_server"><br/>
+            <span class="all">rpc username：</span><input type="text" value="" id="rpc_username"><br/>
+            <span class="all">rpc password：</span><input type="text" value="" id="rpc_password"><br/>
+        </div>
+    </ol>
+
+    <ol>
+        <div class="title"><h4>Pool Config</h4></div>
+        <div class="choice">
+            <span class="all">stratum address：</span><input type="text" value="" id="stratum_addr"><br/>
+            <span class="all">stratum user：</span><input type="text" value="" id="stratum_user"><br/>
+            <span class="all">stratum pass：</span><input type="text" value="" id="stratum_pass"><br/>
+        </div>
+    </ol>
+    <p><button onclick="submitData(this.id)">Restart Mining</button></p>
+</section>
+<script src="js/fun.js">
+
+</script>
+</body>
+</html>

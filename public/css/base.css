@@ -1,0 +1,110 @@
+body{
+    margin-left:15px;
+    margin-right:15px;
+    margin-bottom:15px;
+    maigin-top:15px;
+}
+
+h1,p{
+    text-align:center;
+}
+
+section,.title1,.title2{
+    border: 1.5px solid rgb(225,225,225);
+    margin-left:15px;
+    margin-bottom: 15px;
+    margin-right:15px;
+    maigin-top:15px;
+    border-radius: 5px;
+}
+
+.la,.lb {
+    display: inline-block;
+    width: 29%;
+    padding: 14px 4px 14px 4px;
+    font-size: 15px;
+    font-weight: bold;
+}
+
+input{
+    border: 1.5px solid rgb(225,225,225);
+    padding:5px 3em;
+    border-radius: 5px;
+}
+
+.title{
+    background: rgb(225,225,225);
+    padding: 1px 5px;
+    font-size: 17px;
+    font-weight: bold;
+    height:60px;
+}
+
+.all{
+    font-weight:bold;
+    font-size: 15px;
+    display: block;
+    float: left;
+    width: 180px;
+}
+
+ol{
+    padding:4px 2em;
+    list-style:decimal inside;
+}
+
+li{
+    line-height:30px
+}
+
+.blank,.choice,.choicem,.answer{
+    line-height:30px;
+    padding:5px 15px;
+
+}
+
+textarea{
+    display: inline-block;
+    width: 100%;
+    height: 100%;
+    border: 1.5px solid rgb(225,225,225);
+    padding:2px 1em;
+    border-radius: 5px;
+}
+
+button{
+    text-align:center;
+    background-color: rgb(100,200,230);
+}
+
+.yes{
+    color:Green;
+    font-weight:bold;
+}
+
+.no{
+    color:Red;
+    font-weight:bold;
+}
+button{
+    line-height: 28px;
+    font-weight: bolder;
+}
+input{
+    border: 1px solid #ccc;
+    padding: 7px 0px;
+    border-radius: 3px;
+    padding-left:5px;
+    width: 400px;
+    -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.075);
+    box-shadow: inset 0 1px 1px rgba(0,0,0,.075);
+    -webkit-transition: border-color ease-in-out .15s,-webkit-box-shadow ease-in-out .15s;
+    -o-transition: border-color ease-in-out .15s,box-shadow ease-in-out .15s;
+    transition: border-color ease-in-out .15s,box-shadow ease-in-out .15s
+}
+input:focus{
+    border-color: #66afe9;
+    outline: 0;
+    -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.075),0 0 8px rgba(102,175,233,.6);
+    box-shadow: inset 0 1px 1px rgba(0,0,0,.075),0 0 8px rgba(102,175,233,.6)
+}

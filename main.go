@@ -5,15 +5,15 @@ package main
 
 import (
 	go_logger "github.com/phachon/go-logger"
-	"runtime"
-	"qitmeer-miner/core"
-	"qitmeer-miner/common"
 	"log"
-	"qitmeer-miner/symbols/qitmeer"
 	"os"
 	"os/signal"
-	"time"
+	"qitmeer-miner/common"
+	"qitmeer-miner/core"
+	"qitmeer-miner/symbols/qitmeer"
+	"runtime"
 	"strings"
+	"time"
 )
 var robotminer core.Robot
 
@@ -34,6 +34,7 @@ func main()  {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
+
 	go func() {
 		<-c
 		common.MinerLoger.Info("Got Control+C, exiting...")

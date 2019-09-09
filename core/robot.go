@@ -5,10 +5,8 @@ package core
 
 import (
 	"github.com/Qitmeer/go-opencl/cl"
-	"qitmeer-miner/common"
-	"log"
 	"os"
-	"strconv"
+	"qitmeer-miner/common"
 	"strings"
 	"sync"
 )
@@ -39,6 +37,7 @@ type MinerRobot struct {
 	Rpc 		*common.RpcClient
 	Pool 		bool
 	SubmitStr chan string
+	UseDevices []string
 }
 
 //init GPU device
@@ -47,27 +46,13 @@ func (this *MinerRobot)InitDevice()  {
 	if this.Cfg.OptionConfig.CPUMiner{
 		typ = common.DevicesTypesForCPUMining
 	}
-	clDs := common.GetDevices(typ)
-	if clDs == nil{
+	this.ClDevices = common.GetDevices(typ)
+	if this.ClDevices == nil{
 		common.MinerLoger.Infof("some error occurs!")
 		return
 	}
-	useDevices := []string{}
+	this.UseDevices = []string{}
 	if this.Cfg.OptionConfig.UseDevices != ""{
-		useDevices = strings.Split(this.Cfg.OptionConfig.UseDevices,",")
-	}
-	if len(useDevices) > 0{
-		for k := range clDs{
-			if common.InArray(strconv.Itoa(k),useDevices){
-				common.MinerLoger.Infof("【Select mining Devices】%d %s",k,clDs[k].Name())
-				this.ClDevices = append(this.ClDevices,clDs[k])
-			}
-		}
-	} else{
-		this.ClDevices = clDs
-	}
-	if len(this.ClDevices) < 1{
-		log.Fatalln("You Don't select any GPU devices to mining!")
-		return
+		this.UseDevices = strings.Split(this.Cfg.OptionConfig.UseDevices,",")
 	}
 }

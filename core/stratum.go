@@ -67,6 +67,10 @@ func (this *Stratum)StratumConn(cfg *common.GlobalConfig) error {
 func (this *Stratum)Listen(handle func(data string))  {
 	common.MinerLoger.Debug("Starting Stratum Listener")
 	for {
+		if this.Cfg.OptionConfig.Restart == 1{
+			common.MinerLoger.Debug("pool restart")
+			return
+		}
 		//s.Conn.SetReadDeadline(time.Now().Add(time.Second * 10))
 		var data string
 		var err error
