@@ -9,7 +9,6 @@ import (
 	"github.com/Qitmeer/go-opencl/cl"
 	"github.com/Qitmeer/qitmeer-lib/common/hash"
 	"log"
-	"net/http"
 	"qitmeer-miner/common"
 	"qitmeer-miner/core"
 	"qitmeer-miner/stats_server"
@@ -139,10 +138,6 @@ func (this *QitmeerRobot)Run() {
 	go func(){
 		defer this.Wg.Done()
 		stats_server.HandleRouter(this.Cfg,this.Devices)
-		common.MinerLoger.Infof("stats server %s start",this.Cfg.OptionConfig.StatsServer)
-		if err := http.ListenAndServe(this.Cfg.OptionConfig.StatsServer, nil) ;err != nil{
-			common.MinerLoger.Error(err.Error())
-		}
 	}()
 	this.Wg.Wait()
 }

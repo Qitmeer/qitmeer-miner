@@ -41,7 +41,10 @@ $ go build
 ```
 
 ###### Any questions see [issues](https://github.com/Qitmeer/qitmeer-miner/issues?q=is%3Aissue+is%3Aclosed) or create
-        
+
+## Stats Web Server
+http://127.0.0.1:1235    
+[stats]()  
     
 ## Run
 ```bash
@@ -55,48 +58,51 @@ Usage:
   qitmeer-miner [OPTIONS]
 
 Debug Command:
-  -l, --listdevices   List number of devices.
+  -l, --listdevices    List number of devices.
 
 The Config File Options:
-  -C, --configfile=   Path to configuration file
-      --minerlog=     Write miner log file (/Users/fanxu/www/go/src/qitmeer-miner/miner.log)
+  -C, --configfile=    Path to configuration file
+      --minerlog=      Write miner log file
 
 The Necessary Config Options:
-  -P, --pow=          blake2bd|cuckaroo|cuckatoo (blake2bd)
-  -S, --symbol=       Symbol (PMEER)
-  -N, --network=      network privnet|testnet|mainnet (mainnet)
+  -P, --pow=           blake2bd|cuckaroo|cuckatoo (blake2bd)
+  -S, --symbol=        Symbol (PMEER)
+  -N, --network=       network privnet|testnet|mainnet (mainnet)
 
 The Solo Config Option:
-  -M, --mineraddress= Miner Address
-  -s, --rpcserver=    RPC server to connect to (127.0.0.1)
-  -u, --rpcuser=      RPC username
-  -p, --rpcpass=      RPC password
-      --randstr=      Rand String,Your Unique Marking. (Come from Qitmeer!)
-      --notls         Do not verify tls certificates (true)
-      --rpccert=      RPC server certificate chain for validation
+  -M, --mineraddress=  Miner Address
+  -s, --rpcserver=     RPC server to connect to (127.0.0.1)
+  -u, --rpcuser=       RPC username
+  -p, --rpcpass=       RPC password
+      --randstr=       Rand String,Your Unique Marking. (Come from Qitmeer!)
+      --notls          Do not verify tls certificates (true)
+      --rpccert=       RPC server certificate chain for validation
 
 The pool Config Option:
-  -o, --pool=         Pool to connect to (e.g.stratum+tcp://pool:port)
-  -m, --pooluser=     Pool username
-  -n, --poolpass=     Pool password
+  -o, --pool=          Pool to connect to (e.g.stratum+tcp://pool:port)
+  -m, --pooluser=      Pool username
+  -n, --poolpass=      Pool password
 
 The Optional Config Option:
-      --cpuminer      CPUMiner (false)
-      --proxy=        Connect via SOCKS5 proxy (eg. 127.0.0.1:9050)
-      --proxyuser=    Username for proxy server
-      --proxypass=    Password for proxy server
-      --trimmerTimes= the cuckaroo trimmer times (40)
-      --intensity=    Intensities (the work size is 2^intensity) per device. Single global value or a comma separated list.
-                      (24)
-      --worksize=     The explicitly declared sizes of the work to do per device (overrides intensity). Single global value
-                      or a comma separated list. (256)
-      --timeout=      rpc timeout. (60)
-      --use_devices=  all gpu devices,you can use ./qitmeer-miner -l to see. examples:0,1 use the #0 device and #1 device
+      --cpuminer       CPUMiner (false)
+      --proxy=         Connect via SOCKS5 proxy (eg. 127.0.0.1:9050)
+      --proxyuser=     Username for proxy server
+      --proxypass=     Password for proxy server
+      --trimmerTimes=  the cuckaroo trimmer times (40)
+      --intensity=     Intensities (the work size is 2^intensity) per device. Single global value or a comma
+                       separated list. (24)
+      --worksize=      The explicitly declared sizes of the work to do per device (overrides intensity). Single
+                       global value or a comma separated list. (256)
+      --timeout=       rpc timeout. (60)
+      --use_devices=   all gpu devices,you can use ./qitmeer-miner -l to see. examples:0,1 use the #0 device
+                       and #1 device
       --max_tx_count=  max pack tx count (1000)
       --max_sig_count= max sign tx count (5000)
-      --log_level=     info|debug|error|warn (debug)
+      --log_level=     info|debug|error|warn|trace (debug)
+      --stats_server=  stats web server (127.0.0.1:1235)
 
 Help Options:
-  -h, --help          Show this help message
+  -h, --help           Show this help message
+
 Usage to see  ./qitmeer-miner -h
 ```

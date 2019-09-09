@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"qitmeer-miner/common"
 	"qitmeer-miner/core"
+	"qitmeer-miner/stats_server/websocket"
 	"strconv"
 	"strings"
 )
@@ -54,6 +55,18 @@ func HandleRouter(cfg *common.GlobalConfig,devices []core.BaseDevice ) {
 		cfg.OptionConfig.Restart = 1
 		_,_ = fmt.Fprintf(w, string("success"))
 	})
+	common.MinerLoger.Infof("stats server %s start",cfg.OptionConfig.StatsServer)
+	go websocket.Manager.Start()
+	http.HandleFunc("/ws", func(writer http.ResponseWriter, request *http.Request) {
+		statsData := &websocket.StatsData{}
+		statsData.Cfg = cfg
+		statsData.Devices = devices
+
+		websocket.WsPage(writer,request,statsData)
+	})
+	if err := http.ListenAndServe(cfg.OptionConfig.StatsServer, nil) ;err != nil{
+		common.MinerLoger.Error(err.Error())
+	}
 }
 
 
@@ -64,6 +77,7 @@ func MinerData(w http.ResponseWriter, r *http.Request,devices []core.BaseDevice,
 		devs = append(devs, map[string]interface{}{
 			"id":dev.GetMinerId(),
 			"name":dev.GetName(),
+			"hashrate":dev.GetAverageHashRate(),
 			"isValid":dev.GetIsValid(),
 			"global_size":dev.GetIntensity(),
 			"local_size":dev.GetWorkSize(),

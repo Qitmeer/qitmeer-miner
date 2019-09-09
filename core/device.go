@@ -21,6 +21,7 @@ type BaseDevice interface {
 	GetIsValid() bool
 	SetIsValid(valid bool)
 	GetMinerId() int
+	GetAverageHashRate() float64
 	GetName() string
 	GetStart() uint64
 	GetIntensity() int
@@ -147,6 +148,10 @@ func (this *Device)GetName() string {
 
 func (this *Device)GetStart() uint64 {
 	return uint64(this.Started)
+}
+
+func (this *Device)GetAverageHashRate() float64 {
+	return this.AverageHashRate
 }
 
 func (d *Device)Release()  {
