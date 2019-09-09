@@ -42,10 +42,6 @@ $ go build
 
 ###### Any questions see [issues](https://github.com/Qitmeer/qitmeer-miner/issues?q=is%3Aissue+is%3Aclosed) or create
 
-## Stats Web Server
-http://127.0.0.1:1235    
-[stats]()  
-    
 ## Run
 ```bash
 $ cp qitmeer.conf.example qitmeer.conf
@@ -106,3 +102,8 @@ Help Options:
 
 Usage to see  ./qitmeer-miner -h
 ```
+## Stats Web Server
+brower explorer http://127.0.0.1:1235    
+![stats](public/img/miner1.jpeg)  
+![stats](public/img/miner2.png)  
+![stats](public/img/miner3.png)  
