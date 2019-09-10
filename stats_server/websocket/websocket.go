@@ -106,12 +106,14 @@ func (c *Client) write(data *StatsData) {
 				"config":*data.Cfg,
 			}
 			devStats := map[int]interface{}{}
+			allHashrate := 0.00
 			for _,dev := range data.Devices{
 				devStats[dev.GetMinerId()] = map[string]interface{}{
 					"hashrate":dev.GetAverageHashRate(),
 					"id":dev.GetMinerId(),
 					"name":dev.GetName(),
 				}
+				allHashrate += dev.GetAverageHashRate()
 			}
 			configD["devices"] = devStats
 			bj , _ := json.Marshal(configD)

@@ -28,6 +28,7 @@ type BaseDevice interface {
 	GetWorkSize() int
 	SetIntensity(inter int)
 	SetWorkSize(lsize int)
+	SetPool(pool bool)
 	SetNewWork(w BaseWork)
 	Release()
 	SubmitShare(substr chan string)
@@ -112,6 +113,11 @@ func (this *Device)InitDevice()  {
 func (this *Device)SetNewWork(w BaseWork)  {
 	this.HasNewWork = true
 	this.NewWork <- w
+}
+
+
+func (this *Device)SetPool(b bool)  {
+	this.Pool = b
 }
 
 func (this *Device)GetIsValid() bool {

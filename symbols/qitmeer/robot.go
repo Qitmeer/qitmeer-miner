@@ -102,6 +102,7 @@ func (this *QitmeerRobot)Run() {
 			for _,dev := range this.Devices{
 				dev.SetIsValid(true)
 				dev.InitDevice()
+				dev.SetPool(this.Pool)
 				if this.Cfg.OptionConfig.UseDevices != ""{
 					this.UseDevices = strings.Split(this.Cfg.OptionConfig.UseDevices,",")
 				}
