@@ -104,6 +104,6 @@ Usage to see  ./qitmeer-miner -h
 ```
 ## Stats Web Server
 brower explorer http://127.0.0.1:1235    
-![stats](public/img/miner1.jpeg)  
+![stats](public/img/miner1.png)  
 ![stats](public/img/miner2.png)  
 ![stats](public/img/miner3.png)  
