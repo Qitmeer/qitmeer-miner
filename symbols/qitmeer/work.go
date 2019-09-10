@@ -127,7 +127,7 @@ func (this *QitmeerWork) PoolGet () bool {
 	}
 
 	if (this.stra.PoolWork.JobID != "" && this.stra.PoolWork.Clean) || this.PoolWork.JobID != this.stra.PoolWork.JobID{
-		this.Cfg.OptionConfig.Target = fmt.Sprintf("%064x",this.stra.Target)
+		this.Cfg.OptionConfig.Target = fmt.Sprintf("%064x",common.BlockBitsToTarget(this.stra.PoolWork.Nbits,2))
 		this.PoolWork = this.stra.PoolWork
 		return true
 	}

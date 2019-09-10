@@ -41,6 +41,24 @@ func SliceRemove(s []uint64, e uint64) []uint64 {
 	return s
 }
 
+func BlockBitsToTarget(bits string,width int) []byte {
+	nbits ,err:=hex.DecodeString(bits[0:2])
+	if err != nil{
+		fmt.Println("error",err.Error())
+	}
+	shift := nbits[0] - 3
+	value,_ := hex.DecodeString(bits[2:])
+	target0 :=make([]byte,int(shift))
+	tmp := string(value) + string(target0)
+	target1 := []byte(tmp)
+	if len(target1)<width {
+		head:=make([]byte,width-len(target1))
+		target := string(head)+string(target1)
+		return []byte(target)
+	}
+	return target1
+}
+
 func Int2varinthex(x int64) string  {
 	if x < 0xfd {
 		return fmt.Sprintf("%02x",x)

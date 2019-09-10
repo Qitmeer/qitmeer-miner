@@ -3,6 +3,10 @@ let myChart1 = echarts.init(document.getElementById('stats1'));
 let devices = [];
 let seriesData = {};
 let CalcDistance=function(second,blockTime){
+    if(second== undefined || blockTime == undefined){
+        console.log(second , blockTime);
+        return;
+    }
     if (blockTime<=0){
         blockTime = 120;
     } else{
@@ -22,11 +26,12 @@ let CalcDistance=function(second,blockTime){
         day = parseInt(hour/24);
         hour%=24;//
     }
-    console.log(oldsecond , blockTime);
+
     let allMayBlockCount = Math.ceil(parseFloat(oldsecond) / parseFloat(blockTime),0);
     if(allMayBlockCount<=0){
         allMayBlockCount += 1;
     }
+    second = Math.ceil(second);
     let tips = "Your devices May need "+day+"days,"+hour+"hours,"+minute+"minutes,"+second+" seconds to produce a block!<br/>";
     tips += "Your devices produce block probability is : 1/" + allMayBlockCount;
     $('#needCalc').html(tips);
