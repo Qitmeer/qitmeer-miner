@@ -202,13 +202,10 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, 
 			totalTxFee += h.Transactions[i].Fee
 		}
 	}
-
-	// miner get tx tax
-	coinbaseTx.Tx.TxOut[0].Amount += uint64(totalTxFee)
 	txBuf,err := coinbaseTx.Tx.Serialize()
 	if err != nil {
 		context := "Failed to serialize transaction"
-		common.MinerLoger.Infof(context)
+		common.MinerLoger.Error(context)
 		return err
 	}
 	if !h.HasCoinbasePack {
@@ -220,5 +217,7 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, 
 	} else {
 		h.Transactions[0] = Transactions{coinbaseTx.Tx.TxHash(),hex.EncodeToString(txBuf),0}
 	}
+	// miner get tx tax
+	coinbaseTx.Tx.TxOut[0].Amount += uint64(totalTxFee)
 	return nil
 }
