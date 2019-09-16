@@ -7,7 +7,6 @@ import (
 	"github.com/Qitmeer/go-opencl/cl"
 	"os"
 	"qitmeer-miner/common"
-	"strconv"
 	"strings"
 	"sync"
 )
@@ -52,21 +51,7 @@ func (this *MinerRobot)InitDevice()  {
 		common.MinerLoger.Infof("some error occurs!")
 		return
 	}
-
-	useDevices := []string{}
-	if this.Cfg.OptionConfig.UseDevices != ""{
-		useDevices = strings.Split(this.Cfg.OptionConfig.UseDevices,",")
-	}
-	if len(useDevices) > 0{
-		for k := range this.ClDevices{
-			if common.InArray(strconv.Itoa(k),useDevices){
-				common.MinerLoger.Debugf("【Select mining Devices】%s",k,this.ClDevices[k].Name())
-				this.ClDevices = append(this.ClDevices,this.ClDevices[k])
-			}
-		}
-	} else{
-		this.ClDevices = this.ClDevices
-	}
+	this.UseDevices = []string{}
 	if this.Cfg.OptionConfig.UseDevices != ""{
 		this.UseDevices = strings.Split(this.Cfg.OptionConfig.UseDevices,",")
 	}
