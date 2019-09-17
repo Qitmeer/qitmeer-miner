@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The halalchain developers
+// Copyright (c) 2019 The qitmeer developers
 // Use of this source code is governed by an ISC
 // license that can be found in the LICENSE file.
 
@@ -6,6 +6,9 @@ package common
 
 import (
 	"fmt"
+	"github.com/Qitmeer/qitmeer-lib/core/address"
+	"github.com/Qitmeer/qitmeer-lib/params"
+	go_logger "github.com/phachon/go-logger"
 	"qitmeer-miner/common/go-flags"
 	"log"
 	"net"
@@ -22,16 +25,18 @@ var (
 	minerHomeDir          = GetCurrentDir()
 	defaultConfigFile     = filepath.Join(minerHomeDir, defaultConfigFilename)
 	defaultRPCServer      = "127.0.0.1"
-	defaultRPCPort      = "1234"
 	defaultIntensity = 24
 	defaultTrimmerCount = 40
 	defaultWorkSize = 256
-	minIntensity  = 8
-	defaultRpcMinerLog  = GetCurrentDir() + "/miner.log"
+	minIntensity  = 1
 	maxIntensity  = 31
 	maxWorkSize   = uint32(0xFFFFFFFF - 255)
 	defaultPow  ="blake2bd"
 	defaultSymbol  ="PMEER"
+	defaultTimeout  = 60
+	defaultMaxTxCount = 1000
+	defaultMaxSigCount = 5000
+	defaultStatsServer = "127.0.0.1:1235"
 )
 
 type DeviceConfig struct {
@@ -53,6 +58,17 @@ type OptionalConfig struct {
 	TrimmerCount     int `long:"trimmerTimes" description:"the cuckaroo trimmer times"`
 	Intensity         int `long:"intensity" description:"Intensities (the work size is 2^intensity) per device. Single global value or a comma separated list."`
 	WorkSize          int `long:"worksize" description:"The explicitly declared sizes of the work to do per device (overrides intensity). Single global value or a comma separated list."`
+	Timeout          int `long:"timeout" description:"rpc timeout." default-mask:"60"`
+	UseDevices       string `long:"use_devices" description:"all gpu devices,you can use ./qitmeer-miner -l to see. examples:0,1 use the #0 device and #1 device"`
+	MaxTxCount       int `long:"max_tx_count" description:"max pack tx count" default-mask:"1000"`
+	MaxSigCount       int `long:"max_sig_count" description:"max sign tx count" default-mask:"5000"`
+	LogLevel       string `long:"log_level" description:"info|debug|error|warn|trace" default-mask:"debug"`
+	StatsServer       string `long:"stats_server" description:"stats web server" default-mask:"127.0.0.1:1235"`
+	Restart       int ` description:"restart server" default-mask:"0"`
+	Accept       int ` description:"Accept count" default-mask:"0"`
+	Reject       int ` description:"Reject count" default-mask:"0"`
+	Stale       int ` description:"Stale count" default-mask:"0"`
+	Target       string ` description:"Target"`
 }
 
 type PoolConfig struct {
@@ -77,6 +93,8 @@ type NecessaryConfig struct {
 	// Config / log options
 	Pow     string `short:"P" long:"pow" description:"blake2bd|cuckaroo|cuckatoo"`
 	Symbol      string   `short:"S" long:"symbol" description:"Symbol" default-mask:"PMEER"`
+	NetWork      string   `short:"N" long:"network" description:"network privnet|testnet|mainnet" default-mask:"mainnet"`
+	Param      *params.Params
 }
 
 type GlobalConfig struct {
@@ -160,7 +178,6 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 	// Default config.
 	fileCfg := FileConfig{
 		//ConfigFile:defaultConfigFile,
-		MinerLogFile:  defaultRpcMinerLog,
 	}
 	necessaryCfg := NecessaryConfig{
 		Pow:defaultPow,
@@ -171,12 +188,17 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 		WorkSize:  defaultWorkSize,
 		TrimmerCount:  defaultTrimmerCount,
 		CPUMiner:  false,
+		Timeout:  defaultTimeout,
+		UseDevices:  "",
+		MaxTxCount:defaultMaxTxCount,
+		MaxSigCount:defaultMaxSigCount,
+		StatsServer:defaultStatsServer,
 	}
 
 	// Create the home directory if it doesn't already exist.
 	err := os.MkdirAll(minerHomeDir, 0700)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
+		_,_ = fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(-1)
 	}
 	appName := filepath.Base(os.Args[0])
@@ -187,76 +209,105 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 
 	_,err = preParser.AddGroup("Debug Command", "The Miner Debug tools", &deviceCfg)
 	if err != nil {
-		log.Printf("%v", err)
+		MinerLoger.Errorf("%v", err)
 		os.Exit(0)
 	}
 	_,err = preParser.AddGroup("The Config File Options", "The Config File Options", &fileCfg)
 	if err != nil {
-		log.Printf("%v", err)
+		MinerLoger.Errorf("%v", err)
 		os.Exit(0)
 	}
 	_,err = preParser.AddGroup("The Necessary Config Options", "The Necessary Config Options", &necessaryCfg)
 	if err != nil {
-		log.Printf("%v", err)
+		MinerLoger.Errorf("%v", err)
 		os.Exit(0)
 	}
 	_,err = preParser.AddGroup("The Solo Config Option", "The Solo Config Option", &soloCfg)
 	if err != nil {
-		log.Printf("%v", err)
+		MinerLoger.Errorf("%v", err)
 		os.Exit(0)
 	}
 	_,err = preParser.AddGroup("The pool Config Option", "The pool Config Option", &poolCfg)
 	if err != nil {
-		log.Printf("%v", err)
+		MinerLoger.Errorf("%v", err)
 		os.Exit(0)
 	}
 	_,err = preParser.AddGroup("The Optional Config Option", "The Optional Config Option", &optionalCfg)
 	if err != nil {
-		log.Printf("%v", err)
+		MinerLoger.Errorf("%v", err)
 		os.Exit(0)
 	}
 
 	_,err = preParser.Parse()
 	if err != nil{
-		log.Printf("%v", err)
-		log.Println(fmt.Sprintf("Usage to see  ./%s -h",appName))
+		MinerLoger.Errorf("%v", err)
+		MinerLoger.Errorf("Usage to see  ./%s -h",appName)
 		os.Exit(0)
 	}
 	if fileCfg.ConfigFile == ""{
-		log.Printf("[warn] Don't have config file.")
+		MinerLoger.Warning("Don't have config file.")
 	} else {
 		err = flags.NewIniParser(preParser).ParseFile(fileCfg.ConfigFile)
 		if err != nil {
 			if _, ok := err.(*os.PathError); !ok {
-				fmt.Fprintln(os.Stderr, err)
+				_,_ = fmt.Fprintln(os.Stderr, err)
 				return nil, nil, err
 			}
 		}
 	}
 
-
 	remainingArgs,err := preParser.Parse()
 	if err != nil {
 		if _, ok := err.(*flags.Error); !ok {
-			fmt.Fprintln(os.Stderr, err)
+			_,_ = fmt.Fprintln(os.Stderr, err)
 			return nil, nil, err
 		}
 		preParser.WriteHelp(os.Stderr)
 		os.Exit(0)
 	}
-
-
+	logFormat := "[%timestamp_format%][%level_string%]%body%"
+	if optionalCfg.LogLevel == "trace"{
+		logFormat = "[%timestamp_format%][%level_string%][%file%][%line%][%function%]%body%"
+	}
+	_ = MinerLoger.Detach("console")
+	consoleConfig := &go_logger.ConsoleConfig{
+		Color: false, //
+		JsonFormat: false, //
+		Format: logFormat, //
+	}
+	_ = MinerLoger.Attach("console", ConvertLogLevel(optionalCfg.LogLevel), consoleConfig)
+	if fileCfg.MinerLogFile != ""{
+		fileConfig := &go_logger.FileConfig {
+			Filename : fileCfg.MinerLogFile,
+			LevelFileName : map[int]string {
+				MinerLoger.LoggerLevel("debug"): fileCfg.MinerLogFile,
+			},
+			MaxSize : 1024 * 1024 * 1024 ,
+			MaxLine : 10000000,
+			DateSlice : "d",
+			JsonFormat: false,
+			Format: "",
+		}
+		_ = MinerLoger.Attach("file", go_logger.LOGGER_LEVEL_DEBUG, fileConfig)
+	}
 
 	if deviceCfg.ListDevices{
-		log.Println("【CPU Devices List】:")
+		MinerLoger.Info("【CPU Devices List】:")
 		GetDevices(DevicesTypesForCPUMining)
-		log.Println("【GPU Devices List】:")
+		MinerLoger.Info("【GPU Devices List】:")
 		GetDevices(DevicesTypesForGPUMining)
 		os.Exit(0)
 	}
 	if poolCfg.Pool == "" && soloCfg.MinerAddr == ""{
-		log.Println("[error] Solo need address -M , pool need -o pool address")
+		MinerLoger.Error("Solo need address -M , pool need -o pool address")
 		preParser.WriteHelp(os.Stderr)
+		os.Exit(0)
+	}
+	necessaryCfg.Param = InitNet(necessaryCfg.NetWork,necessaryCfg.Param)
+	if necessaryCfg.Param == nil{
+		os.Exit(0)
+	}
+	if poolCfg.Pool == "" && !CheckBase58Addr(soloCfg.MinerAddr,necessaryCfg.NetWork,necessaryCfg.Param){
 		os.Exit(0)
 	}
 	// Show the version and exit if the version flag was specified.
@@ -272,11 +323,6 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 
 	// Handle environment variable expansion in the RPC certificate path.
 	soloCfg.RPCCert = cleanAndExpandPath(soloCfg.RPCCert)
-
-	// Add default port to RPC server based on --testnet flag
-	// if needed.
-	soloCfg.RPCServer = normalizeAddress(soloCfg.RPCServer, defaultRPCPort)
-
 	return &GlobalConfig{
 		optionalCfg,
 		fileCfg,
@@ -285,4 +331,49 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 		poolCfg,
 		necessaryCfg,
 	}, remainingArgs, nil
+}
+
+func CheckBase58Addr(addr ,network string,p *params.Params) bool {
+	_,err := address.DecodeAddress(addr)
+	if err != nil{
+		log.Fatalln(network,"qitmeer address error!",err,addr)
+		return false
+	}
+	networkChar := addr[0:1]
+	if p.NetworkAddressPrefix != networkChar{
+		log.Fatalln(network,"qitmeer address not match the network,please check your config network param!",p.NetworkAddressPrefix,networkChar)
+		return false
+	}
+	return true
+}
+
+func InitNet(network string,p *params.Params) *params.Params {
+	switch network {
+	case params.MainNetParams.Name:
+		p = &params.MainNetParams
+	case params.TestNetParams.Name:
+		p = &params.TestNetParams
+	case params.PrivNetParams.Name:
+		p = &params.PrivNetParams
+	default:
+		log.Fatalln(network, "Please define the network parameter for qitmeer!")
+		return nil
+	}
+	return p
+}
+
+
+func ConvertLogLevel(level string) int {
+	switch level {
+	case "warn":
+		return go_logger.LOGGER_LEVEL_WARNING
+	case "info":
+		return go_logger.LOGGER_LEVEL_INFO
+	case "debug":
+		return go_logger.LOGGER_LEVEL_DEBUG
+	case "error":
+		return go_logger.LOGGER_LEVEL_ERROR
+	default:
+		return go_logger.LOGGER_LEVEL_DEBUG
+	}
 }

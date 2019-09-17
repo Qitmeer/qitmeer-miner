@@ -1,29 +1,30 @@
-// Copyright (c) 2019 The halalchain developers
+// Copyright (c) 2019 The qitmeer developers
 // Use of this source code is governed by an ISC
 // license that can be found in the LICENSE file.
 package main
 
 import (
-	"runtime"
-	"qitmeer-miner/core"
-	"qitmeer-miner/common"
+	go_logger "github.com/phachon/go-logger"
 	"log"
-	"qitmeer-miner/symbols/qitmeer"
 	"os"
 	"os/signal"
-	"time"
+	"qitmeer-miner/common"
+	"qitmeer-miner/core"
+	"qitmeer-miner/symbols/qitmeer"
+	"runtime"
 	"strings"
+	"time"
 )
 var robotminer core.Robot
 
 //init the config file
 func init(){
+	common.MinerLoger = go_logger.NewLogger()
 	cfg, _, err := common.LoadConfig()
 	if err != nil {
-		log.Fatal("Config file error,please check it.【",err,"】")
+		log.Fatal("[error] config error,please check it.【",err,"】")
 		return
 	}
-	//test config
 	//init miner robot
 	robotminer = GetRobot(cfg)
 }
@@ -33,13 +34,14 @@ func main()  {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
+
 	go func() {
 		<-c
-		log.Println("Got Control+C, exiting...")
+		common.MinerLoger.Info("Got Control+C, exiting...")
 		os.Exit(0)
 	}()
 	if robotminer == nil{
-		log.Fatalln("[error] Please check the coin in the README.md! if this coin is supported -S ")
+		common.MinerLoger.Error("[error] Please check the coin in the README.md! if this coin is supported, use -S to set")
 		return
 	}
 	robotminer.Run()

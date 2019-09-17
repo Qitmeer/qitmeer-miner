@@ -1,13 +1,13 @@
-// Copyright (c) 2019 The halalchain developers
+// Copyright (c) 2019 The qitmeer developers
 // Use of this source code is governed by an ISC
 // license that can be found in the LICENSE file.
 package core
 
 import (
-	"github.com/HalalChain/go-opencl/cl"
-	"qitmeer-miner/common"
-	"log"
+	"github.com/Qitmeer/go-opencl/cl"
 	"os"
+	"qitmeer-miner/common"
+	"strings"
 	"sync"
 )
 
@@ -37,6 +37,7 @@ type MinerRobot struct {
 	Rpc 		*common.RpcClient
 	Pool 		bool
 	SubmitStr chan string
+	UseDevices []string
 }
 
 //init GPU device
@@ -47,7 +48,11 @@ func (this *MinerRobot)InitDevice()  {
 	}
 	this.ClDevices = common.GetDevices(typ)
 	if this.ClDevices == nil{
-		log.Println("some error occurs!")
+		common.MinerLoger.Infof("some error occurs!")
 		return
+	}
+	this.UseDevices = []string{}
+	if this.Cfg.OptionConfig.UseDevices != ""{
+		this.UseDevices = strings.Split(this.Cfg.OptionConfig.UseDevices,",")
 	}
 }

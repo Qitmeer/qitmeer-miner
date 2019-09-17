@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The halalchain developers
+// Copyright (c) 2019 The qitmeer developers
 // Use of this source code is governed by an ISC
 // license that can be found in the LICENSE file.
 package qitmeer
@@ -9,11 +9,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	qitmeer "github.com/HalalChain/qitmeer-lib/common/hash"
+	qitmeer "github.com/Qitmeer/qitmeer-lib/common/hash"
+	"math/big"
 	"qitmeer-miner/common"
 	"qitmeer-miner/core"
-	"log"
-	"math/big"
 	"strconv"
 	"sync/atomic"
 	"time"
@@ -114,25 +113,21 @@ type QitmeerStratum struct {
 }
 
 func (s *QitmeerStratum) CalcBasePowLimit() *big.Int {
-	powLimitbytes := common.BlockBitsToTarget(s.PoolWork.Nbits,32)
-	powLimit := new(big.Int)
-	powLimit = powLimit.SetBytes(powLimitbytes)
-	return powLimit
+	return new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 232), big.NewInt(1))
 }
 
 func (this *QitmeerStratum)HandleReply()  {
 	this.Stratum.Listen(func(data string) {
 		resp, err := this.Unmarshal([]byte(data))
 		if err != nil {
-			log.Println(err)
+			common.MinerLoger.Error(err.Error())
 			return
 		}
-		//log.Println(resp)
 		switch resp.(type) {
 		case StratumMsg:
 			this.handleStratumMsg(resp)
 		case NotifyRes:
-			log.Println("【notify message】: ", data)
+			common.MinerLoger.Debugf("【pool notify message】: %v", data)
 			this.handleNotifyRes(resp)
 		case *SubscribeReply:
 			this.handleSubscribeReply(resp)
@@ -140,7 +135,7 @@ func (this *QitmeerStratum)HandleReply()  {
 			this.HandleSubmitReply(resp)
 		default:
 			this.HandleSubmitReply(resp)
-			log.Println("【Unhandled message】: ", data)
+			common.MinerLoger.Debugf("【Unhandled message】:%v ", data)
 		}
 	})
 }
@@ -155,34 +150,33 @@ func (s *QitmeerStratum) HandleSubmitReply(resp interface{}) {
 	aResp := resp.(*BasicReply)
 	if int(aResp.ID.(float64)) == int(s.AuthID) {
 		if aResp.Result {
-			log.Println("【pool reply】Logged in")
+			common.MinerLoger.Infof("【pool reply】Logged in")
 		} else {
-			log.Println("【pool reply】Auth failure.")
+			common.MinerLoger.Infof("【pool reply】Auth failure.")
 		}
 	} else{
 		if aResp.Result {
 			atomic.AddUint64(&s.ValidShares, 1)
-			log.Println("【pool reply】Share accepted")
+			common.MinerLoger.Infof("【pool reply】Share accepted")
 		} else {
 			atomic.AddUint64(&s.InvalidShares, 1)
-			log.Println("【pool reply】Share rejected: ", aResp.Error)
+			common.MinerLoger.Infof("【pool reply】Share rejected:%v ", aResp.Error)
 		}
 	}
 }
 
 func (s *QitmeerStratum) handleStratumMsg(resp interface{}) {
 	nResp := resp.(StratumMsg)
-	//fmt.Println(nResp)
 	// Too much is still handled in unmarshaler.  Need to
 	// move stuff other than unmarshalling here.
 	switch nResp.Method {
 	case "client.show_message":
-		fmt.Println(nResp.Params)
+		common.MinerLoger.Debugf("%v",nResp.Params)
 	case "client.reconnect":
-		fmt.Println("Reconnect requested")
+		common.MinerLoger.Debug("Reconnect requested")
 		wait, err := strconv.Atoi(nResp.Params[2])
 		if err != nil {
-			fmt.Println(err)
+			common.MinerLoger.Debug(err.Error())
 			return
 		}
 		time.Sleep(time.Duration(wait) * time.Second)
@@ -190,7 +184,7 @@ func (s *QitmeerStratum) handleStratumMsg(resp interface{}) {
 		s.Cfg.PoolConfig.Pool = pool
 		err = s.Reconnect()
 		if err != nil {
-			fmt.Println(err)
+			common.MinerLoger.Debug(err.Error())
 			// XXX should just die at this point
 			// but we don't really have access to
 			// the channel to end everything.
@@ -198,7 +192,7 @@ func (s *QitmeerStratum) handleStratumMsg(resp interface{}) {
 		}
 
 	case "client.get_version":
-		fmt.Println("get_version request received.")
+		common.MinerLoger.Debug("get_version request received.")
 		msg := StratumMsg{
 			Method: nResp.Method,
 			ID:     nResp.ID,
@@ -206,17 +200,17 @@ func (s *QitmeerStratum) handleStratumMsg(resp interface{}) {
 		}
 		m, err := json.Marshal(msg)
 		if err != nil {
-			fmt.Println(err)
+			common.MinerLoger.Debug(err.Error())
 			return
 		}
 		_, err = s.Conn.Write(m)
 		if err != nil {
-			fmt.Println(err)
+			common.MinerLoger.Debug(err.Error())
 			return
 		}
 		_, err = s.Conn.Write([]byte("\n"))
 		if err != nil {
-			fmt.Println(err)
+			common.MinerLoger.Debug(err.Error())
 			return
 		}
 	}
@@ -234,19 +228,19 @@ func (s *QitmeerStratum) handleNotifyRes(resp interface{}) {
 	s.PoolWork.CB3 = nResp.CB3
 	s.PoolWork.Nbits = nResp.Nbits
 	s.PoolWork.Version = nResp.BlockVersion
-	s.PoolWork.Height = nResp.Height
-	s.PoolWork.StateRoot = nResp.StateRoot
+	s.PoolWork.Height = 0
+	stateRoot := make([]byte,32)
+	s.PoolWork.StateRoot = hex.EncodeToString(stateRoot)
 	s.PoolWork.NewWork = true
 	parsedNtime, err := strconv.ParseInt(nResp.Ntime, 16, 64)
 	if err != nil {
-		log.Println(err)
+		common.MinerLoger.Error(err.Error())
 	}
 	//sync the pool base difficulty
 	s.Target, _ = common.DiffToTarget(s.Diff, s.CalcBasePowLimit())
-	log.Println(fmt.Sprintf("[Pool Base nbits]:%s\n[Pool diffculty]:%f\n[Pool target]:%064x",s.PoolWork.Nbits,s.Diff,s.Target))
 	s.PoolWork.Ntime = nResp.Ntime
 	s.PoolWork.NtimeDelta = parsedNtime - time.Now().Unix()
-	log.Println("Notify Clean:",nResp.CleanJobs)
+	common.MinerLoger.Debugf("Notify Clean:%v",nResp.CleanJobs)
 	s.PoolWork.Clean = nResp.CleanJobs
 }
 
@@ -349,11 +343,14 @@ func (s *QitmeerStratum) Unmarshal(blob []byte) (interface{}, error) {
 	case "mining.notify":
 		var resi []interface{}
 		err := json.Unmarshal(objmap["params"], &resi)
-		//fmt.Println("Received: method: ", method, resi)
 		if err != nil {
 			return nil, err
 		}
 		var nres = NotifyRes{}
+		if len(resi) < 9 {
+			common.MinerLoger.Debugf("[error pool notify data]%v",resi)
+			return nil, errors.New("data error")
+		}
 		jobID, ok := resi[0].(string)
 		if !ok {
 			return nil, core.ErrJsonType
@@ -399,6 +396,9 @@ func (s *QitmeerStratum) Unmarshal(blob []byte) (interface{}, error) {
 			return nil, core.ErrJsonType
 		}
 		nres.CleanJobs = cleanJobs
+		if len(resi) < 10{
+			return nres, nil
+		}
 		stateRoot, ok := resi[9].(string)
 		if !ok {
 			return nil, core.ErrJsonType
@@ -427,7 +427,8 @@ func (s *QitmeerStratum) Unmarshal(blob []byte) (interface{}, error) {
 		if !ok {
 			return nil, core.ErrJsonType
 		}
-		s.Target, err = common.DiffToTarget(difficulty, big.NewInt(1))
+		powLimit := s.CalcBasePowLimit()
+		s.Target, err = common.DiffToTarget(difficulty, powLimit)
 		if err != nil {
 			return nil, err
 		}
@@ -438,13 +439,13 @@ func (s *QitmeerStratum) Unmarshal(blob []byte) (interface{}, error) {
 		var param []string
 		param = append(param, diffStr)
 		nres.Params = param
-		log.Println("【pool reply】Stratum difficulty set to", difficulty)
+		common.MinerLoger.Debugf("【pool reply】Stratum difficulty set to %f", difficulty)
 		return nres, nil
 	default:
 		resp := &BasicReply{}
 		err := json.Unmarshal(blob, &resp)
 		if err != nil {
-			log.Println(string(blob))
+			common.MinerLoger.Debug(string(blob))
 			return nil, err
 		}
 		return resp, nil
@@ -452,9 +453,7 @@ func (s *QitmeerStratum) Unmarshal(blob []byte) (interface{}, error) {
 }
 
 func (s *NotifyWork) PrepQitmeerWork() []byte {
-	coinbase1 := s.CB1 + s.ExtraNonce1 + s.ExtraNonce2+ s.CB2
-	coinbase1D,_ := hex.DecodeString(coinbase1)
-	coinbase := common.ConvertHashToString(qitmeer.DoubleHashH(coinbase1D)) + s.CB3
+	coinbase:=s.CB1+s.ExtraNonce1 + s.ExtraNonce2+s.CB2
 	coinbaseD,_ := hex.DecodeString(coinbase)
 	coinbaseH := qitmeer.DoubleHashH(coinbaseD)
 	coinbase_hash_bin := coinbaseH[:]
@@ -465,23 +464,27 @@ func (s *NotifyWork) PrepQitmeerWork() []byte {
 		merkle_root = string(qitmeer.DoubleHashB([]byte(bs)))
 	}
 	merkleRootStr := hex.EncodeToString([]byte(merkle_root))
-	d,_:=hex.DecodeString(merkleRootStr)
-	d = common.Reverse(d)
-	merkleRootStr = hex.EncodeToString(d)
+	ddd,_:=hex.DecodeString(merkleRootStr)
+
+	ddd = common.Reverse(ddd)
+	merkleRootStr2 := hex.EncodeToString(ddd)
+
 	nonceStr := fmt.Sprintf("%016x",0)
 	//pool tx hash has converse every 4 bit
 	tmpHash := s.Hash
 	tmpBytes , _ := hex.DecodeString(tmpHash)
-	normalBytes := common.ReverseByWidth(tmpBytes,4)
+	normalBytes := common.ReverseByWidth(tmpBytes,1)
 	prevHash := hex.EncodeToString(normalBytes)
+	//prevHash :=s.Hash
 	h := make([]byte,8)
 	binary.LittleEndian.PutUint64(h,uint64(s.Height))
 	ctime1 ,_:= hex.DecodeString(s.Ntime)
 	ntime := make([]byte,8)
 	copy(ntime[4:8],ctime1[:])
 	binary.LittleEndian.PutUint64(h,uint64(s.Height))
-	blockheader := s.Version + prevHash + merkleRootStr + s.StateRoot + s.Nbits + hex.EncodeToString(h) + hex.EncodeToString(ntime) + nonceStr
-	//fmt.Println("s.PoolWork.Version + prevHash + merkleRootStr + s.PoolWork.StateRoot + s.PoolWork.Nbits + hex.EncodeToString(h) + hex.EncodeToString(ntime) + nonceStr\n",s.Version,prevHash,merkleRootStr,s.StateRoot,s.Nbits,hex.EncodeToString(h),hex.EncodeToString(ntime),nonceStr)
+	blockheader := s.Version + prevHash + merkleRootStr2 + s.StateRoot + s.Nbits + hex.EncodeToString(h) + hex.EncodeToString(ntime) + nonceStr
+	//fmt.Println("s.PoolWork.Version + prevHash + merkleRootStr + s.PoolWork.StateRoot + s.PoolWork.Nbits + hex.EncodeToString(h) + hex.EncodeToString(ntime) + nonceStr\n",
+	//fmt.Println(s.Version,prevHash,merkleRootStr2,s.StateRoot,s.Nbits,hex.EncodeToString(h),hex.EncodeToString(ntime),nonceStr)
 	workData ,_:= hex.DecodeString(blockheader)
 	return workData
 }
@@ -511,15 +514,11 @@ func (s *QitmeerStratum) PrepSubmit(data []byte,jobID string,ExtraNonce2 string)
 	//latestWorkTs := atomic.LoadUint64(&s.PoolWork.LatestJobTime)
 	timeD := data[TIMESTART:TIMEEND]
 	timestampStr = hex.EncodeToString(common.Reverse(timeD[:])[4:8])
-	//ts := binary.LittleEndian.Uint64(common.Reverse(data[TIMESTART:TIMEEND]))
-	//if ts != latestWorkTs {
-	//	return sub, ErrStratumStaleWork
-	//}
 	nonceStr = hex.EncodeToString(common.Reverse(data[NONCESTART:NONCEEND]))
 	if jobID != s.PoolWork.JobID && s.PoolWork.Clean {
 		return sub, ErrStratumStaleWork
 	}
 	sub.Params = []string{s.Cfg.PoolConfig.PoolUser, jobID, ExtraNonce2, timestampStr,nonceStr}
-	log.Println("【submit】",sub.Params)
+	common.MinerLoger.Infof("【submit】{PoolUser, jobID, ExtraNonce2, timestampStr,nonceStr}:%v",sub.Params)
 	return sub, nil
 }

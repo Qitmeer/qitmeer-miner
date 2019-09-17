@@ -14,13 +14,12 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"github.com/HalalChain/go-opencl/cl"
-	"github.com/HalalChain/qitmeer-lib/common/hash"
-	"github.com/HalalChain/qitmeer-lib/core/types/pow"
-	"github.com/HalalChain/qitmeer-lib/crypto/cuckoo"
-	"github.com/HalalChain/qitmeer-lib/crypto/cuckoo/siphash"
-	"github.com/HalalChain/qitmeer-lib/params"
-	"log"
+	"github.com/Qitmeer/go-opencl/cl"
+	"github.com/Qitmeer/qitmeer-lib/common/hash"
+	"github.com/Qitmeer/qitmeer-lib/core/types/pow"
+	"github.com/Qitmeer/qitmeer-lib/crypto/cuckoo"
+	"github.com/Qitmeer/qitmeer-lib/crypto/cuckoo/siphash"
+	"github.com/Qitmeer/qitmeer-lib/params"
 	"math/big"
 	"qitmeer-miner/common"
 	"qitmeer-miner/core"
@@ -70,14 +69,14 @@ func (this *Cuckatoo) InitDevice() {
 	var err error
 	this.Program, err = this.Context.CreateProgramWithSource([]string{kernel.CuckatooKernel})
 	if err != nil {
-		log.Println("-", this.MinerId, this.DeviceName, err)
+		common.MinerLoger.Errorf("-", this.MinerId, this.DeviceName, err)
 		this.IsValid = false
 		return
 	}
 
 	err = this.Program.BuildProgram([]*cl.Device{this.ClDevice}, "")
 	if err != nil {
-		log.Println("-", this.MinerId, err)
+		common.MinerLoger.Errorf("-", this.MinerId, err)
 		this.IsValid = false
 		return
 	}
@@ -96,7 +95,11 @@ func (this *Cuckatoo) Update() {
 		this.header.PackagePoolHeader(this.Work,pow.CUCKATOO)
 	} else {
 		randStr := fmt.Sprintf("%s%d",this.Cfg.SoloConfig.RandStr,this.CurrentWorkID)
-		_ = this.Work.Block.CalcCoinBase(randStr,this.Cfg.SoloConfig.MinerAddr)
+		err := this.Work.Block.CalcCoinBase(this.Cfg,randStr, this.CurrentWorkID, this.Cfg.SoloConfig.MinerAddr)
+		if err != nil {
+			common.MinerLoger.Infof("calc coinbase error :%v", err)
+			return
+		}
 		txHash := this.Work.Block.BuildMerkleTreeStore(int(this.MinerId))
 		this.header.PackageRpcHeader(this.Work)
 		this.header.HeaderBlock.TxRoot = txHash
@@ -149,25 +152,25 @@ func (this *Cuckatoo) Mine() {
 				this.InitParamData()
 				err = this.CreateEdgeKernel.SetArg(0,uint64(sip.V[0]))
 				if err != nil {
-					log.Println("-", this.MinerId, err)
+					common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
 					this.IsValid = false
 					return
 				}
 				err = this.CreateEdgeKernel.SetArg(1,uint64(sip.V[1]))
 				if err != nil {
-					log.Println("-", this.MinerId, err)
+					common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
 					this.IsValid = false
 					return
 				}
 				err = this.CreateEdgeKernel.SetArg(2,uint64(sip.V[2]))
 				if err != nil {
-					log.Println("-", this.MinerId, err)
+					common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
 					this.IsValid = false
 					return
 				}
 				err = this.CreateEdgeKernel.SetArg(3,uint64(sip.V[3]))
 				if err != nil {
-					log.Println("-", this.MinerId, err)
+					common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
 					this.IsValid = false
 					return
 				}
@@ -189,7 +192,7 @@ func (this *Cuckatoo) Mine() {
 				this.ResultBytes = make([]byte,RES_BUFFER_SIZE*4)
 				_,_ = this.CommandQueue.EnqueueReadBufferByte(this.ResultObj,true,0,this.ResultBytes,nil)
 				leftEdges := binary.LittleEndian.Uint32(this.ResultBytes[4:8])
-				log.Println(fmt.Sprintf("Trimmed to %d edges",leftEdges))
+				common.MinerLoger.Errorf(fmt.Sprintf("Trimmed to %d edges",leftEdges))
 				noncesBytes := make([]byte,42*4)
 				if common.Timeout(10*time.Second, func() {
 					p := C.malloc(C.size_t(len(this.ResultBytes)))
@@ -200,7 +203,7 @@ func (this *Cuckatoo) Mine() {
 					C.free(p)
 				}){
 					//timeout
-					log.Println("timeout 重新计算",nonce)
+					common.MinerLoger.Errorf("timeout 重新计算",nonce)
 					continue
 				}
 				this.Nonces = make([]uint32,0)
@@ -214,13 +217,13 @@ func (this *Cuckatoo) Mine() {
 					this.Nonces = append(this.Nonces,tj)
 				}
 				if !isFind{
-					log.Println("重新计算",nonce)
+					common.MinerLoger.Errorf("重新计算",nonce)
 					continue
 				}
 				sort.Slice(this.Nonces, func(i, j int) bool {
 					return this.Nonces[i]<this.Nonces[j]
 				})
-				log.Println("find",nonce)
+				common.MinerLoger.Errorf("find",nonce)
 				powStruct := this.header.HeaderBlock.Pow.(*pow.Cuckatoo)
 				powStruct.SetCircleEdges(this.Nonces)
 				powStruct.SetNonce(nonce)
@@ -228,14 +231,14 @@ func (this *Cuckatoo) Mine() {
 				powStruct.SetScale(uint32(params.TestPowNetParams.PowConfig.CuckatooDiffScale))
 				err := cuckoo.VerifyCuckatoo(hdrkey[:],this.Nonces[:],uint(edges_bits))
 				if err != nil{
-					log.Println("[error]Verify Error!",err)
+					common.MinerLoger.Errorf("[error]Verify Error!",err)
 					continue
 				}
 				if pow.CalcCuckooDiff(int64(params.TestPowNetParams.PowConfig.CuckatooDiffScale),powStruct.GetBlockHash([]byte{})) < this.header.HeaderBlock.Difficulty{
-					log.Println("difficulty is too easy!")
+					common.MinerLoger.Errorf("difficulty is too easy!")
 					continue
 				}
-				log.Println("[Found Hash]",this.header.HeaderBlock.BlockHash())
+				common.MinerLoger.Infof("[Found Hash]%s",this.header.HeaderBlock.BlockHash())
 				subm := hex.EncodeToString(BlockDataWithProof(this.header.HeaderBlock))
 				if !this.Pool{
 					subm += common.Int2varinthex(int64(len(this.header.Parents)))
@@ -285,19 +288,19 @@ func (this *Cuckatoo) InitParamData() {
 	allBytes := []byte{255,255,255,255}
 	_,err = this.CommandQueue.EnqueueFillBuffer(this.CountersObj,unsafe.Pointer(&this.ClearBytes[0]),4,0,el_count*4,nil)
 	if err != nil {
-		log.Println("-", this.MinerId, err)
+		common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
 		this.IsValid = false
 		return
 	}
 	_,err = this.CommandQueue.EnqueueFillBuffer(this.EdgesObj,unsafe.Pointer(&allBytes[0]),4,0,el_count*4*8,nil)
 	if err != nil {
-		log.Println("-", this.MinerId, err)
+		common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
 		this.IsValid = false
 		return
 	}
 	_,err = this.CommandQueue.EnqueueFillBuffer(this.ResultObj,unsafe.Pointer(&this.ClearBytes[0]),4,0,RES_BUFFER_SIZE*4,nil)
 	if err != nil {
-		log.Println("-", this.MinerId, err)
+		common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
 		this.IsValid = false
 		return
 	}
@@ -309,7 +312,7 @@ func (this *Cuckatoo) InitParamData() {
 	err = this.CreateEdgeKernel.SetArg(8,uint32(current_uorv))
 
 	if err != nil {
-		log.Println("-", this.MinerId, err)
+		common.MinerLoger.Errorf("-", this.MinerId, err)
 		this.IsValid = false
 		return
 	}
@@ -319,26 +322,26 @@ func (this *Cuckatoo) InitKernelAndParam() {
 	var err error
 	this.CreateEdgeKernel, err = this.Program.CreateKernel("LeanRound")
 	if err != nil {
-		log.Println("-", this.MinerId, err)
+		common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
 		this.IsValid = false
 		return
 	}
 
 	this.EdgesObj, err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, el_count*4*8)
 	if err != nil {
-		log.Println("-", this.MinerId, err)
+		common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
 		this.IsValid = false
 		return
 	}
 	this.CountersObj, err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, el_count*4)
 	if err != nil {
-		log.Println("-", this.MinerId, err)
+		common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
 		this.IsValid = false
 		return
 	}
 	this.ResultObj, err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, RES_BUFFER_SIZE*4)
 	if err != nil {
-		log.Println("-", this.MinerId, err)
+		common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
 		this.IsValid = false
 		return
 	}
@@ -353,10 +356,10 @@ func (this *Cuckatoo) Enq(num int) {
 	offset := 0
 	for j:=0;j<num;j++{
 		offset = j * GLOBAL_WORK_SIZE
-		//log.Println(j,offset)
+		//common.MinerLoger.Errorf(j,offset)
 		// 2 ^ 24 2 ^ 11 * 2 ^ 8 * 2 * 2 ^ 4 11+8+1+4=24
 		if _, err := this.CommandQueue.EnqueueNDRangeKernel(this.CreateEdgeKernel, []int{offset}, []int{GLOBAL_WORK_SIZE}, []int{LOCAL_WORK_SIZE}, nil); err != nil {
-			log.Println("CreateEdgeKernel-1058", this.MinerId,err)
+			common.MinerLoger.Errorf("CreateEdgeKernel-1058 %d %v", this.MinerId,err)
 			return
 		}
 	}

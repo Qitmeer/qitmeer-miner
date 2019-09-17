@@ -3,8 +3,8 @@ package cuckoo
 import (
 	"encoding/binary"
 	"fmt"
-	"log"
-	cuckaroo "github.com/HalalChain/qitmeer-lib/crypto/cuckoo"
+	cuckaroo "github.com/Qitmeer/qitmeer-lib/crypto/cuckoo"
+	"qitmeer-miner/common"
 )
 
 type paths struct {
@@ -120,7 +120,7 @@ func (this *Edges)Check() bool{
 	if len(this.data) != cuckaroo.ProofSize{
 		return false
 	}
-	//log.Println(this.nodeMap)
+	//common.MinerLoger.Infof(this.nodeMap)
 	//every node will display 2 times in a cycle
 	for _,count := range this.nodeMap{
 		if count != 2 {
@@ -158,7 +158,7 @@ func (this *CGraph)Find(parents Edges,k int){
 			}
 			if this.CycleEdges.Check(){
 				this.IsFind = true
-				log.Println("Find 42 - Cycles")
+				common.MinerLoger.Infof("Find 42 - Cycles")
 				return
 			}
 		}
@@ -232,7 +232,6 @@ type Edge1 struct {
 }
 
 func (this *CGraph)FindSolutions() bool {
-	log.Println("【Search】In Edge Count ",this.EdgesCount)
 	for ee:=0; ee < this.EdgesCount; ee++{
 		e := Edge1{Item1:this.Edges[ee*2+0],Item2:this.Edges[ee*2+1]}
 		if I1 := this.U.TryGetValue(e.Item1) ;I1 != -1 && int(I1) == e.Item2{
@@ -278,7 +277,7 @@ func (this *CGraph)FindSolutions() bool {
 					if this.CycleEdges.Check(){
 						break
 					}
-					//log.Println(len(this.CycleEdges.data),this.CycleEdges)
+					//common.MinerLoger.Infof(len(this.CycleEdges.data),this.CycleEdges)
 					cycle = 5
 				}
 				break
@@ -286,9 +285,8 @@ func (this *CGraph)FindSolutions() bool {
 		}
 
 		if cycle >= 4 && cycle != cuckaroo.ProofSize{
-			//log.Println(fmt.Sprintf("%d-cycle found!",cycle))
+			//common.MinerLoger.Infof(fmt.Sprintf("%d-cycle found!",cycle))
 		} else if cycle == cuckaroo.ProofSize{
-			//log.Println(fmt.Sprintf("%d-cycle found!",42),this.CycleEdges)
 			return true
 		} else{
 			if path1.Count() > path2.Count(){

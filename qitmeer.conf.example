@@ -29,6 +29,8 @@ pooluser=TmbCBKbZF8PeSdj5Chm22T4hZRMJY5D8XyX
 poolpass=
 
 #[Necessary Config]
+#network privnet|testnet|mainnet
+network=testnet
 #trimmerCount
 #trimmerCount=60
 # Intensities (the work size is 2^intensity) up to device

@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The halalchain developers
+// Copyright (c) 2019 The qitmeer developers
 // Use of this source code is governed by an ISC
 // license that can be found in the LICENSE file.
 package qitmeer
@@ -8,8 +8,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/HalalChain/qitmeer-lib/core/types/pow"
-	"log"
+	"github.com/Qitmeer/qitmeer-lib/core/types/pow"
+	"qitmeer-miner/common"
 	"qitmeer-miner/core"
 	"strings"
 	"time"
@@ -37,9 +37,10 @@ type QitmeerWork struct {
 
 //GetBlockTemplate
 func (this *QitmeerWork) Get () bool {
-	body := this.Rpc.RpcResult("getBlockTemplate",[]interface{}{})
+	body := this.Rpc.RpcResult("getBlockTemplate",[]interface{}{[]string{}})
 	if body == nil{
-		log.Println("network failed")
+		common.MinerLoger.Error("network failed")
+		this.Block.Height = 0
 		return false
 	}
 	var blockTemplate getResponseJson
@@ -48,13 +49,15 @@ func (this *QitmeerWork) Get () bool {
 		var r map[string]interface{}
 		_ = json.Unmarshal(body,&r)
 		if _,ok := r["error"];ok{
-			log.Println("[node reply]",r["error"])
+			common.MinerLoger.Debugf("[getBlockTemplate error]%v",r["error"])
 			return false
 		}
-		log.Println("[node reply]",string(body))
+		common.MinerLoger.Debugf("[getBlockTemplate error]%v",string(body))
 		return false
 	}
-	if this.Block.Height > 0 && this.Block.Height == blockTemplate.Result.Height{
+	if this.Block.Height > 0 && this.Block.Height == blockTemplate.Result.Height &&
+		len(this.Block.Transactions) == (len(blockTemplate.Result.Transactions)+1) &&
+		time.Now().Unix() - this.GetWorkTime < 120{
 		//not has new work
 		return false
 	}
@@ -70,7 +73,7 @@ func (this *QitmeerWork) Get () bool {
 		powStruct.SetScale(uint32(blockTemplate.Result.PowDiffReference.CuckarooDiffScale))
 		powStruct.SetEdgeBits(24)
 		blockTemplate.Result.Difficulty = blockTemplate.Result.PowDiffReference.CuckarooMinDiff
-		log.Println(blockTemplate.Result.Difficulty)
+		common.MinerLoger.Debugf("%d",blockTemplate.Result.Difficulty)
 	case POW_CUCKTOO:
 		blockTemplate.Result.Pow = pow.GetInstance(pow.CUCKATOO,0,[]byte{})
 		powStruct := blockTemplate.Result.Pow.(*pow.Cuckatoo)
@@ -80,10 +83,13 @@ func (this *QitmeerWork) Get () bool {
 	}
 
 	blockTemplate.Result.HasCoinbasePack = false
-	_ = blockTemplate.Result.CalcCoinBase(this.Cfg.SoloConfig.RandStr,this.Cfg.SoloConfig.MinerAddr)
+	_ = blockTemplate.Result.CalcCoinBase(this.Cfg,this.Cfg.SoloConfig.RandStr,uint64(0),this.Cfg.SoloConfig.MinerAddr)
 	blockTemplate.Result.BuildMerkleTreeStore(0)
 	this.Block = blockTemplate.Result
 	this.Started = uint32(time.Now().Unix())
+	this.GetWorkTime = time.Now().Unix()
+	this.Cfg.OptionConfig.Target = this.Block.Target
+	common.MinerLoger.Debugf("getBlockTemplate height:%d , target :%s",this.Block.Height,this.Block.Target)
 	return true
 }
 
@@ -95,14 +101,29 @@ func (this *QitmeerWork) Submit (subm string) error {
 		return ErrSameWork
 	}
 	this.LastSub = subm
-	body := this.Rpc.RpcResult("submitBlock",[]interface{}{subm})
+	var body []byte
 	var res getSubmitResponseJson
-	err := json.Unmarshal(body, &res)
-	if err != nil {
-		fmt.Println("【submit error】",string(body))
-		return err
+	startTime := time.Now().Unix()
+	for{
+		// if the reason of submit error is network failed
+		// to keep the work
+		// then retry submit
+		body = this.Rpc.RpcResult("submitBlock",[]interface{}{subm})
+		err := json.Unmarshal(body, &res)
+		if err != nil {
+			// 2min timeout
+			if time.Now().Unix() - startTime >= 120{
+				break
+			}
+			common.MinerLoger.Debugf("【submit error】%s %s",string(body),err.Error())
+			time.Sleep(1*time.Second)
+			continue
+		}
+		break
 	}
+
 	if !strings.Contains(res.Result,"Block submitted accepted") {
+		common.MinerLoger.Debugf("【submit error】%s",string(body))
 		if strings.Contains(res.Result,"The tips of block is expired"){
 			return ErrSameWork
 		}
@@ -118,16 +139,17 @@ func (this *QitmeerWork) PoolGet () bool {
 	}
 	err := this.stra.PoolWork.PrepWork()
 	if err != nil {
-		log.Println(err)
+		common.MinerLoger.Error(err.Error())
 		return false
 	}
 
-	if (this.stra.PoolWork.JobID != "" && !this.stra.PoolWork.Clean) || this.PoolWork.JobID == this.stra.PoolWork.JobID{
-		return false
+	if (this.stra.PoolWork.JobID != "" && this.stra.PoolWork.Clean) || this.PoolWork.JobID != this.stra.PoolWork.JobID{
+		this.Cfg.OptionConfig.Target = fmt.Sprintf("%064x",common.BlockBitsToTarget(this.stra.PoolWork.Nbits,2))
+		this.PoolWork = this.stra.PoolWork
+		return true
 	}
 
-	this.PoolWork = this.stra.PoolWork
-	return true
+	return false
 }
 
 //pool submit work
@@ -151,12 +173,12 @@ func (this *QitmeerWork) PoolSubmit (subm string) error {
 	}
 	_, err = this.stra.Conn.Write(m)
 	if err != nil {
-		log.Println("【submit error】【pool connect error】",err)
+		common.MinerLoger.Debugf("【submit error】【pool connect error】%s",err)
 		return err
 	}
 	_, err = this.stra.Conn.Write([]byte("\n"))
 	if err != nil {
-		fmt.Println(err)
+		common.MinerLoger.Debug(err.Error())
 		return err
 	}
 

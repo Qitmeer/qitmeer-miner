@@ -5,11 +5,10 @@ james
 package core
 
 import (
-	"github.com/HalalChain/go-opencl/cl"
-	"qitmeer-miner/common"
-	"log"
+	"github.com/Qitmeer/go-opencl/cl"
 	"math"
 	"os"
+	"qitmeer-miner/common"
 	"sync"
 	"time"
 )
@@ -19,10 +18,20 @@ type BaseDevice interface {
 	Update()
 	InitDevice()
 	Status()
+	GetIsValid() bool
+	SetIsValid(valid bool)
+	GetMinerId() int
+	GetAverageHashRate() float64
+	GetName() string
+	GetStart() uint64
+	GetIntensity() int
+	GetWorkSize() int
+	SetIntensity(inter int)
+	SetWorkSize(lsize int)
+	SetPool(pool bool)
+	SetNewWork(w BaseWork)
 	Release()
 	SubmitShare(substr chan string)
-	GetIsValid() bool
-	SetNewWork(w BaseWork)
 }
 type Device struct{
 	Cfg *common.GlobalConfig  //must init
@@ -37,10 +46,12 @@ type Device struct{
 	NonceOut     []byte
 	BlockObj     *cl.MemObject
 	NonceOutObj     *cl.MemObject
+	NonceRandObj     *cl.MemObject
+	Target2Obj     *cl.MemObject
 	Kernel     *cl.Kernel
 	Program     	*cl.Program
 	ClDevice         *cl.Device
-	Started          uint32
+	Started          int64
 	GlobalItemSize int
 	CurrentWorkID uint64
 	Quit chan os.Signal //must init
@@ -62,7 +73,6 @@ func (this *Device)Init(i int,device *cl.Device,pool bool,q chan os.Signal,cfg *
 	this.IsValid=true
 	this.Pool=pool
 	this.SubmitData=make(chan string)
-	this.Started=uint32(time.Now().Unix())
 	this.GlobalItemSize= int(math.Exp2(float64(this.Cfg.OptionConfig.Intensity)))
 	this.Quit=q
 	this.AllDiffOneShares = 0
@@ -78,6 +88,12 @@ func (this *Device)SetNewWork(work BaseWork) {
 }
 
 func (this *Device)Update() {
+	defer func() {
+		err := recover()
+		if err != nil {
+			common.MinerLoger.Errorf("[error]%v",err)
+		}
+	}()
 	var err error
 	this.CurrentWorkID,err = common.RandUint64()
 	if err != nil{
@@ -90,14 +106,54 @@ func (this *Device)InitDevice()  {
 	this.Context, err = cl.CreateContext([]*cl.Device{this.ClDevice})
 	if err != nil {
 		this.IsValid = false
-		log.Println("-", this.MinerId, err)
+		common.MinerLoger.Infof("-%d %v CreateContext", this.MinerId, err)
 		return
 	}
 	this.CommandQueue, err = this.Context.CreateCommandQueue(this.ClDevice, 0)
 	if err != nil {
 		this.IsValid = false
-		log.Println("-", this.MinerId,  err)
+		common.MinerLoger.Infof("-%d %v CreateCommandQueue", this.MinerId,  err)
 	}
+}
+
+func (this *Device)SetPool(b bool)  {
+	this.Pool = b
+}
+
+func (this *Device)SetIsValid(valid bool) {
+	this.IsValid = valid
+}
+
+func (this *Device)GetMinerId() int {
+	return int(this.MinerId)
+}
+
+func (this *Device)GetIntensity() int {
+	return int(math.Log2(float64(this.GlobalItemSize)))
+}
+
+func (this *Device)GetWorkSize() int {
+	return this.LocalItemSize
+}
+
+func (this *Device)SetIntensity(inter int) {
+	this.GlobalItemSize = int(math.Exp2(float64(this.Cfg.OptionConfig.Intensity)))
+}
+
+func (this *Device)SetWorkSize(size int) {
+	this.LocalItemSize = size
+}
+
+func (this *Device)GetName() string {
+	return this.DeviceName
+}
+
+func (this *Device)GetStart() uint64 {
+	return uint64(this.Started)
+}
+
+func (this *Device)GetAverageHashRate() float64 {
+	return this.AverageHashRate
 }
 
 func (d *Device)Release()  {
@@ -106,6 +162,8 @@ func (d *Device)Release()  {
 	d.BlockObj.Release()
 	d.NonceOutObj.Release()
 	d.Program.Release()
+	d.NonceRandObj.Release()
+	d.Target2Obj.Release()
 	d.CommandQueue.Release()
 }
 
@@ -113,24 +171,43 @@ func (this *Device)Status()  {
 	t := time.NewTicker(time.Second * 5)
 	defer t.Stop()
 	for {
-
+		if this.Cfg.OptionConfig.Restart == 1{
+			common.MinerLoger.Debugf("device # %d status restart",this.GetMinerId())
+			return
+		}
 		select{
 		case <- this.Quit:
 			return
 		case <- t.C:
 			if !this.IsValid{
-				return
+				time.Sleep(2*time.Second)
+				continue
 			}
-			secondsElapsed := uint32(time.Now().Unix()) - this.Started
-			diffOneShareHashesAvg := uint64(0x00000000FFFFFFFF)
-			averageHashRate := (float64(diffOneShareHashesAvg) *
-				float64(this.AllDiffOneShares)) /
+			secondsElapsed := time.Now().Unix() - this.Started
+			//diffOneShareHashesAvg := uint64(0x00000000FFFFFFFF)
+			if this.AllDiffOneShares <= 0 || secondsElapsed <= 0{
+				continue
+			}
+			averageHashRate := float64(this.AllDiffOneShares) /
 				float64(secondsElapsed)
-			log.Printf("DEVICE_ID #%d (%s) %v",
+			if this.AverageHashRate <= 0{
+				this.AverageHashRate = averageHashRate
+			}
+			//recent stats 95% percent
+			this.AverageHashRate = (this.AverageHashRate*50+averageHashRate*950)/1000
+			common.MinerLoger.Infof("DEVICE_ID #%d (%s) %v",
 				this.MinerId,
 				this.ClDevice.Name(),
-				common.FormatHashRate(averageHashRate),
+				common.FormatHashRate(this.AverageHashRate),
 			)
+			// restats every 2min
+			// Prevention this.AllDiffOneShares was to large
+			if secondsElapsed > 120{
+				this.Started = time.Now().Unix()
+				this.AllDiffOneShares = 0
+			}
+		default:
+
 		}
 	}
 }

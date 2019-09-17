@@ -9,8 +9,8 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	qitmeer "github.com/Qitmeer/qitmeer-lib/common/hash"
 	"log"
-	qitmeer "github.com/HalalChain/qitmeer-lib/common/hash"
 	"math"
 	"math/big"
 	"math/rand"
@@ -18,6 +18,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -40,6 +41,24 @@ func SliceRemove(s []uint64, e uint64) []uint64 {
 	}
 
 	return s
+}
+
+func BlockBitsToTarget(bits string,width int) []byte {
+	nbits ,err:=hex.DecodeString(bits[0:2])
+	if err != nil{
+		fmt.Println("error",err.Error())
+	}
+	shift := nbits[0] - 3
+	value,_ := hex.DecodeString(bits[2:])
+	target0 :=make([]byte,int(shift))
+	tmp := string(value) + string(target0)
+	target1 := []byte(tmp)
+	if len(target1)<width {
+		head:=make([]byte,width-len(target1))
+		target := string(head)+string(target1)
+		return []byte(target)
+	}
+	return target1
 }
 
 func Int2varinthex(x int64) string  {
@@ -78,27 +97,12 @@ func Reverse(src []byte) []byte {
 	return dst
 }
 
-func BlockBitsToTarget(bits string,width int) []byte {
-	nbits ,err:=hex.DecodeString(bits[0:2])
-	if err != nil{
-		fmt.Println("error",err.Error())
-	}
-	shift := nbits[0] - 3
-	value,_ := hex.DecodeString(bits[2:])
-	target0 :=make([]byte,int(shift))
-	tmp := string(value) + string(target0)
-	target1 := []byte(tmp)
-	if len(target1)<width {
-		head:=make([]byte,width-len(target1))
-		target := string(head)+string(target1)
-		return []byte(target)
-	}
-	return target1
-}
 
 // FormatHashRate sets the units properly when displaying a hashrate.
 func FormatHashRate(h float64) string {
-	if h > 1000000000 {
+	if h > 1000000000000 {
+		return fmt.Sprintf("%.3fTH/s", h/1000000000000)
+	} else if h > 1000000000 {
 		return fmt.Sprintf("%.3fGH/s", h/1000000000)
 	} else if h > 1000000 {
 		return fmt.Sprintf("%.0fMH/s", h/1000000)
@@ -108,7 +112,7 @@ func FormatHashRate(h float64) string {
 		return "0H/s"
 	}
 
-	return fmt.Sprintf("%.1f GH/s", h)
+	return fmt.Sprintf("%.1f TH/s", h)
 }
 
 func ReverseByWidth(s []byte,width int ) []byte {
@@ -271,48 +275,13 @@ func HexMustDecode(hexStr string) []byte {
 }
 
 func GetCurrentDir() string {
-	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))  //返回绝对路径  filepath.Dir(os.Args[0])去除最后一个元素的路径
+	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
-	return strings.Replace(dir, "\\", "/", -1) //将\替换成/
+	return strings.Replace(dir, "\\", "/", -1)
 }
 
-// fileName:文件名字(带全路径)
-// content: 写入的内容
-func AppendToFile(fileName string, content string) error {
-	file,er:=os.Open(fileName)
-	defer func(){file.Close()}()
-	if er!=nil && os.IsNotExist(er){
-		os.Create(fileName)
-	}
-	// 以只写的模式，打开文件
-	f, err := os.OpenFile(fileName, os.O_WRONLY, 0644)
-	if err != nil {
-		fmt.Println(fileName+" file create failed. err: " + err.Error())
-	} else {
-		// 查找文件末尾的偏移量
-		n, _ := f.Seek(0, os.SEEK_END)
-		// 从末尾的偏移量开始写入内容
-		_, err = f.WriteAt([]byte(content), n)
-	}
-	defer f.Close()
-	return err
-}
-
-func GenerateRand(length int) uint32 {
-	// Per [BIP32], the seed must be in range [MinSeedBytes, MaxSeedBytes].
-	//buf,_ := seed.GenerateSeed(32)
-	//log.Println(buf)
-	//os.Exit(1)
-	//buf := make([]byte, length)
-	//rand.Read(buf)
-	s2 := rand.NewSource(time.Now().UnixNano())
-
-	r1 := rand.New(s2)
-	r := uint32(r1.Intn(2<<32))
-	return r
-}
 
 func RandUint64() (uint64, error) {
 	var b [8]byte
@@ -322,19 +291,29 @@ func RandUint64() (uint64, error) {
 	return uint64(binary.LittleEndian.Uint64(b[:])), nil
 }
 
-func RandGenerator(n int) chan uint32 {
-	rand.Seed(time.Now().UnixNano())
-	out := make(chan uint32)
-	go func(x int) {
-		for {
-			out <- uint32(rand.Intn(x))
+
+
+func InArray( val interface{},arr interface{}) bool {
+	switch arr.(type) {
+	case []string:
+		for _,v := range arr.([]string){
+			if v == val{
+				return true
+			}
 		}
-	}(n)
-	return out
+	case []int:
+		for _,v := range arr.([]int){
+			if v == val{
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 func Timeout(timeout time.Duration, runFunc func()) bool {
-	var wg = new(sync.WaitGroup)
+	var wg= new(sync.WaitGroup)
 	c := make(chan interface{})
 	wg.Add(1)
 	go func() {
@@ -352,4 +331,22 @@ func Timeout(timeout time.Duration, runFunc func()) bool {
 	case <-time.After(timeout):
 		return true
 	}
+}
+func GetNeedHashTimesByTarget( target string ) *big.Int {
+	times := big.NewInt(1)
+	for i:=0;i<len(target)-1 ;i++  {
+		tmp := target[i:i+1]
+		if tmp == "0"{
+			times.Lsh(times,4)
+		} else{
+			n, _ := strconv.ParseUint(tmp, 16, 32)
+			if n <= 1{
+				n = 1
+			}
+			n1 := int64( 16 / n )
+			times.Mul(times,big.NewInt(n1))
+			break
+		}
+	}
+	return times
 }

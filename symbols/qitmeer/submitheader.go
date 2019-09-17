@@ -4,9 +4,9 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"github.com/HalalChain/qitmeer-lib/common/hash"
-	"github.com/HalalChain/qitmeer-lib/core/types"
-	"github.com/HalalChain/qitmeer-lib/core/types/pow"
+	"github.com/Qitmeer/qitmeer-lib/common/hash"
+	"github.com/Qitmeer/qitmeer-lib/core/types"
+	"github.com/Qitmeer/qitmeer-lib/core/types/pow"
 	"math/big"
 	"qitmeer-miner/common"
 	"time"
@@ -17,6 +17,8 @@ type MinerBlockData struct {
 	Parents []ParentItems
 	HeaderData []byte
 	TargetDiff *big.Int
+	Target2 []byte
+	Exnonce2 string
 	JobID string
 	HeaderBlock *types.BlockHeader
 }
@@ -66,6 +68,7 @@ func (this *MinerBlockData)PackagePoolHeaderByNonce(work *QitmeerWork,nonce uint
 //the solo work submit structure
 func (this *MinerBlockData)PackageRpcHeader(work *QitmeerWork)  {
 	bitesBy ,_:= hex.DecodeString(work.Block.Target)
+	this.Target2 = common.Reverse(bitesBy[0:32])
 	bitesBy = common.Reverse(bitesBy[:8])
 	this.Parents = work.Block.Parents
 	this.Transactions = make([]Transactions,0)

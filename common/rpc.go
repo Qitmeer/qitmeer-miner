@@ -1,20 +1,16 @@
 package common
 
 import (
-	"net/http"
-	"net"
+	"bytes"
 	"crypto/tls"
-	"io/ioutil"
 	"crypto/x509"
 	"encoding/json"
-	"bytes"
-	"log"
-	"time"
+	"io/ioutil"
+	"net"
+	"net/http"
 	"qitmeer-miner/common/socks"
-)
-const (
-	MaxIdleConnections int = 20
-	RequestTimeout     int = 5
+	"strings"
+	"time"
 )
 
 type RpcClient struct {
@@ -54,6 +50,10 @@ func (rpc *RpcClient)newHTTPClient() (*http.Client, error) {
 			RootCAs:            pool,
 			InsecureSkipVerify: rpc.Cfg.SoloConfig.NoTLS,
 		}
+	} else {
+		tlsConfig = &tls.Config{
+			InsecureSkipVerify: rpc.Cfg.SoloConfig.NoTLS,
+		}
 	}
 
 	// Create and return the new HTTP client potentially configured with a
@@ -63,8 +63,8 @@ func (rpc *RpcClient)newHTTPClient() (*http.Client, error) {
 			Dial:            dial,
 			TLSClientConfig: tlsConfig,
 			DialContext: (&net.Dialer{
-				Timeout:   5 * time.Second,
-				KeepAlive: 5 * time.Second,
+				Timeout:   time.Duration(rpc.Cfg.OptionConfig.Timeout) * time.Second,
+				KeepAlive: time.Duration(rpc.Cfg.OptionConfig.Timeout) * time.Second,
 				DualStack: true,
 			}).DialContext,
 		},
@@ -79,15 +79,18 @@ func (rpc *RpcClient)RpcResult(method string,params []interface{}) []byte{
 	}
 	paramStr,err := json.Marshal(params)
 	if err != nil {
-		log.Println("rpc params error:",err)
+		MinerLoger.Errorf("rpc params error:%v",err)
 		return nil
 	}
-	url := protocol + "://" + rpc.Cfg.SoloConfig.RPCServer
+	url := rpc.Cfg.SoloConfig.RPCServer
+	if !strings.Contains(rpc.Cfg.SoloConfig.RPCServer,"://"){
+		url = protocol + "://" + url
+	}
 	jsonStr := []byte(`{"jsonrpc": "2.0", "method": "`+method+`", "params": `+string(paramStr)+`, "id": 1}`)
 	bodyBuff := bytes.NewBuffer(jsonStr)
 	httpRequest, err := http.NewRequest("POST", url, bodyBuff)
 	if err != nil {
-		log.Println("rpc connect failed",err)
+		MinerLoger.Errorf("rpc connect failed %v",err)
 		return nil
 	}
 	httpRequest.Close = true
@@ -99,25 +102,25 @@ func (rpc *RpcClient)RpcResult(method string,params []interface{}) []byte{
 	// specified options and submit the request.
 	httpClient, err := rpc.newHTTPClient()
 	if err != nil {
-		log.Println("rpc auth faild",err)
+		MinerLoger.Errorf("rpc auth faild %v",err)
 		return nil
 	}
-	httpClient.Timeout = 5*time.Second
+	httpClient.Timeout = time.Duration(rpc.Cfg.OptionConfig.Timeout) * time.Second
 	httpResponse, err := httpClient.Do(httpRequest)
 
 	if err != nil {
-		log.Println("rpc request faild",err)
+		MinerLoger.Errorf("rpc request faild %v",err)
 		return nil
 	}
 	body, err := ioutil.ReadAll(httpResponse.Body)
 	_ = httpResponse.Body.Close()
 	if err != nil {
-		log.Println("error reading json reply:", err)
+		MinerLoger.Errorf("error reading json reply:%v", err)
 		return nil
 	}
 
 	if httpResponse.Status != "200 OK" {
-		log.Println("error http response :",  httpResponse.Status, string(body))
+		MinerLoger.Errorf("error http response :%s %s",  httpResponse.Status, string(body))
 		return nil
 	}
 	return body

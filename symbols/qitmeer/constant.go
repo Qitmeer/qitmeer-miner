@@ -1,10 +1,11 @@
 package qitmeer
 
-import "github.com/HalalChain/qitmeer-lib/common/hash"
+import "github.com/Qitmeer/qitmeer-lib/common/hash"
 
 const (
 	//128
 	MaxBlockHeaderPayload = 4 + (hash.HashSize * 3) + 8 + 8 + 4 + 8 + 176
+	Blake2bBlockLength = 128
 
 	//every mode position
 	TIMESTART = 112

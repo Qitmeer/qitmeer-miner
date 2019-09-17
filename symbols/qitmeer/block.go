@@ -1,7 +1,7 @@
 package qitmeer
 
 import (
-	"github.com/HalalChain/qitmeer-lib/common/hash"
+	"github.com/Qitmeer/qitmeer-lib/common/hash"
 	"math/big"
 )
 
