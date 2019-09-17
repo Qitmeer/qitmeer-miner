@@ -16,7 +16,7 @@ type ParentItems struct {
 type Transactions struct {
 	Hash hash.Hash `json:"hash"`
 	Data string    `json:"data"`
-	Fee  int64     `json:"fee"`
+	Fee  uint64     `json:"fee"`
 }
 
 

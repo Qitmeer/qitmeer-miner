@@ -153,7 +153,7 @@ func (s *QitmeerStratum) HandleSubmitReply(resp interface{}) {
 		if aResp.Result {
 			common.MinerLoger.Infof("【pool reply】Logged in")
 		} else {
-			common.MinerLoger.Infof("【pool reply】Auth failure.")
+			common.MinerLoger.Errorf("【pool reply】Auth failure.")
 		}
 	} else{
 		if aResp.Result {
@@ -161,7 +161,7 @@ func (s *QitmeerStratum) HandleSubmitReply(resp interface{}) {
 			common.MinerLoger.Infof("【pool reply】Share accepted")
 		} else {
 			atomic.AddUint64(&s.InvalidShares, 1)
-			common.MinerLoger.Infof("【pool reply】Share rejected:%v ", aResp.Error)
+			common.MinerLoger.Errorf("【pool reply】Share rejected:%v ", aResp.Error)
 		}
 	}
 }

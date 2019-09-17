@@ -136,18 +136,14 @@ func createCoinbaseTx(coinBaseVal uint64,coinbaseScript []byte, opReturnPkScript
 //calc coinbase
 func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, extraNonce uint64,payAddressS string) error{
 	transactions := make(Transactionses,0)
-	totalTxFee := int64(0)
 	if !h.HasCoinbasePack {
+		h.TotalFee = 0
 		for i:=0;i<len(h.Transactions);i++{
 			transactions = append(transactions,h.Transactions[i])
 		}
 		sort.Sort(transactions)
 		for i:=0;i<len(transactions);i++{
-			totalTxFee += transactions[i].Fee
-		}
-	} else{
-		for i:=1;i<len(h.Transactions);i++{
-			totalTxFee += h.Transactions[i].Fee
+			h.TotalFee += transactions[i].Fee
 		}
 	}
 	payToAddress,err := address.DecodeAddress(payAddressS)
@@ -163,7 +159,7 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, 
 		return err
 	}
 	//uit := 100000000
-	coinbaseTx, err := createCoinbaseTx(uint64(h.Coinbasevalue)-uint64(totalTxFee),
+	coinbaseTx, err := createCoinbaseTx(uint64(h.Coinbasevalue)-h.TotalFee,
 		coinbaseScript,
 		opReturnPkScript,
 		payToAddress,
@@ -174,7 +170,7 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, 
 	}
 
 	transactions = make(Transactionses,0)
-	totalTxFee = int64(0)
+	totalTxFee := uint64(0)
 	if !h.HasCoinbasePack {
 		tmpTrx := make(Transactionses,0)
 		for i:=0;i<len(h.Transactions);i++{
@@ -208,6 +204,8 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, 
 		common.MinerLoger.Error(context)
 		return err
 	}
+	// miner get tx tax
+	coinbaseTx.Tx.TxOut[0].Amount += uint64(totalTxFee)
 	if !h.HasCoinbasePack {
 		newtransactions := make(Transactionses,0)
 		newtransactions = append(newtransactions,Transactions{coinbaseTx.Tx.TxHash(),hex.EncodeToString(txBuf),0})
@@ -217,7 +215,5 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, 
 	} else {
 		h.Transactions[0] = Transactions{coinbaseTx.Tx.TxHash(),hex.EncodeToString(txBuf),0}
 	}
-	// miner get tx tax
-	coinbaseTx.Tx.TxOut[0].Amount += uint64(totalTxFee)
 	return nil
 }

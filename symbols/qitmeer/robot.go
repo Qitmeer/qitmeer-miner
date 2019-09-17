@@ -214,7 +214,7 @@ func (this *QitmeerRobot)SubmitWork() {
 					err = this.Work.Submit(block)
 				}
 				if err != nil{
-					if err == ErrStratumStaleWork{
+					if err == ErrStratumStaleWork || err == ErrSameWork{
 						atomic.AddUint64(&this.StaleShares, 1)
 					} else{
 						atomic.AddUint64(&this.InvalidShares, 1)
