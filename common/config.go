@@ -68,7 +68,7 @@ type OptionalConfig struct {
 	Accept       int ` description:"Accept count" default-mask:"0"`
 	Reject       int ` description:"Reject count" default-mask:"0"`
 	Stale       int ` description:"Stale count" default-mask:"0"`
-
+	Target       string ` description:"Target"`
 }
 
 type PoolConfig struct {

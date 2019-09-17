@@ -2,6 +2,42 @@ let myChart = echarts.init(document.getElementById('stats'));
 let myChart1 = echarts.init(document.getElementById('stats1'));
 let devices = [];
 let seriesData = {};
+let CalcDistance=function(second,blockTime){
+    if(second== undefined || blockTime == undefined){
+        console.log(second , blockTime);
+        return;
+    }
+    if (blockTime<=0){
+        blockTime = 120;
+    } else{
+        blockTime /= 1000000000;
+    }
+    if (second<=0){
+        second = 120;
+    }
+    let oldsecond=second,minute=0,hour=0,day=0;
+    minute = parseInt(second/60); //all minutes
+    second%=60;//all seconds
+    if(minute>60) { //
+        hour = parseInt(minute/60);//all minute
+        minute%=60;//minutes
+    }
+    if(hour>24){//days
+        day = parseInt(hour/24);
+        hour%=24;//
+    }
+
+    let allMayBlockCount = Math.ceil(parseFloat(oldsecond) / parseFloat(blockTime),0);
+    if(allMayBlockCount<=0){
+        allMayBlockCount += 1;
+    }
+    second = Math.ceil(second);
+    let tips = "Your devices May need "+day+"days,"+hour+"hours,"+minute+"minutes,"+second+" seconds to produce a block!<br/>";
+    tips += "Your devices produce block probability is : 1/" + allMayBlockCount;
+    $('#needCalc').html(tips);
+    console.log(tips)
+};
+
 let renderStats = function(d){
     let series = [];
     let timespans = ["45s before","40s before","35s before","30s before","25s before","20s before","15s before","10s before","5s before","current"];
@@ -107,7 +143,7 @@ let renderStats = function(d){
         ]
     };
     myChart1.setOption(option);
-
+    CalcDistance(d.needSec,d.blockTime);
 };
 let getMinerData = function () {
     $.ajax({

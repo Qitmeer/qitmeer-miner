@@ -68,6 +68,7 @@ func (this *Stratum)Listen(handle func(data string))  {
 	common.MinerLoger.Debug("Starting Stratum Listener")
 	for {
 		if this.Cfg.OptionConfig.Restart == 1{
+			_ = this.Conn.Close()
 			common.MinerLoger.Debug("pool restart")
 			return
 		}

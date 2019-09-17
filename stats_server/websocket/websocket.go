@@ -2,9 +2,10 @@ package websocket
 
 import (
 	"encoding/json"
-	"github.com/twinj/uuid"
-	"net/http"
 	"github.com/gorilla/websocket"
+	"github.com/twinj/uuid"
+	"math/big"
+	"net/http"
 	"qitmeer-miner/common"
 	"qitmeer-miner/core"
 	"time"
@@ -106,12 +107,22 @@ func (c *Client) write(data *StatsData) {
 				"config":*data.Cfg,
 			}
 			devStats := map[int]interface{}{}
+			allHashrate := 0.00
+			needCalcTimes := new(big.Float).SetInt(common.GetNeedHashTimesByTarget(data.Cfg.OptionConfig.Target))
 			for _,dev := range data.Devices{
 				devStats[dev.GetMinerId()] = map[string]interface{}{
 					"hashrate":dev.GetAverageHashRate(),
 					"id":dev.GetMinerId(),
 					"name":dev.GetName(),
 				}
+				allHashrate += dev.GetAverageHashRate()
+			}
+			configD["needSec"] = 0
+			configD["blockTime"] = data.Cfg.NecessaryConfig.Param.TargetTimePerBlock
+			canCalcTimes := big.NewFloat(allHashrate)
+			if allHashrate > 0 && needCalcTimes.Cmp(big.NewFloat(0)) > 0{
+				needCalcTimes.Quo(needCalcTimes,canCalcTimes) //need seconds
+				configD["needSec"] = needCalcTimes
 			}
 			configD["devices"] = devStats
 			bj , _ := json.Marshal(configD)

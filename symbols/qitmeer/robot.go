@@ -70,21 +70,27 @@ func (this *QitmeerRobot)Run() {
 	go func() {
 		defer this.Wg.Done()
 		for{
-			for _,dev := range this.Devices{
-				if dev.GetStart() > 0 {
-					dev.Release()
+			if this.Cfg.OptionConfig.Restart == 1{
+				for _,dev := range this.Devices{
+					if dev.GetStart() > 0 {
+						dev.Release()
+					}
 				}
+				common.MinerLoger.Debug("miner will start after 5s due to close the thread before!")
+				time.Sleep(5*time.Second)
 			}
 			this.Cfg.OptionConfig.Restart = 0
 			wg := &sync.WaitGroup{}
 			connectName := "solo"
+			this.Pool = false
 			if this.Cfg.PoolConfig.Pool != ""{ //is pool mode
 				connectName = "pool"
 				this.Stratu = &QitmeerStratum{}
 				err := this.Stratu.StratumConn(this.Cfg)
 				if err != nil {
 					common.MinerLoger.Error(err.Error())
-					return
+					time.Sleep(1*time.Second)
+					continue
 				}
 				wg.Add(1)
 				go func() {
@@ -102,6 +108,7 @@ func (this *QitmeerRobot)Run() {
 			for _,dev := range this.Devices{
 				dev.SetIsValid(true)
 				dev.InitDevice()
+				dev.SetPool(this.Pool)
 				if this.Cfg.OptionConfig.UseDevices != ""{
 					this.UseDevices = strings.Split(this.Cfg.OptionConfig.UseDevices,",")
 				}
@@ -207,7 +214,7 @@ func (this *QitmeerRobot)SubmitWork() {
 					err = this.Work.Submit(block)
 				}
 				if err != nil{
-					if err == ErrStratumStaleWork{
+					if err == ErrStratumStaleWork || err == ErrSameWork{
 						atomic.AddUint64(&this.StaleShares, 1)
 					} else{
 						atomic.AddUint64(&this.InvalidShares, 1)

@@ -18,6 +18,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"unicode"
 )
@@ -38,6 +39,24 @@ func SliceRemove(s []uint64, e uint64) []uint64 {
 	}
 
 	return s
+}
+
+func BlockBitsToTarget(bits string,width int) []byte {
+	nbits ,err:=hex.DecodeString(bits[0:2])
+	if err != nil{
+		fmt.Println("error",err.Error())
+	}
+	shift := nbits[0] - 3
+	value,_ := hex.DecodeString(bits[2:])
+	target0 :=make([]byte,int(shift))
+	tmp := string(value) + string(target0)
+	target1 := []byte(tmp)
+	if len(target1)<width {
+		head:=make([]byte,width-len(target1))
+		target := string(head)+string(target1)
+		return []byte(target)
+	}
+	return target1
 }
 
 func Int2varinthex(x int64) string  {
@@ -288,4 +307,23 @@ func InArray( val interface{},arr interface{}) bool {
 	}
 
 	return false
+}
+
+func GetNeedHashTimesByTarget( target string ) *big.Int {
+	times := big.NewInt(1)
+	for i:=0;i<len(target)-1 ;i++  {
+		tmp := target[i:i+1]
+		if tmp == "0"{
+			times.Lsh(times,4)
+		} else{
+			n, _ := strconv.ParseUint(tmp, 16, 32)
+			if n <= 1{
+				n = 1
+			}
+			n1 := int64( 16 / n )
+			times.Mul(times,big.NewInt(n1))
+			break
+		}
+	}
+	return times
 }
