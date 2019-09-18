@@ -10,6 +10,7 @@ import (
 	"github.com/Qitmeer/qitmeer-lib/core/types"
 	"github.com/Qitmeer/qitmeer-lib/engine/txscript"
 	"github.com/Qitmeer/qitmeer-lib/params"
+	"github.com/Qitmeer/qitmeer/core/merkle"
 	"github.com/google/uuid"
 	"qitmeer-miner/common"
 	"sort"
@@ -134,7 +135,7 @@ func createCoinbaseTx(coinBaseVal uint64,coinbaseScript []byte, opReturnPkScript
 }
 
 //calc coinbase
-func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, extraNonce uint64,payAddressS string) error{
+func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, extraNonce uint64,payAddressS string) *hash.Hash{
 	transactions := make(Transactionses,0)
 	if !h.HasCoinbasePack {
 		h.TotalFee = 0
@@ -148,15 +149,18 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, 
 	}
 	payToAddress,err := address.DecodeAddress(payAddressS)
 	if err != nil {
-		return err
+		common.MinerLoger.Errorf("%v",err)
+		return nil
 	}
 	coinbaseScript, err := standardCoinbaseScript(coinbaseStr,h.Height, extraNonce)
 	if err != nil {
-		return err
+		common.MinerLoger.Errorf("%v",err)
+		return nil
 	}
 	opReturnPkScript, err := standardCoinbaseOpReturn([]byte{})
 	if err != nil {
-		return err
+		common.MinerLoger.Errorf("%v",err)
+		return nil
 	}
 	//uit := 100000000
 	coinbaseTx, err := createCoinbaseTx(uint64(h.Coinbasevalue)-h.TotalFee,
@@ -165,13 +169,14 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, 
 		payToAddress,
 		cfg.NecessaryConfig.Param)
 	if err != nil{
-		common.MinerLoger.Info(err.Error())
-		return err
+		common.MinerLoger.Errorf("%v",err)
+		return nil
 	}
 
 	transactions = make(Transactionses,0)
 	totalTxFee := uint64(0)
 	if !h.HasCoinbasePack {
+		h.transactions = make([]*types.Tx,0)
 		tmpTrx := make(Transactionses,0)
 		for i:=0;i<len(h.Transactions);i++{
 			tmpTrx = append(tmpTrx,h.Transactions[i])
@@ -189,6 +194,7 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, 
 			}
 			transactions = append(transactions,tmpTrx[i])
 			allSigCount += tmpTrx[i].GetSigCount()
+			h.transactions = append(h.transactions,tmpTrx[i].EncodeTx())
 		}
 		for i:=0;i<len(transactions);i++{
 			totalTxFee += transactions[i].Fee
@@ -198,14 +204,18 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, 
 			totalTxFee += h.Transactions[i].Fee
 		}
 	}
+
+	// miner get tx tax
+	coinbaseTx.Tx.TxOut[0].Amount += uint64(totalTxFee)
+	h.AddCoinbaseTx(coinbaseTx)
+	_ = fillWitnessToCoinBase(h.transactions)
+	coinbaseTx = h.transactions[0]
 	txBuf,err := coinbaseTx.Tx.Serialize()
 	if err != nil {
 		context := "Failed to serialize transaction"
 		common.MinerLoger.Error(context)
-		return err
+		return nil
 	}
-	// miner get tx tax
-	coinbaseTx.Tx.TxOut[0].Amount += uint64(totalTxFee)
 	if !h.HasCoinbasePack {
 		newtransactions := make(Transactionses,0)
 		newtransactions = append(newtransactions,Transactions{coinbaseTx.Tx.TxHash(),hex.EncodeToString(txBuf),0})
@@ -215,5 +225,27 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, 
 	} else {
 		h.Transactions[0] = Transactions{coinbaseTx.Tx.TxHash(),hex.EncodeToString(txBuf),0}
 	}
+	ha := h.BuildMerkleTreeStore(0)
+	return &ha
+}
+
+func (h *BlockHeader) AddCoinbaseTx(coinbaseTx *types.Tx){
+	if len(h.transactions) > 0 {
+		h.transactions[0] = coinbaseTx
+	} else{
+		txs := make([]*types.Tx,0)
+		txs = append(txs,coinbaseTx)
+		txs = append(txs,h.transactions...)
+		h.transactions = txs
+	}
+}
+
+func fillWitnessToCoinBase(blockTxns []*types.Tx) error {
+	merkles := merkle.BuildMerkleTreeStore(blockTxns,true)
+	txWitnessRoot:=merkles[len(merkles)-1]
+	witnessPreimage:=append(txWitnessRoot.Bytes(),blockTxns[0].Tx.TxIn[0].SignScript...)
+	witnessCommitment := hash.DoubleHashH(witnessPreimage[:])
+	blockTxns[0].Tx.TxIn[0].PreviousOut.Hash=witnessCommitment
+	blockTxns[0].RefreshHash()
 	return nil
 }

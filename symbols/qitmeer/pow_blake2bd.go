@@ -103,10 +103,9 @@ func (this *Blake2bD) Update() {
 		this.header.PackagePoolHeader(this.Work)
 	} else {
 		randStr := fmt.Sprintf("%s%d",this.Cfg.SoloConfig.RandStr,this.CurrentWorkID)
-		_ = this.Work.Block.CalcCoinBase(this.Cfg,randStr,this.CurrentWorkID,this.Cfg.SoloConfig.MinerAddr)
-		txHash := this.Work.Block.BuildMerkleTreeStore(int(this.MinerId))
+		txHash := this.Work.Block.CalcCoinBase(this.Cfg,randStr,this.CurrentWorkID,this.Cfg.SoloConfig.MinerAddr)
 		this.header.PackageRpcHeader(this.Work)
-		this.header.HeaderBlock.TxRoot = txHash
+		this.header.HeaderBlock.TxRoot = *txHash
 	}
 }
 

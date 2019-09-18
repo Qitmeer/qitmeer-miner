@@ -81,12 +81,7 @@ func (this *Cuckaroo) Update() {
 		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepQitmeerWork()
 	} else {
 		randStr := fmt.Sprintf("%s%d", this.Cfg.SoloConfig.RandStr, this.MinerId)
-		err := this.Work.Block.CalcCoinBase(this.Cfg,randStr, this.CurrentWorkID, this.Cfg.SoloConfig.MinerAddr)
-		if err != nil {
-			common.MinerLoger.Infof("calc coinbase error :%v", err)
-			return
-		}
-		this.Work.Block.BuildMerkleTreeStore(int(this.MinerId))
+		_ = this.Work.Block.CalcCoinBase(this.Cfg,randStr, this.CurrentWorkID, this.Cfg.SoloConfig.MinerAddr)
 	}
 }
 

@@ -5,6 +5,7 @@ package qitmeer
 
 import (
 	"github.com/Qitmeer/qitmeer-lib/common/hash"
+	"github.com/Qitmeer/qitmeer/core/merkle"
 	"math"
 )
 
@@ -29,9 +30,16 @@ func hashMerkleBranches(left *hash.Hash, right *hash.Hash) *hash.Hash {
 	newHash := hash.DoubleHashH(h[:])
 	return &newHash
 }
+func (h *BlockHeader)BuildMerkleTreeStoreWithWitness(witness bool,index int) hash.Hash {
+	if !witness{
+		return h.BuildMerkleTreeStore(index)
+	}
+	merkles := merkle.BuildMerkleTreeStore(h.transactions,witness)
+	return * merkles[len(merkles)-1]
+}
 func (h *BlockHeader)BuildMerkleTreeStore(index int) hash.Hash {
-	// If there's an empty stake tree, return totally zeroed out merkle tree root
-	// only.
+	//If there's an empty stake tree, return totally zeroed out merkle tree root
+	//only.
 	transactions := make([]hash.Hash,0)
 	for i:=0;i<len(h.Transactions);i++{
 		transactions = append(transactions,hash.Hash(h.Transactions[i].Hash))

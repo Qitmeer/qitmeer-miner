@@ -97,7 +97,7 @@ func (this *QitmeerWork) Submit (subm string) error {
 			if time.Now().Unix() - startTime >= 120{
 				break
 			}
-			common.MinerLoger.Errorf("【submit error】%s %s",string(body),err.Error())
+			common.MinerLoger.Errorf("【submit error】"+string(body)+err.Error())
 			time.Sleep(1*time.Second)
 			continue
 		}
@@ -105,7 +105,7 @@ func (this *QitmeerWork) Submit (subm string) error {
 	}
 
 	if !strings.Contains(res.Result,"Block submitted accepted") {
-		common.MinerLoger.Errorf("【submit error】%s",string(body))
+		common.MinerLoger.Error("【submit error】 "+string(body))
 		if strings.Contains(res.Result,"The tips of block is expired"){
 			return ErrSameWork
 		}
