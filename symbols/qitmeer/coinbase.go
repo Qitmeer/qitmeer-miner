@@ -10,7 +10,6 @@ import (
 	"github.com/Qitmeer/qitmeer-lib/core/types"
 	"github.com/Qitmeer/qitmeer-lib/engine/txscript"
 	"github.com/Qitmeer/qitmeer-lib/params"
-	"github.com/Qitmeer/qitmeer/core/merkle"
 	"github.com/google/uuid"
 	"qitmeer-miner/common"
 	"sort"
@@ -241,7 +240,7 @@ func (h *BlockHeader) AddCoinbaseTx(coinbaseTx *types.Tx){
 }
 
 func fillWitnessToCoinBase(blockTxns []*types.Tx) error {
-	merkles := merkle.BuildMerkleTreeStore(blockTxns,true)
+	merkles := BuildMerkleTreeStoreWithness(blockTxns,true)
 	txWitnessRoot:=merkles[len(merkles)-1]
 	witnessPreimage:=append(txWitnessRoot.Bytes(),blockTxns[0].Tx.TxIn[0].SignScript...)
 	witnessCommitment := hash.DoubleHashH(witnessPreimage[:])
