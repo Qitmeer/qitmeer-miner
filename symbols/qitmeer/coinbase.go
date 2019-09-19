@@ -206,6 +206,7 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, 
 
 	// miner get tx tax
 	coinbaseTx.Tx.TxOut[0].Amount += uint64(totalTxFee)
+
 	h.AddCoinbaseTx(coinbaseTx)
 	coinbaseTx = fillWitnessToCoinBase(h.transactions)
 	txBuf,err := coinbaseTx.Tx.Serialize()
@@ -228,7 +229,7 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, 
 }
 
 func (h *BlockHeader) AddCoinbaseTx(coinbaseTx *types.Tx){
-	if len(h.transactions) > 0 {
+	if h.HasCoinbasePack {
 		h.transactions[0] = coinbaseTx
 	} else{
 		txs := make([]*types.Tx,0)
