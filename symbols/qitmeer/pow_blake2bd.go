@@ -123,10 +123,6 @@ func (this *Blake2bD) Mine(wg *sync.WaitGroup) {
 		default:
 
 		}
-		if this.Cfg.OptionConfig.Restart == 1{
-			common.MinerLoger.Errorf("device # %d mining listen restart",this.MinerId)
-			return
-		}
 		if !this.IsValid {
 			common.MinerLoger.Errorf("# %d %s device not use to mining.",this.MinerId,this.DeviceName)
 			time.Sleep(2*time.Second)
@@ -158,10 +154,6 @@ func (this *Blake2bD) Mine(wg *sync.WaitGroup) {
 			}
 			if !this.IsValid {
 				break
-			}
-			if this.Cfg.OptionConfig.Restart == 1{
-				common.MinerLoger.Errorf("device # %d mining restart",this.MinerId)
-				return
 			}
 
 			this.Update()

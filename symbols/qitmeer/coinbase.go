@@ -207,8 +207,7 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, 
 	// miner get tx tax
 	coinbaseTx.Tx.TxOut[0].Amount += uint64(totalTxFee)
 	h.AddCoinbaseTx(coinbaseTx)
-	_ = fillWitnessToCoinBase(h.transactions)
-	coinbaseTx = h.transactions[0]
+	coinbaseTx = fillWitnessToCoinBase(h.transactions)
 	txBuf,err := coinbaseTx.Tx.Serialize()
 	if err != nil {
 		context := "Failed to serialize transaction"
@@ -239,12 +238,12 @@ func (h *BlockHeader) AddCoinbaseTx(coinbaseTx *types.Tx){
 	}
 }
 
-func fillWitnessToCoinBase(blockTxns []*types.Tx) error {
+func fillWitnessToCoinBase(blockTxns []*types.Tx) *types.Tx {
 	merkles := BuildMerkleTreeStoreWithness(blockTxns,true)
 	txWitnessRoot:=merkles[len(merkles)-1]
 	witnessPreimage:=append(txWitnessRoot.Bytes(),blockTxns[0].Tx.TxIn[0].SignScript...)
 	witnessCommitment := hash.DoubleHashH(witnessPreimage[:])
 	blockTxns[0].Tx.TxIn[0].PreviousOut.Hash=witnessCommitment
 	blockTxns[0].RefreshHash()
-	return nil
+	return blockTxns[0]
 }
