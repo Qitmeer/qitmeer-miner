@@ -18,6 +18,7 @@ import (
 	"qitmeer-miner/cuckoo"
 	"qitmeer-miner/kernel"
 	"sort"
+	"sync"
 	"sync/atomic"
 	"unsafe"
 )
@@ -85,9 +86,10 @@ func (this *Cuckaroo) Update() {
 	}
 }
 
-func (this *Cuckaroo) Mine() {
+func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 
 	defer this.Release()
+	defer wg.Done()
 
 	for {
 		select {
@@ -420,9 +422,4 @@ func (this *Cuckaroo) InitKernelAndParam() {
 		return
 	}
 
-}
-
-
-func (this *Cuckaroo)Status()  {
-	this.Device.Status()
 }

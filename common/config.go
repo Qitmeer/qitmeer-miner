@@ -36,7 +36,7 @@ var (
 	defaultTimeout  = 60
 	defaultMaxTxCount = 1000
 	defaultMaxSigCount = 5000
-	defaultStatsServer = "127.0.0.1:1235"
+	defaultStatsServer = ""
 )
 
 type DeviceConfig struct {
