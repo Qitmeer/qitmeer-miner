@@ -14,10 +14,10 @@ import (
 )
 
 type BaseDevice interface {
-	Mine()
+	Mine(wg *sync.WaitGroup)
 	Update()
 	InitDevice()
-	Status()
+	Status(wg *sync.WaitGroup)
 	GetIsValid() bool
 	SetIsValid(valid bool)
 	GetMinerId() int
@@ -72,13 +72,10 @@ func (this *Device)Init(i int,device *cl.Device,pool bool,q chan os.Signal,cfg *
 	this.CurrentWorkID=0
 	this.IsValid=true
 	this.Pool=pool
-	this.SubmitData=make(chan string)
+	this.SubmitData=make(chan string,1)
 	this.GlobalItemSize= int(math.Exp2(float64(this.Cfg.OptionConfig.Intensity)))
 	this.Quit=q
 	this.AllDiffOneShares = 0
-}
-
-func (this *Device)Mine()  {
 }
 
 func (this *Device)Update()  {
@@ -171,14 +168,11 @@ func (d *Device)Release()  {
 	d.CommandQueue.Release()
 }
 
-func (this *Device)Status()  {
+func (this *Device)Status(wg *sync.WaitGroup)  {
+	defer wg.Done()
 	t := time.NewTicker(time.Second * 5)
 	defer t.Stop()
 	for {
-		if this.Cfg.OptionConfig.Restart == 1{
-			common.MinerLoger.Debugf("device # %d status restart",this.GetMinerId())
-			return
-		}
 		select{
 		case <- this.Quit:
 			return
@@ -210,8 +204,6 @@ func (this *Device)Status()  {
 				this.Started = time.Now().Unix()
 				this.AllDiffOneShares = 0
 			}
-		default:
-
 		}
 	}
 }

@@ -13,6 +13,7 @@ import (
 	"qitmeer-miner/common"
 	"qitmeer-miner/core"
 	"qitmeer-miner/kernel"
+	"sync"
 	"time"
 )
 
@@ -109,7 +110,8 @@ func (this *Blake2bD) Update() {
 	}
 }
 
-func (this *Blake2bD) Mine() {
+func (this *Blake2bD) Mine(wg *sync.WaitGroup) {
+	defer wg.Done()
 	defer this.Release()
 	for {
 
