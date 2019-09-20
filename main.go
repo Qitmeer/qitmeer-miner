@@ -14,8 +14,6 @@ import (
 	"runtime"
 	"strings"
 	"time"
-	_ "github.com/mkevac/debugcharts" // 可选，添加后可以查看几个实时图表数据
-	_ "net/http/pprof" // 必须，引入 pprof 模块
 )
 var robotminer core.Robot
 
