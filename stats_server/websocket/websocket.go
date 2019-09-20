@@ -100,6 +100,7 @@ func (c *Client) write(data *StatsData) {
 		_ = c.socket.Close()
 	}()
 	t := time.NewTicker(time.Second * 5)
+	defer t.Stop()
 	configD := map[string]interface{}{
 		"config":*data.Cfg,
 	}

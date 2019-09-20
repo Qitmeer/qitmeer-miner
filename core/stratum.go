@@ -69,6 +69,7 @@ func (this *Stratum)ConnectRetry(){
 				continue
 			}
 		}
+		t.Stop()
 		break
 	}
 }
