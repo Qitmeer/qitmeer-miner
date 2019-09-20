@@ -100,16 +100,19 @@ func (c *Client) write(data *StatsData) {
 		_ = c.socket.Close()
 	}()
 	t := time.NewTicker(time.Second * 5)
+	configD := map[string]interface{}{
+		"config":*data.Cfg,
+	}
+	devStats := map[int]interface{}{}
+	allHashrate := 0.00
+	var needCalcTimes,canCalcTimes *big.Float
+	var bj []byte
+	var dev core.BaseDevice
 	for {
 		select {
 		case <-t.C:
-			configD := map[string]interface{}{
-				"config":*data.Cfg,
-			}
-			devStats := map[int]interface{}{}
-			allHashrate := 0.00
-			needCalcTimes := new(big.Float).SetInt(common.GetNeedHashTimesByTarget(data.Cfg.OptionConfig.Target))
-			for _,dev := range data.Devices{
+			needCalcTimes = new(big.Float).SetInt(common.GetNeedHashTimesByTarget(data.Cfg.OptionConfig.Target))
+			for _,dev = range data.Devices{
 				devStats[dev.GetMinerId()] = map[string]interface{}{
 					"hashrate":dev.GetAverageHashRate(),
 					"id":dev.GetMinerId(),
@@ -119,20 +122,19 @@ func (c *Client) write(data *StatsData) {
 			}
 			configD["needSec"] = 0
 			configD["blockTime"] = data.Cfg.NecessaryConfig.Param.TargetTimePerBlock
-			canCalcTimes := big.NewFloat(allHashrate)
+			canCalcTimes = big.NewFloat(allHashrate)
 			if allHashrate > 0 && needCalcTimes.Cmp(big.NewFloat(0)) > 0{
 				needCalcTimes.Quo(needCalcTimes,canCalcTimes) //need seconds
 				configD["needSec"] = needCalcTimes
 			}
 			configD["devices"] = devStats
-			bj , _ := json.Marshal(configD)
+			bj , _ = json.Marshal(configD)
 			_ = c.socket.WriteMessage(websocket.TextMessage, bj)
 		case message, ok := <-c.send:
 			if !ok {
 				_ = c.socket.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
-
 			_ = c.socket.WriteMessage(websocket.TextMessage, message)
 		}
 	}
