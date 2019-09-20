@@ -62,13 +62,11 @@ func (this *Stratum)ConnectRetry(){
 	defer t.Stop()
 	var err error
 	for{
-		select {
-		case <-t.C:
-			err = this.Reconnect()
-			if err != nil {
-				common.MinerLoger.Debugf("【Connect error , It will reconnect after 2s】.%s",err.Error())
-				continue
-			}
+		<-t.C
+		err = this.Reconnect()
+		if err != nil {
+			common.MinerLoger.Debugf("【Connect error , It will reconnect after 2s】.%s",err.Error())
+			continue
 		}
 		break
 	}

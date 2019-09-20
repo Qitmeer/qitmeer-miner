@@ -110,6 +110,7 @@ func (c *Client) write(data *StatsData) {
 	for {
 		select {
 		case <-t.C:
+			allHashrate = 0.00
 			configD["config"] = *data.Cfg
 			needCalcTimes = new(big.Float).SetInt(common.GetNeedHashTimesByTarget(data.Cfg.OptionConfig.Target))
 			for _,dev = range data.Devices{
