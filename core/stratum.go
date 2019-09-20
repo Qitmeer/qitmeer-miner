@@ -59,6 +59,7 @@ func (this *Stratum)StratumConn(cfg *common.GlobalConfig) error {
 
 func (this *Stratum)ConnectRetry(){
 	t := time.NewTicker(time.Second * 2)
+	defer t.Stop()
 	var err error
 	for{
 		select {
@@ -69,7 +70,6 @@ func (this *Stratum)ConnectRetry(){
 				continue
 			}
 		}
-		t.Stop()
 		break
 	}
 }

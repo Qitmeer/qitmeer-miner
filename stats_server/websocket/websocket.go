@@ -101,9 +101,7 @@ func (c *Client) write(data *StatsData) {
 	}()
 	t := time.NewTicker(time.Second * 5)
 	defer t.Stop()
-	configD := map[string]interface{}{
-		"config":*data.Cfg,
-	}
+	configD := map[string]interface{}{}
 	devStats := map[int]interface{}{}
 	allHashrate := 0.00
 	var needCalcTimes,canCalcTimes *big.Float
@@ -112,6 +110,7 @@ func (c *Client) write(data *StatsData) {
 	for {
 		select {
 		case <-t.C:
+			configD["config"] = *data.Cfg
 			needCalcTimes = new(big.Float).SetInt(common.GetNeedHashTimesByTarget(data.Cfg.OptionConfig.Target))
 			for _,dev = range data.Devices{
 				devStats[dev.GetMinerId()] = map[string]interface{}{

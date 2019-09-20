@@ -48,10 +48,8 @@ func main()  {
 		t := time.NewTicker(time.Second * 5)
 		defer t.Stop()
 		for{
-			select {
-			case <- t.C:
-				runtime.GC()
-			}
+			<- t.C
+			runtime.GC()
 		}
 	}()
 	robotminer.Run()
