@@ -107,13 +107,13 @@ func (rpc *RpcClient)RpcResult(method string,params []interface{}) []byte{
 	}
 	httpClient.Timeout = time.Duration(rpc.Cfg.OptionConfig.Timeout) * time.Second
 	httpResponse, err := httpClient.Do(httpRequest)
-	defer func() {
-		_ = httpResponse.Body.Close()
-	}()
 	if err != nil {
 		MinerLoger.Errorf("rpc request faild %v",err)
 		return nil
 	}
+	defer func() {
+		_ = httpResponse.Body.Close()
+	}()
 	body, err := ioutil.ReadAll(httpResponse.Body)
 	if err != nil {
 		MinerLoger.Errorf("error reading json reply:%v", err)
