@@ -56,11 +56,13 @@ type Device struct{
 	CurrentWorkID uint64
 	Quit chan os.Signal //must init
 	sync.Mutex
-	Wg sync.WaitGroup
-	Pool bool //must init
-	IsValid bool //is valid
+	Wg         sync.WaitGroup
+	Pool       bool //must init
+	IsValid    bool //is valid
 	SubmitData chan string //must
-	NewWork chan BaseWork
+	NewWork    chan BaseWork
+	Err        error
+	Event *cl.Event
 }
 
 func (this *Device)Init(i int,device *cl.Device,pool bool,q chan os.Signal,cfg *common.GlobalConfig)  {
@@ -79,15 +81,8 @@ func (this *Device)Init(i int,device *cl.Device,pool bool,q chan os.Signal,cfg *
 }
 
 func (this *Device)Update()  {
-	defer func() {
-		err := recover()
-		if err != nil {
-			common.MinerLoger.Errorf("[error]%v",err)
-		}
-	}()
-	var err error
-	this.CurrentWorkID,err = common.RandUint64()
-	if err != nil{
+	this.CurrentWorkID,this.Err = common.RandUint64()
+	if this.Err != nil{
 		this.CurrentWorkID++
 	}
 }

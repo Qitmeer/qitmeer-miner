@@ -4,7 +4,7 @@
 package qitmeer
 
 import (
-	"encoding/hex"
+	"fmt"
 	"github.com/Qitmeer/qitmeer-lib/common/hash"
 	"github.com/Qitmeer/qitmeer-lib/core/address"
 	"github.com/Qitmeer/qitmeer-lib/core/types"
@@ -215,14 +215,15 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, 
 		common.MinerLoger.Error(context)
 		return nil
 	}
+	coinbaseData := fmt.Sprintf("%x",txBuf)
 	if !h.HasCoinbasePack {
 		newtransactions := make(Transactionses,0)
-		newtransactions = append(newtransactions,Transactions{coinbaseTx.Tx.TxHash(),hex.EncodeToString(txBuf),0})
+		newtransactions = append(newtransactions,Transactions{coinbaseTx.Tx.TxHash(),coinbaseData,0})
 		newtransactions = append(newtransactions,transactions...)
 		h.Transactions = newtransactions
 		h.HasCoinbasePack = true
 	} else {
-		h.Transactions[0] = Transactions{coinbaseTx.Tx.TxHash(),hex.EncodeToString(txBuf),0}
+		h.Transactions[0] = Transactions{coinbaseTx.Tx.TxHash(),coinbaseData,0}
 	}
 	ha := h.BuildMerkleTreeStore(0)
 	return &ha
