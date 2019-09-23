@@ -88,7 +88,6 @@ func (this *Cuckatoo) InitDevice() {
 
 func (this *Cuckatoo) Update() {
 	this.Transactions = make(map[int][]Transactions)
-	//update coinbase tx hash
 	this.Device.Update()
 	if this.Pool {
 		this.Work.PoolWork.ExtraNonce2 = fmt.Sprintf("%08x", this.CurrentWorkID)
@@ -120,27 +119,28 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 		if len(this.Work.PoolWork.WorkData) <= 0 && this.Work.Block.Height <= 0 {
 			continue
 		}
+		this.header = MinerBlockData{
+			Transactions:[]Transactions{},
+			Parents:[]ParentItems{},
+			HeaderData:make([]byte,0),
+			TargetDiff:&big.Int{},
+			JobID:"",
+		}
 		this.HasNewWork = false
 		this.CurrentWorkID = 0
 		var err error
+		this.Started = time.Now().Unix()
+		this.AllDiffOneShares = 0
 		for {
 			// if has new work ,current calc stop
 			if this.HasNewWork {
 				break
 			}
-			this.header = MinerBlockData{
-				Transactions:[]Transactions{},
-				Parents:[]ParentItems{},
-				HeaderData:make([]byte,0),
-				TargetDiff:&big.Int{},
-				JobID:"",
-			}
-
+			this.Update()
 			for {
 				if this.HasNewWork {
 					break
 				}
-				this.Update()
 				nonce ,_:= common.RandUint64()
 				this.header.HeaderBlock.Pow.SetNonce(nonce)
 				hdrkey := hash.HashH(this.header.HeaderBlock.BlockData())
@@ -182,11 +182,23 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 					}
 					err = this.CreateEdgeKernel.SetArg(7,uint32(current_mode))
 					this.Enq(8)
-					_,err = this.CommandQueue.EnqueueFillBuffer(this.CountersObj,unsafe.Pointer(&this.ClearBytes[0]),4,0,el_count*4,nil)
+					this.Event,err = this.CommandQueue.EnqueueFillBuffer(this.CountersObj,unsafe.Pointer(&this.ClearBytes[0]),4,0,el_count*4,nil)
+					if err != nil {
+						common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
+						this.IsValid = false
+						return
+					}
+					this.Event.Release()
 
 				}
 				this.ResultBytes = make([]byte,RES_BUFFER_SIZE*4)
-				_,_ = this.CommandQueue.EnqueueReadBufferByte(this.ResultObj,true,0,this.ResultBytes,nil)
+				this.Event,err = this.CommandQueue.EnqueueReadBufferByte(this.ResultObj,true,0,this.ResultBytes,nil)
+				if err != nil {
+					common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
+					this.IsValid = false
+					return
+				}
+				this.Event.Release()
 				leftEdges := binary.LittleEndian.Uint32(this.ResultBytes[4:8])
 				common.MinerLoger.Errorf(fmt.Sprintf("Trimmed to %d edges",leftEdges))
 				noncesBytes := make([]byte,42*4)
@@ -199,9 +211,11 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 					C.free(p)
 				}){
 					//timeout
-					common.MinerLoger.Errorf("timeout 重新计算",nonce)
+					common.MinerLoger.Errorf("timeout retry",nonce)
 					continue
 				}
+				// when GPU find cuckoo cycle one time GPS/s
+				this.AllDiffOneShares += 1
 				this.Nonces = make([]uint32,0)
 				isFind := true
 				for jj := 0;jj < len(noncesBytes);jj+=4{
@@ -213,7 +227,7 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 					this.Nonces = append(this.Nonces,tj)
 				}
 				if !isFind{
-					common.MinerLoger.Errorf("重新计算",nonce)
+					common.MinerLoger.Errorf("retry",nonce)
 					continue
 				}
 				sort.Slice(this.Nonces, func(i, j int) bool {
@@ -282,25 +296,27 @@ func (this *Cuckatoo) InitParamData() {
 	var err error
 	this.ClearBytes = make([]byte,4)
 	allBytes := []byte{255,255,255,255}
-	_,err = this.CommandQueue.EnqueueFillBuffer(this.CountersObj,unsafe.Pointer(&this.ClearBytes[0]),4,0,el_count*4,nil)
+	this.Event,err = this.CommandQueue.EnqueueFillBuffer(this.CountersObj,unsafe.Pointer(&this.ClearBytes[0]),4,0,el_count*4,nil)
 	if err != nil {
 		common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
 		this.IsValid = false
 		return
 	}
-	_,err = this.CommandQueue.EnqueueFillBuffer(this.EdgesObj,unsafe.Pointer(&allBytes[0]),4,0,el_count*4*8,nil)
+	this.Event.Release()
+	this.Event,err = this.CommandQueue.EnqueueFillBuffer(this.EdgesObj,unsafe.Pointer(&allBytes[0]),4,0,el_count*4*8,nil)
 	if err != nil {
 		common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
 		this.IsValid = false
 		return
 	}
-	_,err = this.CommandQueue.EnqueueFillBuffer(this.ResultObj,unsafe.Pointer(&this.ClearBytes[0]),4,0,RES_BUFFER_SIZE*4,nil)
+	this.Event.Release()
+	this.Event,err = this.CommandQueue.EnqueueFillBuffer(this.ResultObj,unsafe.Pointer(&this.ClearBytes[0]),4,0,RES_BUFFER_SIZE*4,nil)
 	if err != nil {
 		common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
 		this.IsValid = false
 		return
 	}
-
+	this.Event.Release()
 	err = this.CreateEdgeKernel.SetArgBuffer(4,this.EdgesObj)
 	err = this.CreateEdgeKernel.SetArgBuffer(5,this.CountersObj)
 	err = this.CreateEdgeKernel.SetArgBuffer(6,this.ResultObj)
@@ -349,10 +365,11 @@ func (this *Cuckatoo) Enq(num int) {
 		offset = j * GLOBAL_WORK_SIZE
 		//common.MinerLoger.Errorf(j,offset)
 		// 2 ^ 24 2 ^ 11 * 2 ^ 8 * 2 * 2 ^ 4 11+8+1+4=24
-		if _, err := this.CommandQueue.EnqueueNDRangeKernel(this.CreateEdgeKernel, []int{offset}, []int{GLOBAL_WORK_SIZE}, []int{LOCAL_WORK_SIZE}, nil); err != nil {
-			common.MinerLoger.Errorf("CreateEdgeKernel-1058 %d %v", this.MinerId,err)
+		if this.Event, this.Err = this.CommandQueue.EnqueueNDRangeKernel(this.CreateEdgeKernel, []int{offset}, []int{GLOBAL_WORK_SIZE}, []int{LOCAL_WORK_SIZE}, nil); err != nil {
+			common.MinerLoger.Errorf("CreateEdgeKernel-1058 %d %v", this.MinerId,this.Err)
 			return
 		}
+		this.Event.Release()
 	}
 }
 
