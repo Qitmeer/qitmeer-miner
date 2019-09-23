@@ -29,7 +29,7 @@ type MinerRobot struct {
 	StaleShares   uint64
 	InvalidShares uint64
 	AllDiffOneShares uint64
-	Wg            sync.WaitGroup
+	Wg            *sync.WaitGroup
 	Started       uint32
 	Quit          chan os.Signal
 	Work 		  *Work

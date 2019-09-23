@@ -4,11 +4,8 @@
 package qitmeer
 
 import (
-	"encoding/hex"
 	"fmt"
 	"github.com/Qitmeer/go-opencl/cl"
-	"github.com/Qitmeer/qitmeer-lib/common/hash"
-	"github.com/astaxie/beego"
 	"log"
 	"qitmeer-miner/common"
 	"qitmeer-miner/core"
@@ -69,105 +66,83 @@ func (this *QitmeerRobot)InitDevice()  {
 
 // runing
 func (this *QitmeerRobot)Run() {
+	this.Wg = &sync.WaitGroup{}
 	this.InitDevice()
 	//mining service
-	this.Wg.Add(1)
-	go func() {
-		defer this.Wg.Done()
-		for{
-			if this.Cfg.OptionConfig.Restart == 1{
-				for _,dev := range this.Devices{
-					if dev.GetStart() > 0 {
-						dev.Release()
-					}
-				}
-				common.MinerLoger.Debug("miner will start after 5s due to close the thread before!")
-				time.Sleep(5*time.Second)
-			}
-			this.Cfg.OptionConfig.Restart = 0
-			wg := &sync.WaitGroup{}
-			connectName := "solo"
-			this.Pool = false
-			if this.Cfg.PoolConfig.Pool != ""{ //is pool mode
-				connectName = "pool"
-				this.Stratu = &QitmeerStratum{}
-				err := this.Stratu.StratumConn(this.Cfg)
-				if err != nil {
-					common.MinerLoger.Error(err.Error())
-					time.Sleep(1*time.Second)
-					continue
-				}
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					this.Stratu.HandleReply()
-				}()
-				this.Pool = true
-			}
-			common.MinerLoger.Infof("%s miner start",connectName)
-			this.Work = QitmeerWork{}
-			this.Work.Cfg = this.Cfg
-			this.Work.Rpc = this.Rpc
-			this.Work.stra = this.Stratu
-			// Device Miner
-			for _,dev := range this.Devices{
-				dev.SetIsValid(true)
-				dev.InitDevice()
-				dev.SetPool(this.Pool)
-				if this.Cfg.OptionConfig.UseDevices != ""{
-					this.UseDevices = strings.Split(this.Cfg.OptionConfig.UseDevices,",")
-				}
-				if len(this.UseDevices) > 0 && !common.InArray(strconv.Itoa(dev.GetMinerId()),this.UseDevices){
-					dev.SetIsValid(false)
-				}
-				go dev.Mine()
-				go dev.Status()
-			}
-			//refresh work
-			wg.Add(1)
-			go func(){
-				defer wg.Done()
-				this.ListenWork()
-			}()
-			//submit work
-			wg.Add(1)
-			go func(){
-				defer wg.Done()
-				this.SubmitWork()
-			}()
-			//submit status
-			wg.Add(1)
-			go func(){
-				defer wg.Done()
-				this.Status()
-			}()
-			wg.Wait()
+	connectName := "solo"
+	this.Pool = false
+	if this.Cfg.PoolConfig.Pool != ""{ //is pool mode
+		connectName = "pool"
+		this.Stratu = &QitmeerStratum{}
+		_ = this.Stratu.StratumConn(this.Cfg)
+		this.Wg.Add(1)
+		go func() {
+			defer this.Wg.Done()
+			this.Stratu.HandleReply()
+		}()
+		this.Pool = true
+	}
+	common.MinerLoger.Infof("%s miner start",connectName)
+	this.Work = QitmeerWork{}
+	this.Work.Cfg = this.Cfg
+	this.Work.Rpc = this.Rpc
+	this.Work.stra = this.Stratu
+	// Device Miner
+	for _,dev := range this.Devices{
+		dev.SetIsValid(true)
+		dev.InitDevice()
+		dev.SetPool(this.Pool)
+		if len(this.UseDevices) > 0 && !common.InArray(strconv.Itoa(dev.GetMinerId()),this.UseDevices){
+			dev.SetIsValid(false)
 		}
-	}()
-
-	//http server stats
+		this.Wg.Add(1)
+		go dev.Mine(this.Wg)
+		this.Wg.Add(1)
+		go dev.Status(this.Wg)
+	}
+	//refresh work
 	this.Wg.Add(1)
 	go func(){
 		defer this.Wg.Done()
-		stats_server.HandleRouter(this.Cfg,this.Devices)
+		this.ListenWork()
 	}()
+	//submit work
+	this.Wg.Add(1)
+	go func(){
+		defer this.Wg.Done()
+		this.SubmitWork()
+	}()
+	//submit status
+	this.Wg.Add(1)
+	go func(){
+		defer this.Wg.Done()
+		this.Status()
+	}()
+
+	//http server stats
+	if this.Cfg.OptionConfig.StatsServer != ""{
+		this.Wg.Add(1)
+		go func(){
+			defer this.Wg.Done()
+			stats_server.HandleRouter(this.Cfg,this.Devices)
+		}()
+	}
+
 	this.Wg.Wait()
 }
 
 // ListenWork
 func (this *QitmeerRobot)ListenWork() {
 	common.MinerLoger.Info("listen new work server")
-	time.Sleep(1*time.Second)
+	t := time.NewTicker(time.Second * 2)
+	defer t.Stop()
+	r := false
 	for {
-		if this.Cfg.OptionConfig.Restart == 1{
-			common.MinerLoger.Info("listen server restart")
-			return
-		}
 		select {
 		case <-this.Quit:
 			return
-		default:
-			var r = false
+		case <-t.C:
+			r = false
 			if this.Pool {
 				r = this.Work.PoolGet() // get new work
 			} else {
@@ -182,23 +157,18 @@ func (this *QitmeerRobot)ListenWork() {
 				}
 			}
 		}
-		time.Sleep(1*time.Second)
 	}
 }
 
 // ListenWork
 func (this *QitmeerRobot)SubmitWork() {
 	common.MinerLoger.Info("listen submit block server")
-	wg := sync.WaitGroup{}
-	wg.Add(1)
 	go func() {
-		defer wg.Done()
 		str := ""
+		var logContent string
+		var count int
+		var arr []string
 		for{
-			if this.Cfg.OptionConfig.Restart == 1{
-				common.MinerLoger.Info("submit server restart")
-				return
-			}
 			select {
 			case <-this.Quit:
 				return
@@ -210,41 +180,35 @@ func (this *QitmeerRobot)SubmitWork() {
 				var err error
 				var height ,txCount ,block string
 				if this.Pool {
-					arr := strings.Split(str,"-")
+					arr = strings.Split(str,"-")
 					block = arr[0]
 					err = this.Work.PoolSubmit(str)
 				} else {
 					//solo miner
-					arr := strings.Split(str,"-")
+					arr = strings.Split(str,"-")
 					txCount = arr[1]
 					height = arr[2]
 					block = arr[0]
 					err = this.Work.Submit(block)
 				}
 				if err != nil{
-					if err != ErrSameWork{
-						//log.Println("【submit error】:",err)
+					if err != ErrSameWork || err == ErrSameWork{
 						if err == ErrStratumStaleWork{
 							atomic.AddUint64(&this.StaleShares, 1)
 						} else{
 							atomic.AddUint64(&this.InvalidShares, 1)
-							beego.Error(err.Error())
 						}
 					}
 				} else {
-					byt ,_:= hex.DecodeString(block)
-					common.MinerLoger.Infof("[Found hash and submit]%s",hash.DoubleHashH(byt[0:Blake2bBlockLength]))
 					atomic.AddUint64(&this.ValidShares, 1)
 					if !this.Pool{
-						count ,_ := strconv.Atoi(txCount)
+						count ,_ = strconv.Atoi(txCount)
 						this.AllTransactionsCount += int64(count)
-						logContent := fmt.Sprintf("%s,receive block, block height = %s,Including %s transactions(not contain coinbase tx); Received Total transactions = %d\n",
-							time.Now().Format("2006-01-02 03:04:05 PM"),height,txCount,this.AllTransactionsCount)
+						logContent = fmt.Sprintf("receive block, block height = %s,Including %s transactions(not contain coinbase tx); Received Total transactions = %d\n",
+							height,txCount,this.AllTransactionsCount)
 						common.MinerLoger.Info(logContent)
 					}
 				}
-			default:
-
 			}
 		}
 
@@ -252,18 +216,14 @@ func (this *QitmeerRobot)SubmitWork() {
 	for _,dev := range this.Devices{
 		go dev.SubmitShare(this.SubmitStr)
 	}
-	wg.Wait()
 }
 
 // stats the submit result
 func (this *QitmeerRobot)Status()  {
 	t := time.NewTicker(time.Second * 30)
+	var valid,rejected,staleShares uint64
 	defer t.Stop()
 	for {
-		if this.Cfg.OptionConfig.Restart == 1{
-			common.MinerLoger.Debug("stats restart")
-			return
-		}
 		select {
 		case <-this.Quit:
 			return
@@ -271,9 +231,9 @@ func (this *QitmeerRobot)Status()  {
 			if this.Work.stra == nil && this.Work.Block.Height == 0{
 				continue
 			}
-			valid := atomic.LoadUint64(&this.ValidShares)
-			rejected := atomic.LoadUint64(&this.InvalidShares)
-			staleShares := atomic.LoadUint64(&this.StaleShares)
+			valid = atomic.LoadUint64(&this.ValidShares)
+			rejected = atomic.LoadUint64(&this.InvalidShares)
+			staleShares = atomic.LoadUint64(&this.StaleShares)
 			if this.Pool{
 				valid = atomic.LoadUint64(&this.Stratu.ValidShares)
 				rejected = atomic.LoadUint64(&this.Stratu.InvalidShares)
@@ -289,8 +249,6 @@ func (this *QitmeerRobot)Status()  {
 				rejected,
 				total,
 			)
-		default:
-
 		}
 	}
 }

@@ -44,6 +44,14 @@ func main()  {
 		common.MinerLoger.Error("[error] Please check the coin in the README.md! if this coin is supported, use -S to set")
 		return
 	}
+	go func() {
+		t := time.NewTicker(time.Second * 5)
+		defer t.Stop()
+		for{
+			<- t.C
+			runtime.GC()
+		}
+	}()
 	robotminer.Run()
 }
 

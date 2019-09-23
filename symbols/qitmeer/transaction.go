@@ -6,6 +6,7 @@ import (
 	"github.com/Qitmeer/qitmeer-lib/common/hash"
 	"github.com/Qitmeer/qitmeer-lib/core/message"
 	"github.com/Qitmeer/qitmeer-lib/core/protocol"
+	"github.com/Qitmeer/qitmeer-lib/core/types"
 )
 
 type ParentItems struct {
@@ -16,7 +17,7 @@ type ParentItems struct {
 type Transactions struct {
 	Hash hash.Hash `json:"hash"`
 	Data string    `json:"data"`
-	Fee  int64     `json:"fee"`
+	Fee  uint64     `json:"fee"`
 }
 
 
@@ -35,4 +36,12 @@ func (this *Transactions) GetSigCount() int{
 	var mtx = new(message.MsgTx)
 	_ = mtx.Decode(bytes.NewReader(txBytes),protocol.ProtocolVersion)
 	return len(mtx.Tx.TxOut)
+}
+
+func (this *Transactions) EncodeTx() *types.Tx{
+	txBytes,_ := hex.DecodeString(this.Data)
+	var mtx = new(message.MsgTx)
+	_ = mtx.Decode(bytes.NewReader(txBytes),protocol.ProtocolVersion)
+	tx := types.NewTx(mtx.Tx)
+	return tx
 }

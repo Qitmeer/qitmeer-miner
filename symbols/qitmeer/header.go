@@ -45,6 +45,8 @@ type BlockHeader struct {
 
 	Coinbasevalue   int64 `json:"coinbasevalue"`
 	HasCoinbasePack bool
+	TotalFee uint64
+	transactions []*types.Tx
 }
 
 //qitmeer block header

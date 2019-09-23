@@ -4,7 +4,7 @@
 package qitmeer
 
 import (
-	"encoding/hex"
+	"fmt"
 	"github.com/Qitmeer/qitmeer-lib/common/hash"
 	"github.com/Qitmeer/qitmeer-lib/core/address"
 	"github.com/Qitmeer/qitmeer-lib/core/types"
@@ -134,48 +134,48 @@ func createCoinbaseTx(coinBaseVal uint64,coinbaseScript []byte, opReturnPkScript
 }
 
 //calc coinbase
-func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, extraNonce uint64,payAddressS string) error{
+func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, extraNonce uint64,payAddressS string) *hash.Hash{
 	transactions := make(Transactionses,0)
-	totalTxFee := int64(0)
 	if !h.HasCoinbasePack {
+		h.TotalFee = 0
 		for i:=0;i<len(h.Transactions);i++{
 			transactions = append(transactions,h.Transactions[i])
 		}
 		sort.Sort(transactions)
 		for i:=0;i<len(transactions);i++{
-			totalTxFee += transactions[i].Fee
-		}
-	} else{
-		for i:=1;i<len(h.Transactions);i++{
-			totalTxFee += h.Transactions[i].Fee
+			h.TotalFee += transactions[i].Fee
 		}
 	}
 	payToAddress,err := address.DecodeAddress(payAddressS)
 	if err != nil {
-		return err
+		common.MinerLoger.Errorf("%v",err)
+		return nil
 	}
 	coinbaseScript, err := standardCoinbaseScript(coinbaseStr,h.Height, extraNonce)
 	if err != nil {
-		return err
+		common.MinerLoger.Errorf("%v",err)
+		return nil
 	}
 	opReturnPkScript, err := standardCoinbaseOpReturn([]byte{})
 	if err != nil {
-		return err
+		common.MinerLoger.Errorf("%v",err)
+		return nil
 	}
 	//uit := 100000000
-	coinbaseTx, err := createCoinbaseTx(uint64(h.Coinbasevalue)-uint64(totalTxFee),
+	coinbaseTx, err := createCoinbaseTx(uint64(h.Coinbasevalue)-h.TotalFee,
 		coinbaseScript,
 		opReturnPkScript,
 		payToAddress,
 		cfg.NecessaryConfig.Param)
 	if err != nil{
-		common.MinerLoger.Info(err.Error())
-		return err
+		common.MinerLoger.Errorf("%v",err)
+		return nil
 	}
 
 	transactions = make(Transactionses,0)
-	totalTxFee = int64(0)
+	totalTxFee := uint64(0)
 	if !h.HasCoinbasePack {
+		h.transactions = make([]*types.Tx,0)
 		tmpTrx := make(Transactionses,0)
 		for i:=0;i<len(h.Transactions);i++{
 			tmpTrx = append(tmpTrx,h.Transactions[i])
@@ -193,6 +193,7 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, 
 			}
 			transactions = append(transactions,tmpTrx[i])
 			allSigCount += tmpTrx[i].GetSigCount()
+			h.transactions = append(h.transactions,tmpTrx[i].EncodeTx())
 		}
 		for i:=0;i<len(transactions);i++{
 			totalTxFee += transactions[i].Fee
@@ -202,22 +203,49 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, 
 			totalTxFee += h.Transactions[i].Fee
 		}
 	}
+
+	// miner get tx tax
+	coinbaseTx.Tx.TxOut[0].Amount += uint64(totalTxFee)
+
+	h.AddCoinbaseTx(coinbaseTx)
+	coinbaseTx = fillWitnessToCoinBase(h.transactions)
 	txBuf,err := coinbaseTx.Tx.Serialize()
 	if err != nil {
 		context := "Failed to serialize transaction"
 		common.MinerLoger.Error(context)
-		return err
+		return nil
 	}
+	coinbaseData := fmt.Sprintf("%x",txBuf)
 	if !h.HasCoinbasePack {
 		newtransactions := make(Transactionses,0)
-		newtransactions = append(newtransactions,Transactions{coinbaseTx.Tx.TxHash(),hex.EncodeToString(txBuf),0})
+		newtransactions = append(newtransactions,Transactions{coinbaseTx.Tx.TxHash(),coinbaseData,0})
 		newtransactions = append(newtransactions,transactions...)
 		h.Transactions = newtransactions
 		h.HasCoinbasePack = true
 	} else {
-		h.Transactions[0] = Transactions{coinbaseTx.Tx.TxHash(),hex.EncodeToString(txBuf),0}
+		h.Transactions[0] = Transactions{coinbaseTx.Tx.TxHash(),coinbaseData,0}
 	}
-	// miner get tx tax
-	coinbaseTx.Tx.TxOut[0].Amount += uint64(totalTxFee)
-	return nil
+	ha := h.BuildMerkleTreeStore(0)
+	return &ha
+}
+
+func (h *BlockHeader) AddCoinbaseTx(coinbaseTx *types.Tx){
+	if h.HasCoinbasePack {
+		h.transactions[0] = coinbaseTx
+	} else{
+		txs := make([]*types.Tx,0)
+		txs = append(txs,coinbaseTx)
+		txs = append(txs,h.transactions...)
+		h.transactions = txs
+	}
+}
+
+func fillWitnessToCoinBase(blockTxns []*types.Tx) *types.Tx {
+	merkles := BuildMerkleTreeStoreWithness(blockTxns,true)
+	txWitnessRoot:=merkles[len(merkles)-1]
+	witnessPreimage:=append(txWitnessRoot.Bytes(),blockTxns[0].Tx.TxIn[0].SignScript...)
+	witnessCommitment := hash.DoubleHashH(witnessPreimage[:])
+	blockTxns[0].Tx.TxIn[0].PreviousOut.Hash=witnessCommitment
+	blockTxns[0].RefreshHash()
+	return blockTxns[0]
 }

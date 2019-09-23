@@ -25,6 +25,7 @@ import (
 	"qitmeer-miner/core"
 	"qitmeer-miner/kernel"
 	"sort"
+	"sync"
 	"time"
 	"unsafe"
 )
@@ -95,21 +96,16 @@ func (this *Cuckatoo) Update() {
 		this.header.PackagePoolHeader(this.Work,pow.CUCKATOO)
 	} else {
 		randStr := fmt.Sprintf("%s%d",this.Cfg.SoloConfig.RandStr,this.CurrentWorkID)
-		err := this.Work.Block.CalcCoinBase(this.Cfg,randStr, this.CurrentWorkID, this.Cfg.SoloConfig.MinerAddr)
-		if err != nil {
-			common.MinerLoger.Infof("calc coinbase error :%v", err)
-			return
-		}
-		txHash := this.Work.Block.BuildMerkleTreeStore(int(this.MinerId))
+		txHash := this.Work.Block.CalcCoinBase(this.Cfg,randStr, this.CurrentWorkID, this.Cfg.SoloConfig.MinerAddr)
 		this.header.PackageRpcHeader(this.Work)
-		this.header.HeaderBlock.TxRoot = txHash
+		this.header.HeaderBlock.TxRoot = *txHash
 	}
 }
 
-func (this *Cuckatoo) Mine() {
+func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 
 	defer this.Release()
-
+	defer wg.Done()
 	for {
 		select {
 		case w := <-this.NewWork:
@@ -347,11 +343,6 @@ func (this *Cuckatoo) InitKernelAndParam() {
 	}
 }
 
-
-func (this *Cuckatoo)Status()  {
-	this.Device.Status()
-}
-
 func (this *Cuckatoo) Enq(num int) {
 	offset := 0
 	for j:=0;j<num;j++{
@@ -364,3 +355,8 @@ func (this *Cuckatoo) Enq(num int) {
 		}
 	}
 }
+
+func (this* Cuckatoo) GetMinerType() string {
+	return "cuckatoo"
+}
+

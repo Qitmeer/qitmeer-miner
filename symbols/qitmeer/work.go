@@ -56,7 +56,6 @@ func (this *QitmeerWork) Get () bool {
 		return false
 	}
 	if this.Block.Height > 0 && this.Block.Height == blockTemplate.Result.Height &&
-		len(this.Block.Transactions) == (len(blockTemplate.Result.Transactions)+1) &&
 		time.Now().Unix() - this.GetWorkTime < 120{
 		//not has new work
 		return false
@@ -74,12 +73,14 @@ func (this *QitmeerWork) Get () bool {
 		powStruct.SetEdgeBits(24)
 		blockTemplate.Result.Difficulty = blockTemplate.Result.PowDiffReference.CuckarooMinDiff
 		common.MinerLoger.Debugf("%d",blockTemplate.Result.Difficulty)
+		blockTemplate.Result.Target = fmt.Sprintf("difficulty %d",blockTemplate.Result.Difficulty)
 	case POW_CUCKTOO:
 		blockTemplate.Result.Pow = pow.GetInstance(pow.CUCKATOO,0,[]byte{})
 		powStruct := blockTemplate.Result.Pow.(*pow.Cuckatoo)
 		powStruct.SetScale(uint32(blockTemplate.Result.PowDiffReference.CuckatooDiffScale))
 		powStruct.SetEdgeBits(29)
 		blockTemplate.Result.Difficulty = blockTemplate.Result.PowDiffReference.CuckatooMinDiff
+		blockTemplate.Result.Target = fmt.Sprintf("difficulty %d",blockTemplate.Result.Difficulty)
 	}
 
 	blockTemplate.Result.HasCoinbasePack = false
@@ -115,7 +116,7 @@ func (this *QitmeerWork) Submit (subm string) error {
 			if time.Now().Unix() - startTime >= 120{
 				break
 			}
-			common.MinerLoger.Debugf("【submit error】%s %s",string(body),err.Error())
+			common.MinerLoger.Errorf("【submit error】"+string(body)+err.Error())
 			time.Sleep(1*time.Second)
 			continue
 		}
@@ -123,7 +124,7 @@ func (this *QitmeerWork) Submit (subm string) error {
 	}
 
 	if !strings.Contains(res.Result,"Block submitted accepted") {
-		common.MinerLoger.Debugf("【submit error】%s",string(body))
+		common.MinerLoger.Error("【submit error】 "+string(body))
 		if strings.Contains(res.Result,"The tips of block is expired"){
 			return ErrSameWork
 		}

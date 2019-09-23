@@ -14,10 +14,10 @@ import (
 )
 
 type BaseDevice interface {
-	Mine()
+	Mine(wg *sync.WaitGroup)
 	Update()
 	InitDevice()
-	Status()
+	Status(wg *sync.WaitGroup)
 	GetIsValid() bool
 	SetIsValid(valid bool)
 	GetMinerId() int
@@ -31,6 +31,7 @@ type BaseDevice interface {
 	SetPool(pool bool)
 	SetNewWork(w BaseWork)
 	Release()
+	GetMinerType() string
 	SubmitShare(substr chan string)
 }
 type Device struct{
@@ -56,11 +57,13 @@ type Device struct{
 	CurrentWorkID uint64
 	Quit chan os.Signal //must init
 	sync.Mutex
-	Wg sync.WaitGroup
-	Pool bool //must init
-	IsValid bool //is valid
+	Wg         sync.WaitGroup
+	Pool       bool //must init
+	IsValid    bool //is valid
 	SubmitData chan string //must
-	NewWork chan BaseWork
+	NewWork    chan BaseWork
+	Err        error
+	Event *cl.Event
 }
 
 func (this *Device)Init(i int,device *cl.Device,pool bool,q chan os.Signal,cfg *common.GlobalConfig)  {
@@ -72,7 +75,7 @@ func (this *Device)Init(i int,device *cl.Device,pool bool,q chan os.Signal,cfg *
 	this.CurrentWorkID=0
 	this.IsValid=true
 	this.Pool=pool
-	this.SubmitData=make(chan string)
+	this.SubmitData=make(chan string,1)
 	this.GlobalItemSize= int(math.Exp2(float64(this.Cfg.OptionConfig.Intensity)))
 	this.Quit=q
 	this.AllDiffOneShares = 0
@@ -87,16 +90,14 @@ func (this *Device)SetNewWork(work BaseWork) {
 	this.NewWork <- work
 }
 
-func (this *Device)Update() {
-	defer func() {
-		err := recover()
-		if err != nil {
-			common.MinerLoger.Errorf("[error]%v",err)
-		}
-	}()
-	var err error
-	this.CurrentWorkID,err = common.RandUint64()
-	if err != nil{
+
+func (this *Device)GetMinerType() string{
+	return "blake2bd"
+}
+
+func (this *Device)Update()  {
+	this.CurrentWorkID,this.Err = common.RandUint64()
+	if this.Err != nil{
 		this.CurrentWorkID++
 	}
 }
@@ -167,14 +168,11 @@ func (d *Device)Release()  {
 	d.CommandQueue.Release()
 }
 
-func (this *Device)Status()  {
+func (this *Device)Status(wg *sync.WaitGroup)  {
+	defer wg.Done()
 	t := time.NewTicker(time.Second * 5)
 	defer t.Stop()
 	for {
-		if this.Cfg.OptionConfig.Restart == 1{
-			common.MinerLoger.Debugf("device # %d status restart",this.GetMinerId())
-			return
-		}
 		select{
 		case <- this.Quit:
 			return
@@ -195,10 +193,14 @@ func (this *Device)Status()  {
 			}
 			//recent stats 95% percent
 			this.AverageHashRate = (this.AverageHashRate*50+averageHashRate*950)/1000
+			unit := " H/s"
+			if this.GetMinerType() == "blake2bd"{
+				unit = " GPS"
+			}
 			common.MinerLoger.Infof("DEVICE_ID #%d (%s) %v",
 				this.MinerId,
 				this.ClDevice.Name(),
-				common.FormatHashRate(this.AverageHashRate),
+				common.FormatHashRate(this.AverageHashRate,unit),
 			)
 			// restats every 2min
 			// Prevention this.AllDiffOneShares was to large
@@ -206,8 +208,6 @@ func (this *Device)Status()  {
 				this.Started = time.Now().Unix()
 				this.AllDiffOneShares = 0
 			}
-		default:
-
 		}
 	}
 }
