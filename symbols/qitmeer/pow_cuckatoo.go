@@ -365,7 +365,7 @@ func (this *Cuckatoo) Enq(num int) {
 		offset = j * GLOBAL_WORK_SIZE
 		//common.MinerLoger.Errorf(j,offset)
 		// 2 ^ 24 2 ^ 11 * 2 ^ 8 * 2 * 2 ^ 4 11+8+1+4=24
-		if this.Event, this.Err = this.CommandQueue.EnqueueNDRangeKernel(this.CreateEdgeKernel, []int{offset}, []int{GLOBAL_WORK_SIZE}, []int{LOCAL_WORK_SIZE}, nil); err != nil {
+		if this.Event, this.Err = this.CommandQueue.EnqueueNDRangeKernel(this.CreateEdgeKernel, []int{offset}, []int{GLOBAL_WORK_SIZE}, []int{LOCAL_WORK_SIZE}, nil); this.Err != nil {
 			common.MinerLoger.Errorf("CreateEdgeKernel-1058 %d %v", this.MinerId,this.Err)
 			return
 		}
