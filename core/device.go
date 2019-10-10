@@ -63,6 +63,7 @@ type Device struct{
 	SubmitData chan string //must
 	NewWork    chan BaseWork
 	Err        error
+	MiningType        string
 	Event *cl.Event
 }
 
@@ -92,7 +93,7 @@ func (this *Device)SetNewWork(work BaseWork) {
 
 
 func (this *Device)GetMinerType() string{
-	return "blake2bd"
+	return this.MiningType
 }
 
 func (this *Device)Update()  {
@@ -194,7 +195,7 @@ func (this *Device)Status(wg *sync.WaitGroup)  {
 			//recent stats 95% percent
 			this.AverageHashRate = (this.AverageHashRate*50+averageHashRate*950)/1000
 			unit := " H/s"
-			if this.GetMinerType() == "blake2bd"{
+			if this.GetMinerType() != "blake2bd"{
 				unit = " GPS"
 			}
 			common.MinerLoger.Infof("DEVICE_ID #%d (%s) %v",

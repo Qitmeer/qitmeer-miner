@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/Qitmeer/qitmeer-lib/core/types/pow"
+	"github.com/Qitmeer/qitmeer/core/types/pow"
 	"qitmeer-miner/common"
 	"qitmeer-miner/core"
 	"strings"

@@ -4,9 +4,9 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"github.com/Qitmeer/qitmeer-lib/common/hash"
-	"github.com/Qitmeer/qitmeer-lib/core/types"
-	"github.com/Qitmeer/qitmeer-lib/core/types/pow"
+	"github.com/Qitmeer/qitmeer/common/hash"
+	"github.com/Qitmeer/qitmeer/core/types"
+	"github.com/Qitmeer/qitmeer/core/types/pow"
 	"math/big"
 	"qitmeer-miner/common"
 	"time"
@@ -87,7 +87,7 @@ func (this *MinerBlockData)PackageRpcHeader(work *QitmeerWork)  {
 	this.HeaderBlock.ParentRoot = work.Block.ParentRoot
 	this.HeaderBlock.TxRoot = work.Block.TxRoot
 	this.HeaderBlock.StateRoot = work.Block.StateRoot
-	this.HeaderBlock.Difficulty = work.Block.Difficulty
+	this.HeaderBlock.Difficulty = uint32(work.Block.Difficulty)
 	this.HeaderBlock.Timestamp = time.Unix(int64(work.Block.Curtime), 0)
-	this.HeaderBlock.Pow = pow.GetInstance(work.Block.Pow.GetPowType(),binary.LittleEndian.Uint64(bitesBy),[]byte{})
+	this.HeaderBlock.Pow = pow.GetInstance(work.Block.Pow.GetPowType(),binary.LittleEndian.Uint32(bitesBy),[]byte{})
 }

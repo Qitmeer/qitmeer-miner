@@ -2,11 +2,11 @@ package qitmeer
 
 import (
 	"bytes"
-	"github.com/Qitmeer/qitmeer-lib/common/hash"
-	"github.com/Qitmeer/qitmeer-lib/core/json"
-	s "github.com/Qitmeer/qitmeer-lib/core/serialization"
-	"github.com/Qitmeer/qitmeer-lib/core/types"
-	"github.com/Qitmeer/qitmeer-lib/core/types/pow"
+	"github.com/Qitmeer/qitmeer/common/hash"
+	"github.com/Qitmeer/qitmeer/core/json"
+	s "github.com/Qitmeer/qitmeer/core/serialization"
+	"github.com/Qitmeer/qitmeer/core/types"
+	"github.com/Qitmeer/qitmeer/core/types/pow"
 	"io"
 	"sync"
 )
@@ -51,14 +51,14 @@ type BlockHeader struct {
 
 //qitmeer block header
 func BlockDataWithProof(h *types.BlockHeader) []byte {
-	buf := bytes.NewBuffer(make([]byte, 0, MaxBlockHeaderPayload))
+	var buf bytes.Buffer
 	// TODO, redefine the protocol version and storage
-	_ = writeBlockHeaderWithProof(buf, 0, h)
+	_ = writeBlockHeaderWithProof(&buf, 0, h)
 	return buf.Bytes()
 }
 
 func writeBlockHeaderWithProof(w io.Writer, pver uint32, bh *types.BlockHeader) error {
-	sec := bh.Timestamp.Unix()
+	sec := uint32(bh.Timestamp.Unix())
 	return s.WriteElements(w, bh.Version, &bh.ParentRoot, &bh.TxRoot,
 		&bh.StateRoot, bh.Difficulty, sec, &bh.Pow)
 }
@@ -71,6 +71,6 @@ func ReadBlockHeader(b []byte,bh *types.BlockHeader) error {
 	r := bytes.NewReader(b)
 	// TODO fix time ambiguous
 	return s.ReadElements(r, &bh.Version, &bh.ParentRoot, &bh.TxRoot,
-		&bh.StateRoot, &bh.Difficulty,(*s.Int64Time)(&bh.Timestamp),
+		&bh.StateRoot, &bh.Difficulty,(*s.Uint32Time)(&bh.Timestamp),
 		&bh.Pow)
 }

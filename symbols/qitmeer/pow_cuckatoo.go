@@ -15,11 +15,11 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/Qitmeer/go-opencl/cl"
-	"github.com/Qitmeer/qitmeer-lib/common/hash"
-	"github.com/Qitmeer/qitmeer-lib/core/types/pow"
-	"github.com/Qitmeer/qitmeer-lib/crypto/cuckoo"
-	"github.com/Qitmeer/qitmeer-lib/crypto/cuckoo/siphash"
-	"github.com/Qitmeer/qitmeer-lib/params"
+	"github.com/Qitmeer/qitmeer/common/hash"
+	"github.com/Qitmeer/qitmeer/core/types/pow"
+	"github.com/Qitmeer/qitmeer/crypto/cuckoo"
+	"github.com/Qitmeer/qitmeer/crypto/cuckoo/siphash"
+	"github.com/Qitmeer/qitmeer/params"
 	"math/big"
 	"qitmeer-miner/common"
 	"qitmeer-miner/core"
@@ -77,7 +77,7 @@ func (this *Cuckatoo) InitDevice() {
 
 	err = this.Program.BuildProgram([]*cl.Device{this.ClDevice}, "")
 	if err != nil {
-		common.MinerLoger.Errorf("-", this.MinerId, err)
+		common.MinerLoger.Errorf("- %d %v", this.MinerId, err)
 		this.IsValid = false
 		return
 	}
@@ -141,7 +141,7 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 				if this.HasNewWork {
 					break
 				}
-				nonce ,_:= common.RandUint64()
+				nonce ,_:= common.RandUint32()
 				this.header.HeaderBlock.Pow.SetNonce(nonce)
 				hdrkey := hash.HashH(this.header.HeaderBlock.BlockData())
 				sip := siphash.Newsip(hdrkey[:])
@@ -200,7 +200,7 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 				}
 				this.Event.Release()
 				leftEdges := binary.LittleEndian.Uint32(this.ResultBytes[4:8])
-				common.MinerLoger.Errorf(fmt.Sprintf("Trimmed to %d edges",leftEdges))
+				common.MinerLoger.Debugf("Trimmed to %d edges",leftEdges)
 				noncesBytes := make([]byte,42*4)
 				if common.Timeout(10*time.Second, func() {
 					p := C.malloc(C.size_t(len(this.ResultBytes)))
@@ -211,7 +211,7 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 					C.free(p)
 				}){
 					//timeout
-					common.MinerLoger.Errorf("timeout retry",nonce)
+					common.MinerLoger.Errorf("timeout retry %d",nonce)
 					continue
 				}
 				// when GPU find cuckoo cycle one time GPS/s
@@ -227,7 +227,7 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 					this.Nonces = append(this.Nonces,tj)
 				}
 				if !isFind{
-					common.MinerLoger.Errorf("retry",nonce)
+					common.MinerLoger.Debugf("Not Found,Retry %d",nonce)
 					continue
 				}
 				sort.Slice(this.Nonces, func(i, j int) bool {
@@ -244,7 +244,7 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 					common.MinerLoger.Errorf("[error]Verify Error!",err)
 					continue
 				}
-				if pow.CalcCuckooDiff(int64(params.TestPowNetParams.PowConfig.CuckatooDiffScale),powStruct.GetBlockHash([]byte{})) < this.header.HeaderBlock.Difficulty{
+				if pow.CalcCuckooDiff(int64(params.TestPowNetParams.PowConfig.CuckatooDiffScale),powStruct.GetBlockHash([]byte{})) < uint64(this.header.HeaderBlock.Difficulty){
 					common.MinerLoger.Errorf("difficulty is too easy!")
 					continue
 				}
@@ -372,8 +372,3 @@ func (this *Cuckatoo) Enq(num int) {
 		this.Event.Release()
 	}
 }
-
-func (this* Cuckatoo) GetMinerType() string {
-	return "cuckatoo"
-}
-

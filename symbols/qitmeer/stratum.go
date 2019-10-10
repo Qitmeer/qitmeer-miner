@@ -9,7 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	qitmeer "github.com/Qitmeer/qitmeer-lib/common/hash"
+	qitmeer "github.com/Qitmeer/qitmeer/common/hash"
 	"math/big"
 	"qitmeer-miner/common"
 	"qitmeer-miner/core"

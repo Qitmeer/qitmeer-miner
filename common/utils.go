@@ -9,7 +9,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	qitmeer "github.com/Qitmeer/qitmeer-lib/common/hash"
+	qitmeer "github.com/Qitmeer/qitmeer/common/hash"
 	"log"
 	"math"
 	"math/big"
@@ -291,6 +291,15 @@ func RandUint64() (uint64, error) {
 		return 0, err
 	}
 	return uint64(binary.LittleEndian.Uint64(b[:])), nil
+}
+
+
+func RandUint32() (uint32, error) {
+	var b [4]byte
+	if _, err := rand.Read(b[:]); err != nil {
+		return 0, err
+	}
+	return uint32(binary.LittleEndian.Uint32(b[:])), nil
 }
 
 

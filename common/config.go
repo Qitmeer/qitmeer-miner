@@ -6,8 +6,8 @@ package common
 
 import (
 	"fmt"
-	"github.com/Qitmeer/qitmeer-lib/core/address"
-	"github.com/Qitmeer/qitmeer-lib/params"
+	"github.com/Qitmeer/qitmeer/core/address"
+	"github.com/Qitmeer/qitmeer/params"
 	go_logger "github.com/phachon/go-logger"
 	"qitmeer-miner/common/go-flags"
 	"log"
@@ -355,6 +355,8 @@ func InitNet(network string,p *params.Params) *params.Params {
 		p = &params.TestNetParams
 	case params.PrivNetParams.Name:
 		p = &params.PrivNetParams
+	case params.TestPowNetParams.Name:
+		p = &params.TestPowNetParams
 	default:
 		log.Fatalln(network, "Please define the network parameter for qitmeer!")
 		return nil

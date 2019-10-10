@@ -9,11 +9,11 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/Qitmeer/go-opencl/cl"
-	"github.com/Qitmeer/qitmeer-lib/common/hash"
-	"github.com/Qitmeer/qitmeer-lib/core/types/pow"
-	cuckaroo "github.com/Qitmeer/qitmeer-lib/crypto/cuckoo"
-	"github.com/Qitmeer/qitmeer-lib/crypto/cuckoo/siphash"
-	"github.com/Qitmeer/qitmeer-lib/params"
+	"github.com/Qitmeer/qitmeer/common/hash"
+	"github.com/Qitmeer/qitmeer/core/types/pow"
+	cuckaroo "github.com/Qitmeer/qitmeer/crypto/cuckoo"
+	"github.com/Qitmeer/qitmeer/crypto/cuckoo/siphash"
+	"github.com/Qitmeer/qitmeer/params"
 	"math/big"
 	"qitmeer-miner/common"
 	"qitmeer-miner/core"
@@ -135,7 +135,7 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 				if this.HasNewWork {
 					break
 				}
-				nonce ,_:= common.RandUint64()
+				nonce ,_:= common.RandUint32()
 				this.header.HeaderBlock.Pow.SetNonce(nonce)
 				hdrkey := hash.HashH(this.header.HeaderBlock.BlockData())
 				if this.Cfg.OptionConfig.CPUMiner{
@@ -274,7 +274,7 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 					common.MinerLoger.Errorf("[error]Verify Error!%v",err)
 					continue
 				}
-				if pow.CalcCuckooDiff(int64(params.TestPowNetParams.PowConfig.CuckarooDiffScale),powStruct.GetBlockHash([]byte{})) < this.header.HeaderBlock.Difficulty{
+				if pow.CalcCuckooDiff(int64(params.TestPowNetParams.PowConfig.CuckarooDiffScale),powStruct.GetBlockHash([]byte{})) < uint64(this.header.HeaderBlock.Difficulty){
 					common.MinerLoger.Error("difficulty is too easy!")
 					continue
 				}
@@ -456,8 +456,4 @@ func (this *Cuckaroo) InitKernelAndParam() {
 		return
 	}
 
-}
-
-func (this* Cuckaroo) GetMinerType() string {
-	return "cuckaroo"
 }
