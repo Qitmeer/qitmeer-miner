@@ -9,7 +9,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	qitmeer "github.com/Qitmeer/qitmeer-lib/common/hash"
+	qitmeer "github.com/Qitmeer/qitmeer/common/hash"
 	"log"
 	"math"
 	"math/big"
