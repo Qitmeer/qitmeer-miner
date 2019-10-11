@@ -6,8 +6,8 @@ package common
 
 import (
 	"fmt"
-	"github.com/Qitmeer/qitmeer-lib/core/address"
-	"github.com/Qitmeer/qitmeer-lib/params"
+	"github.com/Qitmeer/qitmeer/core/address"
+	"github.com/Qitmeer/qitmeer/params"
 	go_logger "github.com/phachon/go-logger"
 	"qitmeer-miner/common/go-flags"
 	"log"

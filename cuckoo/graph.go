@@ -3,7 +3,7 @@ package cuckoo
 import (
 	"encoding/binary"
 	"fmt"
-	cuckaroo "github.com/Qitmeer/qitmeer-lib/crypto/cuckoo"
+	cuckaroo "github.com/Qitmeer/qitmeer/crypto/cuckoo"
 	"qitmeer-miner/common"
 )
 
