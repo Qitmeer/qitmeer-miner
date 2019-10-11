@@ -118,7 +118,7 @@ impl Search {
             let pos = self.path.iter().position(|&v| v == node).unwrap();
             let diff = (self.path.len() - pos) / 2;
             if diff > 1 {
-                println!("Found {}-cycle {}", diff, node);
+//                println!("Found {}-cycle {}", diff, node);
             }
         }
         let res =

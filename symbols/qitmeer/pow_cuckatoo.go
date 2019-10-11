@@ -199,8 +199,8 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 					return
 				}
 				this.Event.Release()
-				leftEdges := binary.LittleEndian.Uint32(this.ResultBytes[4:8])
-				common.MinerLoger.Debugf("Trimmed to %d edges",leftEdges)
+				//leftEdges := binary.LittleEndian.Uint32(this.ResultBytes[4:8])
+				//common.MinerLoger.Debugf("Trimmed to %d edges",leftEdges)
 				noncesBytes := make([]byte,42*4)
 				if common.Timeout(10*time.Second, func() {
 					p := C.malloc(C.size_t(len(this.ResultBytes)))
@@ -211,7 +211,6 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 					C.free(p)
 				}){
 					//timeout
-					common.MinerLoger.Errorf("timeout retry %d",nonce)
 					continue
 				}
 				// when GPU find cuckoo cycle one time GPS/s
@@ -227,7 +226,6 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 					this.Nonces = append(this.Nonces,tj)
 				}
 				if !isFind{
-					common.MinerLoger.Debugf("Not Found,Retry %d",nonce)
 					continue
 				}
 				sort.Slice(this.Nonces, func(i, j int) bool {
