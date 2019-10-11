@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Qitmeer/qitmeer/core/types/pow"
+	`math/big`
 	"qitmeer-miner/common"
 	"qitmeer-miner/core"
 	"strings"
@@ -60,27 +61,31 @@ func (this *QitmeerWork) Get () bool {
 		//not has new work
 		return false
 	}
+	n := new(big.Int)
 	switch this.Cfg.NecessaryConfig.Pow {
 	case POW_DOUBLE_BLAKE2B:
 		blockTemplate.Result.Pow = pow.GetInstance(pow.BLAKE2BD,0,[]byte{})
 		target := blockTemplate.Result.PowDiffReference.Blake2bTarget
-		blockTemplate.Result.Difficulty = blockTemplate.Result.PowDiffReference.Blake2bDifficulty
+		n, _ = n.SetString(target, 16)
+		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
 		blockTemplate.Result.Target = target
 	case POW_CUCKROO:
 		blockTemplate.Result.Pow = pow.GetInstance(pow.CUCKAROO,0,[]byte{})
 		powStruct := blockTemplate.Result.Pow.(*pow.Cuckaroo)
 		powStruct.SetScale(uint32(blockTemplate.Result.PowDiffReference.CuckarooDiffScale))
 		powStruct.SetEdgeBits(24)
-		blockTemplate.Result.Difficulty = blockTemplate.Result.PowDiffReference.CuckarooMinDiff
+		n.SetUint64(blockTemplate.Result.PowDiffReference.CuckarooMinDiff)
+		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
 		common.MinerLoger.Debugf("%d",blockTemplate.Result.Difficulty)
-		blockTemplate.Result.Target = fmt.Sprintf("difficulty %d",blockTemplate.Result.Difficulty)
+		blockTemplate.Result.Target = fmt.Sprintf("min difficulty %d",blockTemplate.Result.PowDiffReference.CuckarooMinDiff)
 	case POW_CUCKTOO:
 		blockTemplate.Result.Pow = pow.GetInstance(pow.CUCKATOO,0,[]byte{})
 		powStruct := blockTemplate.Result.Pow.(*pow.Cuckatoo)
 		powStruct.SetScale(uint32(blockTemplate.Result.PowDiffReference.CuckatooDiffScale))
 		powStruct.SetEdgeBits(29)
-		blockTemplate.Result.Difficulty = blockTemplate.Result.PowDiffReference.CuckatooMinDiff
-		blockTemplate.Result.Target = fmt.Sprintf("difficulty %d",blockTemplate.Result.Difficulty)
+		n.SetUint64(blockTemplate.Result.PowDiffReference.CuckatooMinDiff)
+		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
+		blockTemplate.Result.Target = fmt.Sprintf("min difficulty %d",blockTemplate.Result.PowDiffReference.CuckatooMinDiff)
 	}
 
 	blockTemplate.Result.HasCoinbasePack = false

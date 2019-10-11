@@ -244,7 +244,8 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 					common.MinerLoger.Errorf("[error]Verify Error!",err)
 					continue
 				}
-				if pow.CalcCuckooDiff(int64(params.TestPowNetParams.PowConfig.CuckatooDiffScale),powStruct.GetBlockHash([]byte{})) < uint64(this.header.HeaderBlock.Difficulty){
+				targetDiff := pow.CompactToBig(this.header.HeaderBlock.Difficulty)
+				if pow.CalcCuckooDiff(int64(params.TestPowNetParams.PowConfig.CuckatooDiffScale),powStruct.GetBlockHash([]byte{})) < targetDiff.Uint64(){
 					common.MinerLoger.Errorf("difficulty is too easy!")
 					continue
 				}

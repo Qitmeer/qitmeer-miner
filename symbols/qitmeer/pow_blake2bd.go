@@ -167,11 +167,6 @@ func (this *Blake2bD) Mine(wg *sync.WaitGroup) {
 			var err error
 			hData := make([]byte,128)
 			copy(hData[0:types.MaxBlockHeaderPayload-pow.PROOFDATA_LENGTH],this.header.HeaderBlock.BlockData())
-			//s := "080000000260a9c56e72540fb7086bcb6497bd4e0a74adf32ebfa62f999162fbf8c39c3e384b2b43a64fa960bceac21692e42bd033542983a2af4118000c23b69a1124090000000000000000000000000000000000000000000000000000000000000000ffff001ef1fb9e5d000000ff00"
-			//
-			//a ,_:= hex.DecodeString(s)
-			//copy(hData[0:types.MaxBlockHeaderPayload-pow.PROOFDATA_LENGTH],a)
-			//fmt.Println(hex.EncodeToString(this.header.HeaderBlock.BlockData()),"before================",this.MinerId)
 			if this.Event, err = this.CommandQueue.EnqueueWriteBufferByte(this.BlockObj, true, 0, hData, nil); err != nil {
 				common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
 				this.IsValid = false
@@ -218,9 +213,10 @@ func (this *Blake2bD) Mine(wg *sync.WaitGroup) {
 				this.header.HeaderBlock.Pow.SetNonce(xnonce)
 				h = this.header.HeaderBlock.BlockHash()
 				headerData := BlockDataWithProof(this.header.HeaderBlock)
-				common.MinerLoger.Debugf("device #%d found hash:%s nonce:%d target:%064x",this.MinerId,h,xnonce,this.header.TargetDiff)
+				copy(hData[104:112],this.NonceOut)
 				if HashToBig(&h).Cmp(this.header.TargetDiff) <= 0 {
 					common.MinerLoger.Debugf("device #%d found hash:%s nonce:%d target:%064x",this.MinerId,h,xnonce,this.header.TargetDiff)
+					fmt.Println("=====",this.header.HeaderBlock.Difficulty)
 					subm = hex.EncodeToString(headerData)
 					if !this.Pool{
 						subm += common.Int2varinthex(int64(len(this.header.Parents)))
