@@ -20,6 +20,7 @@ import (
 const (
 	POW_DOUBLE_BLAKE2B = "blake2bd"
 	POW_CUCKROO = "cuckaroo"
+	POW_CUCKROO29 = "cuckaroo29"
 	POW_CUCKTOO = "cuckatoo"
 )
 type QitmeerRobot struct {
@@ -34,6 +35,12 @@ func (this *QitmeerRobot)GetPow(i int ,device *cl.Device) core.BaseDevice{
 	switch this.Cfg.NecessaryConfig.Pow {
 	case POW_CUCKROO:
 		deviceMiner := &Cuckaroo{}
+		deviceMiner.MiningType = "cuckaroo"
+		deviceMiner.Init(i,device,this.Pool,this.Quit,this.Cfg)
+		this.Devices = append(this.Devices,deviceMiner)
+		return deviceMiner
+	case POW_CUCKROO29:
+		deviceMiner := &Cuckaroo29{}
 		deviceMiner.MiningType = "cuckaroo"
 		deviceMiner.Init(i,device,this.Pool,this.Quit,this.Cfg)
 		this.Devices = append(this.Devices,deviceMiner)
