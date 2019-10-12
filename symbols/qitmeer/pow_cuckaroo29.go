@@ -171,11 +171,6 @@ func (this *Cuckaroo29) Mine(wg *sync.WaitGroup) {
 					common.MinerLoger.Infof("CreateEdgeKernel-1058%d,%v", this.MinerId,err)
 					return
 				}
-				if err != nil {
-					common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
-					this.IsValid = false
-					return
-				}
 				this.Event.Release()
 				for i:= 0;i<this.Cfg.OptionConfig.TrimmerCount;i++{
 					if this.Event, err = this.CommandQueue.EnqueueNDRangeKernel(this.Trimmer01Kernel, []int{0}, []int{2048*256*2}, []int{256}, nil); err != nil {
