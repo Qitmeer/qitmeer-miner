@@ -166,20 +166,20 @@ func (this *Cuckaroo29) Mine(wg *sync.WaitGroup) {
 					return
 				}
 
-				// 2 ^ 24 2 ^ 11 * 2 ^ 8 * 2 * 2 ^ 4 11+8+1+4=24
-				if this.Event, err = this.CommandQueue.EnqueueNDRangeKernel(this.CreateEdgeKernel, []int{0}, []int{2048*256*2}, []int{256}, nil); err != nil {
+				// 2 ^ 24 2 ^ 11 * 2 ^ 8 * 2 * 2 ^ 4 11+8+1+4=24  12 + 10
+				if this.Event, err = this.CommandQueue.EnqueueNDRangeKernel(this.CreateEdgeKernel, []int{0}, []int{4096*1024}, []int{1024}, nil); err != nil {
 					common.MinerLoger.Infof("CreateEdgeKernel-1058%d,%v", this.MinerId,err)
 					return
 				}
 				this.Event.Release()
 				for i:= 0;i<this.Cfg.OptionConfig.TrimmerCount;i++{
-					if this.Event, err = this.CommandQueue.EnqueueNDRangeKernel(this.Trimmer01Kernel, []int{0}, []int{2048*256*2}, []int{256}, nil); err != nil {
+					if this.Event, err = this.CommandQueue.EnqueueNDRangeKernel(this.Trimmer01Kernel, []int{0}, []int{4096*1024}, []int{1024}, nil); err != nil {
 						common.MinerLoger.Infof("Trimmer01Kernel-1058%d,%v", this.MinerId,err)
 						return
 					}
 					this.Event.Release()
 				}
-				if this.Event, err = this.CommandQueue.EnqueueNDRangeKernel(this.Trimmer02Kernel, []int{0}, []int{2048*256*2}, []int{256}, nil); err != nil {
+				if this.Event, err = this.CommandQueue.EnqueueNDRangeKernel(this.Trimmer02Kernel, []int{0}, []int{4096*1024}, []int{1024}, nil); err != nil {
 					common.MinerLoger.Infof("Trimmer02Kernel-1058%d,%v", this.MinerId,err)
 					return
 				}
@@ -227,7 +227,7 @@ func (this *Cuckaroo29) Mine(wg *sync.WaitGroup) {
 					return
 				}
 				this.Event.Release()
-				if this.Event, err = this.CommandQueue.EnqueueNDRangeKernel(this.RecoveryKernel, []int{0}, []int{2048*256*2}, []int{256}, nil); err != nil {
+				if this.Event, err = this.CommandQueue.EnqueueNDRangeKernel(this.RecoveryKernel, []int{0}, []int{4096*1024}, []int{1024}, nil); err != nil {
 					common.MinerLoger.Infof("RecoveryKernel-1058%d,%v", this.MinerId,err)
 					return
 				}
