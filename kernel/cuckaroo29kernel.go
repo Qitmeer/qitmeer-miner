@@ -3,7 +3,7 @@ package kernel
 var Cuckaroo29Kernel = `
 // Cuckaroo Cycle, a memory-hard proof-of-work by James Qitmeer
 // Copyright (c) 2019 
-// edgebits 29
+// edgebits 28
 
 #pragma OPENCL EXTENSION cl_khr_int64_base_atomics : enable
 #pragma OPENCL EXTENSION cl_khr_int64_extended_atomics : enable
@@ -16,7 +16,7 @@ typedef ulong u64;
 typedef u32 node_t;
 typedef u64 nonce_t;
 
-#define EDGEBITS 29
+#define EDGEBITS 28
 // number of edges
 #define NEDGES ((node_t)1 << EDGEBITS)
 // used to mask siphash output
@@ -44,9 +44,9 @@ __kernel  void CreateEdges(const u64 v0i, const u64 v1i, const u64 v2i, const u6
 	u64 v2;
 	u64 v3;
 
-	for (int i = 0; i < 16*32; i += 1)
+	for (int i = 0; i < 16*16; i += 1)
 	{
-		u64 blockNonce = gid * 16 * 32 + i;
+		u64 blockNonce = gid * 16 * 16 + i;
 		u64 nonce1 = (blockNonce << 1);
 		u64 nonce2 = (blockNonce << 1 | 1);
 		//build u
@@ -106,9 +106,9 @@ __attribute__((reqd_work_group_size(256, 1, 1)))
 __kernel  void Trimmer01(__global uint2 * edges,__global u32 *indexes)
 {
 	const int gid = get_global_id(0);
-	for (int i = 0; i < 16 * 32; i++)
+	for (int i = 0; i < 16 * 16; i++)
 	{
-		u32 blockNonce = gid * 16 * 32 + i;
+		u32 blockNonce = gid * 16 * 16 + i;
 		u32 V = edges[blockNonce].x;
 		u32 v1 = edges[blockNonce].y;
 		if(V==0 && v1==0){
@@ -131,9 +131,9 @@ __kernel  void Trimmer02(__global uint2 * edges,__global u32 *indexes,__global u
 {
 	const int gid = get_global_id(0);
 	barrier(CLK_LOCAL_MEM_FENCE);
-	for (int i = 0; i < 16 * 32; i++)
+	for (int i = 0; i < 16 * 16; i++)
 	{
-		u64 blockNonce = gid * 16 * 32 + i;
+		u64 blockNonce = gid * 16 * 16 + i;
 		u32 V = edges[blockNonce].x;
 		u32 v1 = edges[blockNonce].y;
 		
@@ -157,9 +157,9 @@ __kernel  void RecoveryNonce(__global uint2 * edges,__global uint2 *nodes,__glob
 {
 	const int gid = get_global_id(0);
 	barrier(CLK_LOCAL_MEM_FENCE);
-	for (int i = 0; i < 16 * 32; i++)
+	for (int i = 0; i < 16 * 16; i++)
 	{
-		u64 blockNonce = gid * 16 * 32 + i;
+		u64 blockNonce = gid * 16 * 16 + i;
 		u32 V = edges[blockNonce].x;
 		u32 v1 = edges[blockNonce].y;
 		

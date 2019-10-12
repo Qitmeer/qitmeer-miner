@@ -51,7 +51,7 @@ type Cuckaroo29 struct {
 	header MinerBlockData
 }
 
-var EdgeBits = uint8(29)
+var EdgeBits = uint8(28)
 
 func (this *Cuckaroo29) InitDevice() {
 	this.Device.InitDevice()

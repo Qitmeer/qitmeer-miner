@@ -10,6 +10,7 @@ import (
     "os"
     `qitmeer-miner/kernel`
     "sync"
+    `time`
     "unsafe"
 )
 const(
@@ -49,6 +50,7 @@ type Device struct{
     Quit chan os.Signal //must init
     sync.Mutex
     Wg sync.WaitGroup
+    EventList []*cl.Event
 }
 
 func (this *Device)Mine()  {
@@ -83,13 +85,12 @@ func (this *Device)Mine()  {
     this.Kernels["kernel_round_na"], err = this.Program.CreateKernel("FluffyRoundNON")
     this.Kernels["kernel_round_nb"], err = this.Program.CreateKernel("FluffyRoundNON")
     this.Kernels["kernel_tail"], err = this.Program.CreateKernel("FluffyTailO")
-
     this.BufferA1, err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, BUFFER_SIZE_A1)
     this.BufferA2, err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, BUFFER_SIZE_A2)
     this.BufferB, err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, BUFFER_SIZE_B)
     this.BufferI1, err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, INDEX_SIZE)
     this.BufferI2, err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, INDEX_SIZE)
-    this.BufferR, err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, 42*2)
+    this.BufferR, err = this.Context.CreateEmptyBuffer(cl.MemReadOnly, 42*2)
     this.BufferNonces, err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, INDEX_SIZE)
 
     for i:=0;i<2<<32;i++{
@@ -119,7 +120,7 @@ func (this *Device)Mine()  {
         err = this.Kernels["kernel_seed_b1"].SetArg(3,this.BufferI1)
         err = this.Kernels["kernel_seed_b1"].SetArg(4,this.BufferI2)
 
-        err = this.Kernels["kernel_seed_b1"].SetArg(5,32)
+        err = this.Kernels["kernel_seed_b1"].SetArg(5,uint32(32))
         //init kernels
         err = this.Kernels["kernel_seed_b2"].SetArg(0,this.BufferB)
 
@@ -130,7 +131,7 @@ func (this *Device)Mine()  {
         err = this.Kernels["kernel_seed_b2"].SetArg(3,this.BufferI1)
         err = this.Kernels["kernel_seed_b2"].SetArg(4,this.BufferI2)
 
-        err = this.Kernels["kernel_seed_b2"].SetArg(5,0)
+        err = this.Kernels["kernel_seed_b2"].SetArg(5,uint32(0))
         //init kernels
         err = this.Kernels["kernel_round1"].SetArg(0,this.BufferA1)
 
@@ -184,26 +185,29 @@ func (this *Device)Mine()  {
         this.ClearBuffer(this.BufferI1)
         this.ClearBuffer(this.BufferI2)
 
-        this.KernelEnq(this.Kernels["kernel_seed_a"],2048,128)
-        this.KernelEnq(this.Kernels["kernel_seed_b1"],1024,128)
-        this.KernelEnq(this.Kernels["kernel_seed_b2"],1024,128)
+        this.KernelEnq("kernel_seed_a",this.Kernels["kernel_seed_a"],2048,128)
+        this.KernelEnq("kernel_seed_b1",this.Kernels["kernel_seed_b1"],1024,128)
+        this.KernelEnq("kernel_seed_b2",this.Kernels["kernel_seed_b2"],1024,128)
         this.ClearBuffer(this.BufferI1)
-        this.KernelEnq(this.Kernels["kernel_round1"],4096,1024)
+        this.KernelEnq("kernel_round1",this.Kernels["kernel_round1"],4096,1024)
         this.ClearBuffer(this.BufferI2)
-        this.KernelEnq(this.Kernels["kernel_round0"],4096,1024)
+        this.KernelEnq("kernel_round0",this.Kernels["kernel_round0"],4096,1024)
         this.ClearBuffer(this.BufferI1)
-        this.KernelEnq(this.Kernels["kernel_round_nb"],4096,1024)
+        this.KernelEnq("kernel_round_nb",this.Kernels["kernel_round_nb"],4096,1024)
         for j:= 0;j<120;j++{
             this.ClearBuffer(this.BufferI2)
-            this.KernelEnq(this.Kernels["kernel_round_na"],4096,1024)
+            this.KernelEnq("kernel_round_na",this.Kernels["kernel_round_na"],4096,1024)
             this.ClearBuffer(this.BufferI1)
-            this.KernelEnq(this.Kernels["kernel_round_nb"],4096,1024)
+            this.KernelEnq("kernel_round_nb",this.Kernels["kernel_round_nb"],4096,1024)
         }
         this.ClearBuffer(this.BufferI2)
-        this.KernelEnq(this.Kernels["kernel_tail"],4096,1024)
+        this.KernelEnq("kernel_tail",this.Kernels["kernel_tail"],4096,1024)
+        time.Sleep(1*time.Second)
         edges_bytes := make([]byte,8)
         event,err := this.CommandQueue.EnqueueReadBufferByte(this.BufferI2,true,0,edges_bytes,nil)
         if err != nil {
+            fmt.Println("error read edges_bytes:",err)
+            this.Release()
             return
         }
         event.Release()
@@ -221,18 +225,19 @@ func (this *Device)ClearBuffer(buffMem *cl.MemObject)  {
     clearBytes := make([]byte,4)
     event,err := this.CommandQueue.EnqueueFillBuffer(buffMem,unsafe.Pointer(&clearBytes[0]),4,0,INDEX_SIZE,nil)
     if err != nil {
+        log.Println("clear kernel error " , this.MinerId,err)
         return
     }
     event.Release()
 }
 
-func (this *Device)KernelEnq(k *cl.Kernel,localSize,workSize int)  {
+func (this *Device)KernelEnq(name string,k *cl.Kernel,localSize,workSize int)  {
     event , err := this.CommandQueue.EnqueueNDRangeKernel(k, []int{0}, []int{localSize*workSize}, []int{workSize}, nil);
     if err != nil {
-        log.Println("exec kernel error ", this.MinerId,err)
+        log.Println("exec kernel error ", name , this.MinerId,err)
         return
     }
-    event.Release()
+    this.EventList = append(this.EventList,event)
 }
 
 func (d *Device)Release()  {
@@ -249,4 +254,9 @@ func (d *Device)Release()  {
     for _,v:=range d.Kernels{
         v.Release()
     }
+    d.Kernels = map[string]*cl.Kernel{}
+    for _,v:=range d.EventList{
+        v.Release()
+    }
+    d.EventList = []*cl.Event{}
 }
