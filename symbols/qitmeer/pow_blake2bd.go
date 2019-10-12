@@ -216,7 +216,6 @@ func (this *Blake2bD) Mine(wg *sync.WaitGroup) {
 				copy(hData[104:112],this.NonceOut)
 				if HashToBig(&h).Cmp(this.header.TargetDiff) <= 0 {
 					common.MinerLoger.Debugf("device #%d found hash:%s nonce:%d target:%064x",this.MinerId,h,xnonce,this.header.TargetDiff)
-					fmt.Println("=====",this.header.HeaderBlock.Difficulty)
 					subm = hex.EncodeToString(headerData)
 					if !this.Pool{
 						subm += common.Int2varinthex(int64(len(this.header.Parents)))
