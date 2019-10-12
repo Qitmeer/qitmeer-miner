@@ -3,7 +3,7 @@ package kernel
 var Cuckaroo29Kernel = `
 // Cuckaroo Cycle, a memory-hard proof-of-work by James Qitmeer
 // Copyright (c) 2019 
-// edgebits 28
+// edgebits 29
 
 #pragma OPENCL EXTENSION cl_khr_int64_base_atomics : enable
 #pragma OPENCL EXTENSION cl_khr_int64_extended_atomics : enable
@@ -16,7 +16,7 @@ typedef ulong u64;
 typedef u32 node_t;
 typedef u64 nonce_t;
 
-#define EDGEBITS 28
+#define EDGEBITS 29
 // number of edges
 #define NEDGES ((node_t)1 << EDGEBITS)
 // used to mask siphash output
@@ -31,10 +31,11 @@ typedef u64 nonce_t;
     v1 ^= v2; v3 ^= v0; v2 = rotate(v2,(ulong)32); \
   } while(0)
 
-__attribute__((reqd_work_group_size(1024, 1, 1)))
+__attribute__((reqd_work_group_size(128, 1, 1)))
 __kernel  void CreateEdges(const u64 v0i, const u64 v1i, const u64 v2i, const u64 v3i, __global u32 * edges,__global u32 * indexes)
 {
 	const int gid = get_global_id(0);
+	const int group = get_group_id(0);
 
 	u64 u00;
 	u64 v00;
@@ -44,9 +45,9 @@ __kernel  void CreateEdges(const u64 v0i, const u64 v1i, const u64 v2i, const u6
 	u64 v2;
 	u64 v3;
 
-	for (int i = 0; i < 16; i += 1)
+	for (int i = 0; i < 8; i += 1)
 	{
-		u64 blockNonce = gid * 16 + i;
+		u64 blockNonce = gid * 8 * group + i;
 		u64 nonce1 = (blockNonce << 1);
 		u64 nonce2 = (blockNonce << 1 | 1);
 		//build u
@@ -102,13 +103,14 @@ __kernel  void CreateEdges(const u64 v0i, const u64 v1i, const u64 v2i, const u6
 
 }
 
-__attribute__((reqd_work_group_size(1024, 1, 1)))
+__attribute__((reqd_work_group_size(128, 1, 1)))
 __kernel  void Trimmer01(__global uint2 * edges,__global u32 *indexes)
 {
 	const int gid = get_global_id(0);
-	for (int i = 0; i < 16; i++)
+	const int group = get_group_id(0);
+	for (int i = 0; i < 8; i++)
 	{
-		u32 blockNonce = gid * 16 + i;
+		u32 blockNonce = gid * 8 * group + i;
 		u32 V = edges[blockNonce].x;
 		u32 v1 = edges[blockNonce].y;
 		if(V==0 && v1==0){
@@ -126,14 +128,15 @@ __kernel  void Trimmer01(__global uint2 * edges,__global u32 *indexes)
 	
 }
 
-__attribute__((reqd_work_group_size(1024, 1, 1)))
+__attribute__((reqd_work_group_size(128, 1, 1)))
 __kernel  void Trimmer02(__global uint2 * edges,__global u32 *indexes,__global uint2 * destination,__global u32 *count)
 {
 	const int gid = get_global_id(0);
+	const int group = get_group_id(0);
 	barrier(CLK_LOCAL_MEM_FENCE);
-	for (int i = 0; i < 16; i++)
+	for (int i = 0; i < 8; i++)
 	{
-		u64 blockNonce = gid * 16 + i;
+		u64 blockNonce = gid * 8 * group + i;
 		u32 V = edges[blockNonce].x;
 		u32 v1 = edges[blockNonce].y;
 		
@@ -152,14 +155,15 @@ __kernel  void Trimmer02(__global uint2 * edges,__global u32 *indexes,__global u
 	
 }
 
-__attribute__((reqd_work_group_size(1024, 1, 1)))
+__attribute__((reqd_work_group_size(128, 1, 1)))
 __kernel  void RecoveryNonce(__global uint2 * edges,__global uint2 *nodes,__global u32 *nonces)
 {
 	const int gid = get_global_id(0);
+	const int group = get_group_id(0);
 	barrier(CLK_LOCAL_MEM_FENCE);
-	for (int i = 0; i < 16; i++)
+	for (int i = 0; i < 8; i++)
 	{
-		u64 blockNonce = gid * 16 + i;
+		u64 blockNonce = gid * 8 * group + i;
 		u32 V = edges[blockNonce].x;
 		u32 v1 = edges[blockNonce].y;
 		

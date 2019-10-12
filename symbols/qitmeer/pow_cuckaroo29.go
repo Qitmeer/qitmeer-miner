@@ -51,7 +51,7 @@ type Cuckaroo29 struct {
 	header MinerBlockData
 }
 
-var EdgeBits = uint8(28)
+var EdgeBits = uint8(29)
 
 func (this *Cuckaroo29) InitDevice() {
 	this.Device.InitDevice()
@@ -165,21 +165,21 @@ func (this *Cuckaroo29) Mine(wg *sync.WaitGroup) {
 					this.IsValid = false
 					return
 				}
-
-				// 2 ^ 24 2 ^ 11 * 2 ^ 8 * 2 * 2 ^ 4 11+8+1+4=24  12 + 10
-				if this.Event, err = this.CommandQueue.EnqueueNDRangeKernel(this.CreateEdgeKernel, []int{0}, []int{4096*1024}, []int{1024}, nil); err != nil {
+				workgroup := 128
+				// 2 ^ 24 2 ^ 11 * 2 ^ 8 * 2 * 2 ^ 4 11+8+1+4=24  12 + 7 + 3 + 7
+				if this.Event, err = this.CommandQueue.EnqueueNDRangeKernel(this.CreateEdgeKernel, []int{0}, []int{4096*workgroup}, []int{workgroup}, nil); err != nil {
 					common.MinerLoger.Infof("CreateEdgeKernel-1058%d,%v", this.MinerId,err)
 					return
 				}
 				this.Event.Release()
 				for i:= 0;i<this.Cfg.OptionConfig.TrimmerCount;i++{
-					if this.Event, err = this.CommandQueue.EnqueueNDRangeKernel(this.Trimmer01Kernel, []int{0}, []int{4096*1024}, []int{1024}, nil); err != nil {
+					if this.Event, err = this.CommandQueue.EnqueueNDRangeKernel(this.Trimmer01Kernel, []int{0}, []int{4096*workgroup}, []int{workgroup}, nil); err != nil {
 						common.MinerLoger.Infof("Trimmer01Kernel-1058%d,%v", this.MinerId,err)
 						return
 					}
 					this.Event.Release()
 				}
-				if this.Event, err = this.CommandQueue.EnqueueNDRangeKernel(this.Trimmer02Kernel, []int{0}, []int{4096*1024}, []int{1024}, nil); err != nil {
+				if this.Event, err = this.CommandQueue.EnqueueNDRangeKernel(this.Trimmer02Kernel, []int{0}, []int{4096*workgroup}, []int{workgroup}, nil); err != nil {
 					common.MinerLoger.Infof("Trimmer02Kernel-1058%d,%v", this.MinerId,err)
 					return
 				}
@@ -227,7 +227,7 @@ func (this *Cuckaroo29) Mine(wg *sync.WaitGroup) {
 					return
 				}
 				this.Event.Release()
-				if this.Event, err = this.CommandQueue.EnqueueNDRangeKernel(this.RecoveryKernel, []int{0}, []int{4096*1024}, []int{1024}, nil); err != nil {
+				if this.Event, err = this.CommandQueue.EnqueueNDRangeKernel(this.RecoveryKernel, []int{0}, []int{4096*workgroup}, []int{workgroup}, nil); err != nil {
 					common.MinerLoger.Infof("RecoveryKernel-1058%d,%v", this.MinerId,err)
 					return
 				}
