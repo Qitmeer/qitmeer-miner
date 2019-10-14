@@ -22,8 +22,8 @@ func GetDevices(t cl.DeviceType) []*cl.Device {
 		}
 		for _, device := range platormDevices {
 			clDevices = append(clDevices, device)
-			MinerLoger.Infof("%s Found Device : %d | name: %s | MaxGroupSize: %d | MaxAllocMemory: %.2f MB",platform.Name(),i,device.Name(),
-				device.MaxWorkGroupSize(),float64(device.MaxMemAllocSize())/1024.00/1024.00 )
+			MinerLoger.Infof("%s Found Device : %d | name: %s | MaxGroupSize: %d | MaxAllocMemory: %.2f MB | MaxMemory: %0.2f",platform.Name(),i,device.Name(),
+				device.MaxWorkGroupSize(),float64(device.MaxMemAllocSize())/1024.00/1024.00,float64(device.GlobalMemSize())/1024.00/1024.00 )
 
 			i++
 		}

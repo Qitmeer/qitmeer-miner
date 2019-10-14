@@ -33,7 +33,7 @@ typedef u64 nonce_t;
   } while(0)
 
 __attribute__((reqd_work_group_size({{group}}, 1, 1)))
-__kernel  void CreateEdges(const u64 v0i, const u64 v1i, const u64 v2i, const u64 v3i, __global u32 * edges,__global u32 * indexes)
+__kernel  void CreateEdges(const u64 v0i, const u64 v1i, const u64 v2i, const u64 v3i, __global uint2 * edges,__global u32 * indexes)
 {
 	const int gid = get_global_id(0);
 
@@ -47,7 +47,7 @@ __kernel  void CreateEdges(const u64 v0i, const u64 v1i, const u64 v2i, const u6
 
 	for (int i = 0; i < STEP; i += 1)
 	{
-		u64 blockNonce = gid * STEP  + i;
+		u64 blockNonce = gid * STEP + i;
 		u64 nonce1 = (blockNonce << 1);
 		u64 nonce2 = (blockNonce << 1 | 1);
 		//build u
@@ -82,11 +82,10 @@ __kernel  void CreateEdges(const u64 v0i, const u64 v1i, const u64 v2i, const u6
 
 		v00 = (v0 ^ v1) ^ (v2  ^ v3);	
 		u32 u = (( u00 & EDGEMASK)<<1);
-		//u32 V = ((( ( v00 >> 32 ) & EDGEMASK)<<1) | 1);
 		u32 V = ((( ( v00 ) & EDGEMASK)<<1) | 1);
 		//u64 index = u+V;
-			edges[nonce1] = u;
-			edges[nonce2] = V;
+			edges[blockNonce].x = u;
+			edges[blockNonce].y = V;
 			atomic_inc(&indexes[u]);
 			atomic_inc(&indexes[V]);
 	}
@@ -122,7 +121,6 @@ __attribute__((reqd_work_group_size({{group}}, 1, 1)))
 __kernel  void Trimmer02(__global uint2 * edges,__global u32 *indexes,__global uint2 * destination,__global u32 *count)
 {
 	const int gid = get_global_id(0);
-	const int group = get_group_id(0);
 	barrier(CLK_LOCAL_MEM_FENCE);
 	for (int i = 0; i < STEP; i++)
 	{
@@ -138,8 +136,10 @@ __kernel  void Trimmer02(__global uint2 * edges,__global u32 *indexes,__global u
 
 			int idx = atomic_add(&count[0],1);
 			atomic_add(&count[1],1);
-
-			destination[idx] = edges[blockNonce];
+			if (idx < 1000000){
+					destination[idx] = edges[blockNonce];
+			}
+		
 		}
 	}
 	
