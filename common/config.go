@@ -37,6 +37,9 @@ var (
 	defaultMaxTxCount = 1000
 	defaultMaxSigCount = 5000
 	defaultStatsServer = ""
+	defaultLocalSize = 4096
+	defaultWorkGroupSize = 256
+	defaultEdgeBits = 24
 )
 
 type DeviceConfig struct {
@@ -69,6 +72,9 @@ type OptionalConfig struct {
 	Reject       int ` description:"Reject count" default-mask:"0"`
 	Stale       int ` description:"Stale count" default-mask:"0"`
 	Target       string ` description:"Target"`
+	EdgeBits       int `long:"edge_bits" description:"edge bits" default-mask:"24"`
+	LocalSize       int `long:"local_size" description:"local size" default-mask:"4096"`
+	GroupSize       int `long:"group_size" description:"work group size" default-mask:"256"`
 }
 
 type PoolConfig struct {
@@ -193,6 +199,9 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 		MaxTxCount:defaultMaxTxCount,
 		MaxSigCount:defaultMaxSigCount,
 		StatsServer:defaultStatsServer,
+		LocalSize:defaultLocalSize,
+		GroupSize:defaultWorkGroupSize,
+		EdgeBits:defaultEdgeBits,
 	}
 
 	// Create the home directory if it doesn't already exist.

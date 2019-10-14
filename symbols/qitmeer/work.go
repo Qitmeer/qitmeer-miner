@@ -78,7 +78,6 @@ func (this *QitmeerWork) Get () bool {
 		powStruct.SetEdgeBits(24)
 		n.SetUint64(blockTemplate.Result.PowDiffReference.CuckarooMinDiff)
 		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
-		common.MinerLoger.Debugf("%d",blockTemplate.Result.Difficulty)
 		blockTemplate.Result.Target = fmt.Sprintf("min difficulty %d",blockTemplate.Result.PowDiffReference.CuckarooMinDiff)
 	case POW_CUCKTOO:
 		blockTemplate.Result.Pow = pow.GetInstance(pow.CUCKATOO,0,[]byte{})

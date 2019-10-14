@@ -1,4 +1,4 @@
-package cuckoo
+package main
 
 import (
     `fmt`
@@ -6,7 +6,8 @@ import (
     `math`
     `os`
     `qitmeer-miner/common`
-    "testing"
+    `qitmeer-miner/cuckoo`
+    `sync`
     `time`
 )
 //init the config file
@@ -14,7 +15,7 @@ func init(){
     common.MinerLoger = go_logger.NewLogger()
 }
 
-func TestCuckoo29(t *testing.T){
+func main() {
     err := os.Setenv("GPU_MAX_HEAP_SIZE", "100")
     if err != nil {
         fmt.Println(err.Error())
@@ -23,7 +24,7 @@ func TestCuckoo29(t *testing.T){
     if err != nil {
         fmt.Println(err.Error())
     }
-    err = os.Setenv("GPU_MAX_ALLOC_PERCENT", "95")
+    err = os.Setenv("GPU_MAX_ALLOC_PERCENT", "100")
     if err != nil {
         fmt.Println(err.Error())
     }
@@ -47,25 +48,32 @@ func TestCuckoo29(t *testing.T){
 
     clDevices := common.GetDevices(common.DevicesTypesForGPUMining)
 
-    devices := make([]*Device,0)
+    devices := make([]*cuckoo.Device,0)
 
     for i, device := range clDevices {
-        deviceMiner := &Device{
+        deviceMiner := &cuckoo.Device{
         }
         deviceMiner.MinerId = uint32(i)
         deviceMiner.DeviceName=device.Name()
         deviceMiner.ClDevice=device
         deviceMiner.CurrentWorkID=0
-        deviceMiner.Started=uint32(time.Now().Unix())
+        deviceMiner.Started=time.Now().Unix()
         deviceMiner.GlobalItemSize= int(math.Exp2(float64(24)))
         devices = append(devices,deviceMiner)
     }
-
+    wg := sync.WaitGroup{}
     for k,d := range devices{
-        if k == 0{
+        if k == 0 {
             continue
         }
+        common.MinerLoger.Debugf("允许单对象最大 %d G",d.ClDevice.MaxMemAllocSize()/1000/1000/1000)
+        common.MinerLoger.Debugf("允许内存最大 %d G",d.ClDevice.GlobalMemSize()/1000/1000/1000)
+        wg.Add(1)
+        go d.Status(&wg)
+        d.SetIsValid(true)
+        d.InitDevice()
         d.Mine()
         break
     }
+    wg.Wait()
 }

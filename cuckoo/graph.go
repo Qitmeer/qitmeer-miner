@@ -232,6 +232,7 @@ type Edge1 struct {
 }
 
 func (this *CGraph)FindSolutions() bool {
+	common.MinerLoger.Debugf("search edges:%d",this.EdgesCount)
 	for ee:=0; ee < this.EdgesCount; ee++{
 		e := Edge1{Item1:this.Edges[ee*2+0],Item2:this.Edges[ee*2+1]}
 		if I1 := this.U.TryGetValue(e.Item1) ;I1 != -1 && int(I1) == e.Item2{
@@ -285,7 +286,7 @@ func (this *CGraph)FindSolutions() bool {
 		}
 
 		if cycle >= 4 && cycle != cuckaroo.ProofSize{
-			//common.MinerLoger.Infof(fmt.Sprintf("%d-cycle found!",cycle))
+			common.MinerLoger.Infof(fmt.Sprintf("%d-cycle found!",cycle))
 		} else if cycle == cuckaroo.ProofSize{
 			return true
 		} else{

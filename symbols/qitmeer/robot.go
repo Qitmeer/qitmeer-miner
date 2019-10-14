@@ -39,12 +39,6 @@ func (this *QitmeerRobot)GetPow(i int ,device *cl.Device) core.BaseDevice{
 		deviceMiner.Init(i,device,this.Pool,this.Quit,this.Cfg)
 		this.Devices = append(this.Devices,deviceMiner)
 		return deviceMiner
-	case POW_CUCKROO29:
-		deviceMiner := &Cuckaroo29{}
-		deviceMiner.MiningType = "cuckaroo"
-		deviceMiner.Init(i,device,this.Pool,this.Quit,this.Cfg)
-		this.Devices = append(this.Devices,deviceMiner)
-		return deviceMiner
 	case POW_CUCKTOO:
 		deviceMiner := &Cuckatoo{}
 		deviceMiner.MiningType = "cuckatoo"
