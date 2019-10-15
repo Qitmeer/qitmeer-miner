@@ -69,8 +69,8 @@ func main() {
         if k == 0 {
             continue
         }
-        common.MinerLoger.Debugf("允许单对象最大 %d G",d.ClDevice.MaxMemAllocSize()/1000/1000/1000)
-        common.MinerLoger.Debugf("允许内存最大 %d G",d.ClDevice.GlobalMemSize()/1000/1000/1000)
+        common.MinerLoger.Debugf("one object max mem %d G",d.ClDevice.MaxMemAllocSize()/1000/1000/1000)
+        common.MinerLoger.Debugf("max mem %d G",d.ClDevice.GlobalMemSize()/1000/1000/1000)
         wg.Add(1)
         go d.Status(&wg)
         d.SetIsValid(true)
