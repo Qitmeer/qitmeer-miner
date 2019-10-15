@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"github.com/Qitmeer/go-opencl/cl"
 	"github.com/Qitmeer/qitmeer/common/hash"
+	`github.com/Qitmeer/qitmeer/core/types`
+	"github.com/Qitmeer/qitmeer/core/types/pow"
 	"math/big"
 	"qitmeer-miner/common"
 	"qitmeer-miner/core"
@@ -63,6 +65,7 @@ func (this *Blake2bD) InitDevice() {
 		this.IsValid = false
 		return
 	}
+	_= this.Kernel.SetArgBuffer(1, this.NonceOutObj)
 	this.NonceRandObj, this.Err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, 8)
 	if this.Err != nil {
 		common.MinerLoger.Errorf("-%d,%v CreateEmptyBuffer NonceRandObj", this.MinerId,this.Err )
@@ -76,7 +79,6 @@ func (this *Blake2bD) InitDevice() {
 		return
 	}
 	_ = this.Kernel.SetArgBuffer(1, this.NonceOutObj)
-	this.LocalItemSize, this.Err = this.Kernel.WorkGroupSize(this.ClDevice)
 	this.LocalItemSize = this.Cfg.OptionConfig.WorkSize
 	if this.Err != nil {
 		common.MinerLoger.Infof("- WorkGroupSize failed -%d %v", this.MinerId,this.Err )
@@ -99,12 +101,14 @@ func (this *Blake2bD) Update() {
 	//update coinbase tx hash
 	this.Device.Update()
 	if this.Pool {
-		this.Work.PoolWork.ExtraNonce2 = fmt.Sprintf("%08x", uint32(this.CurrentWorkID))
-		this.header.Exnonce2 = this.Work.PoolWork.ExtraNonce2
+		this.Work.PoolWork.ExtraNonce2 = fmt.Sprintf("%08x", this.CurrentWorkID)
 		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepQitmeerWork()
-		this.header.PackagePoolHeader(this.Work)
+		this.header.PackagePoolHeader(this.Work,pow.BLAKE2BD)
 	} else {
 		randStr := fmt.Sprintf("%s%d",this.Cfg.SoloConfig.RandStr,this.CurrentWorkID)
+		this.Work.PoolWork.ExtraNonce2 = fmt.Sprintf("%08x", uint32(this.CurrentWorkID))
+		this.header.Exnonce2 = fmt.Sprintf("%d",this.Work.PoolWork.Height)
+		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepQitmeerWork()
 		txHash := this.Work.Block.CalcCoinBase(this.Cfg,randStr,this.CurrentWorkID,this.Cfg.SoloConfig.MinerAddr)
 		this.header.PackageRpcHeader(this.Work)
 		this.header.HeaderBlock.TxRoot = *txHash
@@ -114,7 +118,7 @@ func (this *Blake2bD) Update() {
 func (this *Blake2bD) Mine(wg *sync.WaitGroup) {
 	defer wg.Done()
 	defer this.Release()
-	var randNonceBase ,xnonce uint64
+	var randNonceBase  uint64
 	var subm string
 	var txCount,j int
 	var h hash.Hash
@@ -152,7 +156,6 @@ func (this *Blake2bD) Mine(wg *sync.WaitGroup) {
 			HeaderData:make([]byte,0),
 			TargetDiff:&big.Int{},
 			JobID:"",
-			Exnonce2:"",
 		}
 
 		for {
@@ -160,17 +163,19 @@ func (this *Blake2bD) Mine(wg *sync.WaitGroup) {
 			if this.HasNewWork {
 				break
 			}
-			if !this.IsValid {
-				break
-			}
-
 			this.Update()
-			if this.Event, this.Err = this.CommandQueue.EnqueueWriteBufferByte(this.BlockObj, true, 0, BlockData(this.header.HeaderBlock), nil); this.Err != nil {
-				common.MinerLoger.Errorf("-%d %v %v %d EnqueueWriteBufferByte BlockObj", this.MinerId,this.Err ,this.BlockObj,len(BlockData(this.header.HeaderBlock)))
+			var err error
+			hData := make([]byte,128)
+			copy(hData[0:types.MaxBlockHeaderPayload-pow.PROOFDATA_LENGTH],this.header.HeaderBlock.BlockData())
+			if this.Event, err = this.CommandQueue.EnqueueWriteBufferByte(this.BlockObj, true, 0, hData, nil); err != nil {
+				common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
 				this.IsValid = false
 				return
 			}
 			this.Event.Release()
+			if !this.IsValid {
+				break
+			}
 			randNonceBase,_ = common.RandUint64()
 			randNonceBytes = make([]byte,8)
 			binary.LittleEndian.PutUint64(randNonceBytes,randNonceBase)
@@ -193,6 +198,7 @@ func (this *Blake2bD) Mine(wg *sync.WaitGroup) {
 				return
 			}
 			this.Event.Release()
+			this.NonceOut = make([]byte, 8)
 			//Get output
 			if this.Event, this.Err = this.CommandQueue.EnqueueReadBufferByte(this.NonceOutObj, true, 0, this.NonceOut, nil); this.Err != nil {
 				common.MinerLoger.Errorf("-%d %v EnqueueReadBufferByte NonceOutObj", this.MinerId,this.Err )
@@ -201,14 +207,16 @@ func (this *Blake2bD) Mine(wg *sync.WaitGroup) {
 			}
 			this.Event.Release()
 			this.AllDiffOneShares += uint64(this.GlobalItemSize)
-			xnonce = binary.LittleEndian.Uint64(this.NonceOut)
+			xnonce := binary.LittleEndian.Uint32(this.NonceOut[4:8])
 			if xnonce >0 {
 				//Found Hash
-				this.header.HeaderBlock.Nonce = xnonce
+				this.header.HeaderBlock.Pow.SetNonce(xnonce)
 				h = this.header.HeaderBlock.BlockHash()
-				common.MinerLoger.Debugf("device #%d found hash:%s nonce:%d target:%064x",this.MinerId,h,xnonce,this.header.TargetDiff)
+				headerData := BlockDataWithProof(this.header.HeaderBlock)
+				copy(hData[104:112],this.NonceOut)
 				if HashToBig(&h).Cmp(this.header.TargetDiff) <= 0 {
-					subm = hex.EncodeToString(BlockData(this.header.HeaderBlock))
+					common.MinerLoger.Debugf("device #%d found hash:%s nonce:%d target:%064x",this.MinerId,h,xnonce,this.header.TargetDiff)
+					subm = hex.EncodeToString(headerData)
 					if !this.Pool{
 						subm += common.Int2varinthex(int64(len(this.header.Parents)))
 						for j = 0; j < len(this.header.Parents); j++ {
@@ -222,7 +230,7 @@ func (this *Blake2bD) Mine(wg *sync.WaitGroup) {
 							subm += this.header.Transactions[j].Data
 						}
 						txCount -= 1
-						subm += "-" + fmt.Sprintf("%d",txCount) + "-" + fmt.Sprintf("%d",this.header.HeaderBlock.ExNonce)
+						subm += "-" + fmt.Sprintf("%d",txCount) + "-" + fmt.Sprintf("%s",this.header.Exnonce2)
 					} else {
 						subm += "-" + this.header.JobID + "-" + this.header.Exnonce2
 					}
@@ -248,3 +256,4 @@ func (this* Blake2bD) ClearNonceData()  {
 	}
 	this.Event.Release()
 }
+

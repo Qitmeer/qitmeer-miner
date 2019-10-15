@@ -4,14 +4,14 @@
 package qitmeer
 
 import (
-	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Qitmeer/qitmeer/core/types/pow"
+	`math/big`
 	"qitmeer-miner/common"
 	"qitmeer-miner/core"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -61,12 +61,37 @@ func (this *QitmeerWork) Get () bool {
 		//not has new work
 		return false
 	}
-	diff, _ := strconv.ParseUint(blockTemplate.Result.Bits, 16, 32)
-	diffi := make([]byte,4)
-	binary.LittleEndian.PutUint32(diffi, uint32(diff))
-	blockTemplate.Result.Difficulty = binary.LittleEndian.Uint32(diffi)
+	n := new(big.Int)
+	switch this.Cfg.NecessaryConfig.Pow {
+	case POW_DOUBLE_BLAKE2B:
+		blockTemplate.Result.Pow = pow.GetInstance(pow.BLAKE2BD,0,[]byte{})
+		target := blockTemplate.Result.PowDiffReference.Blake2bTarget
+		n, _ = n.SetString(target, 16)
+		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
+		blockTemplate.Result.Target = target
+	case POW_CUCKROO:
+		fallthrough
+	case POW_CUCKROO29:
+		blockTemplate.Result.Pow = pow.GetInstance(pow.CUCKAROO,0,[]byte{})
+		powStruct := blockTemplate.Result.Pow.(*pow.Cuckaroo)
+		powStruct.SetScale(uint32(blockTemplate.Result.PowDiffReference.CuckarooDiffScale))
+		powStruct.SetEdgeBits(24)
+		n.SetUint64(blockTemplate.Result.PowDiffReference.CuckarooMinDiff)
+		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
+		blockTemplate.Result.Target = fmt.Sprintf("min difficulty %d",blockTemplate.Result.PowDiffReference.CuckarooMinDiff)
+	case POW_CUCKTOO:
+		blockTemplate.Result.Pow = pow.GetInstance(pow.CUCKATOO,0,[]byte{})
+		powStruct := blockTemplate.Result.Pow.(*pow.Cuckatoo)
+		powStruct.SetScale(uint32(blockTemplate.Result.PowDiffReference.CuckatooDiffScale))
+		powStruct.SetEdgeBits(29)
+		n.SetUint64(blockTemplate.Result.PowDiffReference.CuckatooMinDiff)
+		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
+		blockTemplate.Result.Target = fmt.Sprintf("min difficulty %d",blockTemplate.Result.PowDiffReference.CuckatooMinDiff)
+	}
+
 	blockTemplate.Result.HasCoinbasePack = false
 	_ = blockTemplate.Result.CalcCoinBase(this.Cfg,this.Cfg.SoloConfig.RandStr,uint64(0),this.Cfg.SoloConfig.MinerAddr)
+	blockTemplate.Result.BuildMerkleTreeStore(0)
 	this.Block = blockTemplate.Result
 	this.Started = uint32(time.Now().Unix())
 	this.GetWorkTime = time.Now().Unix()

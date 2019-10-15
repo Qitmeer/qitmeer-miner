@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/Qitmeer/qitmeer/common/hash"
 	"github.com/Qitmeer/qitmeer/core/types"
+	"github.com/Qitmeer/qitmeer/core/types/pow"
 	"math/big"
 	"qitmeer-miner/common"
 	"time"
@@ -42,14 +43,14 @@ func BlockComputePoolData(b []byte) []byte{
 	return bb
 }
 //the pool work submit structure
-func (this *MinerBlockData)PackagePoolHeader(work *QitmeerWork)  {
-	this.HeaderData = BlockComputePoolData(work.PoolWork.WorkData)
+func (this *MinerBlockData)PackagePoolHeader(work *QitmeerWork,powType pow.PowType)  {
+	this.HeaderData = BlockComputePoolData(work.PoolWork.WorkData) // 128
 	this.TargetDiff = work.stra.Target
-	bitesBy ,_:= hex.DecodeString(fmt.Sprintf("%064x",this.TargetDiff))
-	this.Target2 = common.Reverse(bitesBy[0:32])
-	bitesBy = common.Reverse(bitesBy[:8])
-	this.Parents = work.Block.Parents
-	copy(this.HeaderData[NONCESTART:NONCEEND],bitesBy[:])
+	nbitesBy := common.Target2BlockBits(fmt.Sprintf("%064x",this.TargetDiff))
+	copy(this.HeaderData[NONCESTART:NONCEEND],nbitesBy[:])
+	instance := pow.GetInstance(powType,0,[]byte{})
+	proofData,_ := hex.DecodeString(instance.GetProofData())
+	this.HeaderData = append(this.HeaderData,proofData...) //328 bytes
 	this.JobID = work.PoolWork.JobID
 	this.HeaderBlock = &types.BlockHeader{}
 	_ = ReadBlockHeader(this.HeaderData,this.HeaderBlock)
@@ -86,25 +87,7 @@ func (this *MinerBlockData)PackageRpcHeader(work *QitmeerWork)  {
 	this.HeaderBlock.ParentRoot = work.Block.ParentRoot
 	this.HeaderBlock.TxRoot = work.Block.TxRoot
 	this.HeaderBlock.StateRoot = work.Block.StateRoot
-	this.HeaderBlock.Difficulty = work.Block.Difficulty
+	this.HeaderBlock.Difficulty = uint32(work.Block.Difficulty)
 	this.HeaderBlock.Timestamp = time.Unix(int64(work.Block.Curtime), 0)
-	this.HeaderBlock.Nonce = binary.LittleEndian.Uint64(bitesBy)
-	this.HeaderBlock.ExNonce = work.Block.Height
-}
-
-//the solo work submit structure
-func (this *MinerBlockData)PackageRpcHeaderByNonce(work *QitmeerWork,nonce uint64)  {
-	//common.MinerLoger.Infof(work.Block.Blake2bDTarget)
-	bitesBy := make([]byte,8)
-	binary.LittleEndian.PutUint64(bitesBy,nonce)
-	this.HeaderData = work.Block.BlockData()
-	this.Transactions = work.Block.Transactions
-	this.Parents = work.Block.Parents
-	copy(this.HeaderData[NONCESTART:NONCEEND],bitesBy[:])
-
-	b1 , _ := hex.DecodeString(work.Block.Target)
-	var r [32]byte
-	copy(r[:],common.Reverse(b1)[:])
-	r1 := hash.Hash(r)
-	this.TargetDiff = HashToBig(&r1)
+	this.HeaderBlock.Pow = pow.GetInstance(work.Block.Pow.GetPowType(),binary.LittleEndian.Uint32(bitesBy),[]byte{})
 }

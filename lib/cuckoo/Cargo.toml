@@ -1,0 +1,10 @@
+[package]
+name = "cuckoo"
+version = "0.1.0"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+libc = "0.2.2"
+hashbrown = "0.1"

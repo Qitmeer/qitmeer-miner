@@ -116,6 +116,10 @@ func (this *Edges)AddEdges(e Edge1){
 	}
 }
 
+func (this *Edges)GetData() []Edge1{
+	return this.data
+}
+
 func (this *Edges)Check() bool{
 	if len(this.data) != cuckaroo.ProofSize{
 		return false
@@ -232,7 +236,7 @@ type Edge1 struct {
 }
 
 func (this *CGraph)FindSolutions() bool {
-	//common.MinerLoger.Infof("【Search】In Edge Count ",this.EdgesCount)
+	common.MinerLoger.Debugf("search edges:%d",this.EdgesCount)
 	for ee:=0; ee < this.EdgesCount; ee++{
 		e := Edge1{Item1:this.Edges[ee*2+0],Item2:this.Edges[ee*2+1]}
 		if I1 := this.U.TryGetValue(e.Item1) ;I1 != -1 && int(I1) == e.Item2{
@@ -268,11 +272,6 @@ func (this *CGraph)FindSolutions() bool {
 				joinB = path2Idx
 				cycle = joinB+joinA + 1
 				if cycle == cuckaroo.ProofSize{
-					//common.MinerLoger.Infof(e)
-					//common.MinerLoger.Infof(i)
-					//common.MinerLoger.Infof(path1)
-					//common.MinerLoger.Infof(path2)
-					//common.MinerLoger.Infof(path2Idx)
 					for k:=path2Idx;k>0;k--{
 						if path2.values[k] & 1 == 0{
 							this.CycleEdges.AddEdges(Edge1{Item1:path2.values[k],Item2:path2.values[k-1]})
@@ -291,9 +290,8 @@ func (this *CGraph)FindSolutions() bool {
 		}
 
 		if cycle >= 4 && cycle != cuckaroo.ProofSize{
-			//common.MinerLoger.Infof(fmt.Sprintf("%d-cycle found!",cycle))
+			common.MinerLoger.Infof(fmt.Sprintf("%d-cycle found!",cycle))
 		} else if cycle == cuckaroo.ProofSize{
-			//common.MinerLoger.Infof(fmt.Sprintf("%d-cycle found!",PROOF_SIZE),this.CycleEdges)
 			return true
 		} else{
 			if path1.Count() > path2.Count(){

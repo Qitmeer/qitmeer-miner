@@ -20,6 +20,7 @@ import (
 const (
 	POW_DOUBLE_BLAKE2B = "blake2bd"
 	POW_CUCKROO = "cuckaroo"
+	POW_CUCKROO29 = "cuckaroo29"
 	POW_CUCKTOO = "cuckatoo"
 )
 type QitmeerRobot struct {
@@ -34,12 +35,19 @@ func (this *QitmeerRobot)GetPow(i int ,device *cl.Device) core.BaseDevice{
 	switch this.Cfg.NecessaryConfig.Pow {
 	case POW_CUCKROO:
 		deviceMiner := &Cuckaroo{}
+		deviceMiner.MiningType = "cuckaroo"
 		deviceMiner.Init(i,device,this.Pool,this.Quit,this.Cfg)
 		this.Devices = append(this.Devices,deviceMiner)
 		return deviceMiner
 	case POW_CUCKTOO:
+		deviceMiner := &Cuckatoo{}
+		deviceMiner.MiningType = "cuckatoo"
+		deviceMiner.Init(i,device,this.Pool,this.Quit,this.Cfg)
+		this.Devices = append(this.Devices,deviceMiner)
+		return deviceMiner
 	case POW_DOUBLE_BLAKE2B:
 		deviceMiner := &Blake2bD{}
+		deviceMiner.MiningType = "blake2bd"
 		deviceMiner.Init(i,device,this.Pool,this.Quit,this.Cfg)
 		this.Devices = append(this.Devices,deviceMiner)
 		return deviceMiner
@@ -146,6 +154,9 @@ func (this *QitmeerRobot)ListenWork() {
 			}
 			if r {
 				for _, dev := range this.Devices {
+					if !dev.GetIsValid(){
+						continue
+					}
 					dev.SetNewWork(&this.Work)
 				}
 			}
@@ -185,18 +196,20 @@ func (this *QitmeerRobot)SubmitWork() {
 					err = this.Work.Submit(block)
 				}
 				if err != nil{
-					if err == ErrStratumStaleWork || err == ErrSameWork{
-						atomic.AddUint64(&this.StaleShares, 1)
-					} else{
-						atomic.AddUint64(&this.InvalidShares, 1)
+					if err != ErrSameWork || err == ErrSameWork{
+						if err == ErrStratumStaleWork{
+							atomic.AddUint64(&this.StaleShares, 1)
+						} else{
+							atomic.AddUint64(&this.InvalidShares, 1)
+						}
 					}
 				} else {
 					atomic.AddUint64(&this.ValidShares, 1)
 					if !this.Pool{
 						count ,_ = strconv.Atoi(txCount)
 						this.AllTransactionsCount += int64(count)
-						logContent = fmt.Sprintf("%s,receive block, block height = %s,Including %s transactions(not contain coinbase tx); Received Total transactions = %d\n",
-							time.Now().Format("2006-01-02 03:04:05 PM"),height,txCount,this.AllTransactionsCount)
+						logContent = fmt.Sprintf("receive block, block height = %s,Including %s transactions(not contain coinbase tx); Received Total transactions = %d\n",
+							height,txCount,this.AllTransactionsCount)
 						common.MinerLoger.Info(logContent)
 					}
 				}

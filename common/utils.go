@@ -20,6 +20,8 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 	"unicode"
 )
 
@@ -97,20 +99,22 @@ func Reverse(src []byte) []byte {
 
 
 // FormatHashRate sets the units properly when displaying a hashrate.
-func FormatHashRate(h float64) string {
+func FormatHashRate(h float64,unit string) string {
 	if h > 1000000000000 {
-		return fmt.Sprintf("%.3fTH/s", h/1000000000000)
+		return fmt.Sprintf("%.4fT%s", h/1000000000000,unit)
 	} else if h > 1000000000 {
-		return fmt.Sprintf("%.3fGH/s", h/1000000000)
+		return fmt.Sprintf("%.4fG%s", h/1000000000,unit)
 	} else if h > 1000000 {
-		return fmt.Sprintf("%.0fMH/s", h/1000000)
+		return fmt.Sprintf("%.4fM%s", h/1000000,unit)
 	} else if h > 1000 {
-		return fmt.Sprintf("%.1fkH/s", h/1000)
+		return fmt.Sprintf("%.4fk%s", h/1000,unit)
 	} else if h == 0 {
-		return "0H/s"
+		return fmt.Sprintf("0%s",unit)
+	}else if h > 0 {
+		return fmt.Sprintf("%.4f%s",h,unit)
 	}
 
-	return fmt.Sprintf("%.1f TH/s", h)
+	return fmt.Sprintf("%.4f T%s", h,unit)
 }
 
 func ReverseByWidth(s []byte,width int ) []byte {
@@ -290,6 +294,16 @@ func RandUint64() (uint64, error) {
 }
 
 
+func RandUint32() (uint32, error) {
+	var b [4]byte
+	if _, err := rand.Read(b[:]); err != nil {
+		return 0, err
+	}
+	return uint32(binary.LittleEndian.Uint32(b[:])), nil
+}
+
+
+
 func InArray( val interface{},arr interface{}) bool {
 	switch arr.(type) {
 	case []string:
@@ -309,6 +323,26 @@ func InArray( val interface{},arr interface{}) bool {
 	return false
 }
 
+func Timeout(timeout time.Duration, runFunc func()) bool {
+	var wg= new(sync.WaitGroup)
+	c := make(chan interface{})
+	wg.Add(1)
+	go func() {
+		defer close(c)
+		wg.Wait()
+	}()
+	go func() {
+		runFunc()
+		c <- nil
+		wg.Done()
+	}()
+	select {
+	case <-c:
+		return false
+	case <-time.After(timeout):
+		return true
+	}
+}
 func GetNeedHashTimesByTarget( target string ) *big.Int {
 	times := big.NewInt(1)
 	for i:=0;i<len(target)-1 ;i++  {

@@ -3,13 +3,17 @@ package qitmeer
 import (
 	"bytes"
 	"github.com/Qitmeer/qitmeer/common/hash"
+	"github.com/Qitmeer/qitmeer/core/json"
+	"github.com/Qitmeer/qitmeer/core/types/pow"
 	s "github.com/Qitmeer/qitmeer/core/serialization"
 	"github.com/Qitmeer/qitmeer/core/types"
 	"io"
+	"sync"
 )
 
 //qitmeer block header
 type BlockHeader struct {
+	sync.Mutex
 	// block version
 	Version uint32 `json:"version"`
 	// The merkle root of the previous parent blocks (the dag layer)
@@ -21,23 +25,23 @@ type BlockHeader struct {
 	// can all of the state data (stake, receipt, utxo) in state root?
 	StateRoot hash.Hash `json:"stateroot"`
 
-	// Difficulty target for tx
-	Difficulty   uint32         `json:"difficulty"`
 	Transactions []Transactions `json:"transactions"`
 	Parents []ParentItems `json:"parents"`
 	// Difficulty target for tx
-	Bits string `json:"bits"`
 
 	// block number
 	Height uint64 `json:"height"`
+	Difficulty uint64 `json:"difficulty"`
 
 	// TimeStamp
 	Curtime uint32 `json:"curtime"`
 
+	Pow pow.IPow
+
 	// Nonce
-	Nonce uint64 `json:"nonce"`
-	Nonces []*uint32 `json:"nonces"`
 	Target string `json:"target"`
+
+	PowDiffReference json.PowDiffReference `json:"pow_diff_reference"`
 
 	Coinbasevalue   int64 `json:"coinbasevalue"`
 	HasCoinbasePack bool
@@ -46,55 +50,17 @@ type BlockHeader struct {
 }
 
 //qitmeer block header
-func (h *BlockHeader) BlockData() []byte {
-	buf := bytes.NewBuffer(make([]byte, 0, MaxBlockHeaderPayload))
+func BlockDataWithProof(h *types.BlockHeader) []byte {
+	var buf bytes.Buffer
 	// TODO, redefine the protocol version and storage
-	_ = writeBlockHeader(buf, 0, h)
+	_ = writeBlockHeaderWithProof(&buf, 0, h)
 	return buf.Bytes()
 }
 
-//qitmeer block header
-func BlockData(h *types.BlockHeader) []byte {
-	buf := bytes.NewBuffer(make([]byte, 0, 128))
-	// TODO, redefine the protocol version and storage
-	_ = WriteBlockHeader(buf, h)
-	return buf.Bytes()
-}
-
-//qitmeer block header
-func (h *BlockHeader) BlockDataCuckaroo() []byte {
-	buf := bytes.NewBuffer(make([]byte, 0, MaxBlockHeaderPayload))
-	// TODO, redefine the protocol version and storage
-	_ = writeBlockHeaderCuckaroo(buf, 0, h)
-	return buf.Bytes()
-}
-
-//qitmeer Header structure of assembly
-func writeBlockHeader(w io.Writer, pver uint32, bh *BlockHeader) error {
-	sec := uint64(bh.Curtime)
+func writeBlockHeaderWithProof(w io.Writer, pver uint32, bh *types.BlockHeader) error {
+	sec := uint32(bh.Timestamp.Unix())
 	return s.WriteElements(w, bh.Version, &bh.ParentRoot, &bh.TxRoot,
-		&bh.StateRoot, bh.Difficulty, bh.Height, sec, bh.Nonce)
-}
-
-//qitmeer Header structure of assembly
-func WriteBlockHeader(w io.Writer, bh *types.BlockHeader) error {
-	sec := bh.Timestamp.Unix()
-	return s.WriteElements(w, bh.Version, &bh.ParentRoot, &bh.TxRoot,
-		&bh.StateRoot, bh.Difficulty, bh.ExNonce, sec, bh.Nonce)
-}
-
-func writeBlockHeaderCuckaroo(w io.Writer, pver uint32, bh *BlockHeader) error {
-	sec := uint64(bh.Curtime)
-	return s.WriteElements(w, bh.Version, &bh.ParentRoot, &bh.TxRoot,
-		&bh.StateRoot, bh.Difficulty, bh.Height, sec, bh.Nonce,bh.Nonces)
-}
-
-//block hash
-func (h *BlockHeader) BlockHash() hash.Hash {
-	buf := bytes.NewBuffer(make([]byte, 0, MaxBlockHeaderPayload))
-	// TODO, redefine the protocol version and storage
-	_ = writeBlockHeader(buf, 0, h)
-	return hash.DoubleHashH(buf.Bytes())
+		&bh.StateRoot, bh.Difficulty, sec, &bh.Pow)
 }
 
 // readBlockHeader reads a block header from io reader.  See Deserialize for
@@ -105,8 +71,6 @@ func ReadBlockHeader(b []byte,bh *types.BlockHeader) error {
 	r := bytes.NewReader(b)
 	// TODO fix time ambiguous
 	return s.ReadElements(r, &bh.Version, &bh.ParentRoot, &bh.TxRoot,
-		&bh.StateRoot, &bh.Difficulty,&bh.ExNonce,(*s.Int64Time)(&bh.Timestamp),
-		&bh.Nonce)
+		&bh.StateRoot, &bh.Difficulty,(*s.Uint32Time)(&bh.Timestamp),
+		&bh.Pow)
 }
-
-

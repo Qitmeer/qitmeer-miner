@@ -1,12 +1,6 @@
 package qitmeer
 
-import "github.com/Qitmeer/qitmeer/common/hash"
-
 const (
-	//128
-	MaxBlockHeaderPayload = 4 + (hash.HashSize * 3) + 4 + 8 + 8 + 8 + 42*4
-	Blake2bBlockLength = 128
-
 	//every mode position
 	TIMESTART = 112
 	TIMEEND = 120

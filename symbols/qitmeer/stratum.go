@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	qitmeer "github.com/Qitmeer/qitmeer/common/hash"
-	"github.com/Qitmeer/qitmeer/params"
 	"math/big"
 	"qitmeer-miner/common"
 	"qitmeer-miner/core"
@@ -114,7 +113,7 @@ type QitmeerStratum struct {
 }
 
 func (s *QitmeerStratum) CalcBasePowLimit() *big.Int {
-	return params.MainNetParams.PowLimit
+	return new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 232), big.NewInt(1))
 }
 
 func (this *QitmeerStratum)HandleReply()  {
@@ -430,7 +429,7 @@ func (s *QitmeerStratum) Unmarshal(blob []byte) (interface{}, error) {
 		if !ok {
 			return nil, core.ErrJsonType
 		}
-		powLimit := params.MainNetParams.PowLimit
+		powLimit := s.CalcBasePowLimit()
 		s.Target, err = common.DiffToTarget(difficulty, powLimit)
 		if err != nil {
 			return nil, err

@@ -3,6 +3,7 @@ package kernel
 var CuckarooKernel = `
 // Cuckaroo Cycle, a memory-hard proof-of-work by James Qitmeer
 // Copyright (c) 2019 
+// edgebits {{edge_bits}}
 
 #pragma OPENCL EXTENSION cl_khr_int64_base_atomics : enable
 #pragma OPENCL EXTENSION cl_khr_int64_extended_atomics : enable
@@ -15,7 +16,8 @@ typedef ulong u64;
 typedef u32 node_t;
 typedef u64 nonce_t;
 
-#define EDGEBITS 24
+#define EDGEBITS {{edge_bits}}
+#define STEP {{step}}
 // number of edges
 #define NEDGES ((node_t)1 << EDGEBITS)
 // used to mask siphash output
@@ -30,8 +32,8 @@ typedef u64 nonce_t;
     v1 ^= v2; v3 ^= v0; v2 = rotate(v2,(ulong)32); \
   } while(0)
 
-__attribute__((reqd_work_group_size(256, 1, 1)))
-__kernel  void CreateEdges(const u64 v0i, const u64 v1i, const u64 v2i, const u64 v3i, __global u32 * edges,__global u32 * indexes)
+__attribute__((reqd_work_group_size({{group}}, 1, 1)))
+__kernel  void CreateEdges(const u64 v0i, const u64 v1i, const u64 v2i, const u64 v3i, __global uint2 * edges,__global u32 * indexes)
 {
 	const int gid = get_global_id(0);
 
@@ -43,9 +45,9 @@ __kernel  void CreateEdges(const u64 v0i, const u64 v1i, const u64 v2i, const u6
 	u64 v2;
 	u64 v3;
 
-	for (int i = 0; i < 16; i += 1)
+	for (int i = 0; i < STEP; i += 1)
 	{
-		u64 blockNonce = gid * 16 + i;
+		u64 blockNonce = gid * STEP + i;
 		u64 nonce1 = (blockNonce << 1);
 		u64 nonce2 = (blockNonce << 1 | 1);
 		//build u
@@ -80,34 +82,23 @@ __kernel  void CreateEdges(const u64 v0i, const u64 v1i, const u64 v2i, const u6
 
 		v00 = (v0 ^ v1) ^ (v2  ^ v3);	
 		u32 u = (( u00 & EDGEMASK)<<1);
-		//u32 V = ((( ( v00 >> 32 ) & EDGEMASK)<<1) | 1);
 		u32 V = ((( ( v00 ) & EDGEMASK)<<1) | 1);
 		//u64 index = u+V;
-		//int idx = atomic_inc(&existBucket[index]);
-			edges[nonce1] = u;
-			edges[nonce2] = V;
+			edges[blockNonce].x = u;
+			edges[blockNonce].y = V;
 			atomic_inc(&indexes[u]);
 			atomic_inc(&indexes[V]);
-		//if(idx==0){
-		//	edges[nonce1] = u;
-		//	edges[nonce2] = V;
-		//	atomic_inc(&indexes[u]);
-		//	atomic_inc(&indexes[V]);
-		//} else{
-		//	edges[nonce1] = 0;
-		//	edges[nonce2] = 0;
-		//}
 	}
 
 }
 
-__attribute__((reqd_work_group_size(256, 1, 1)))
+__attribute__((reqd_work_group_size({{group}}, 1, 1)))
 __kernel  void Trimmer01(__global uint2 * edges,__global u32 *indexes)
 {
 	const int gid = get_global_id(0);
-	for (int i = 0; i < 16; i++)
+	for (int i = 0; i < STEP; i++)
 	{
-		u32 blockNonce = gid * 16 + i;
+		u32 blockNonce = gid * STEP + i;
 		u32 V = edges[blockNonce].x;
 		u32 v1 = edges[blockNonce].y;
 		if(V==0 && v1==0){
@@ -125,14 +116,15 @@ __kernel  void Trimmer01(__global uint2 * edges,__global u32 *indexes)
 	
 }
 
-__attribute__((reqd_work_group_size(256, 1, 1)))
+
+__attribute__((reqd_work_group_size({{group}}, 1, 1)))
 __kernel  void Trimmer02(__global uint2 * edges,__global u32 *indexes,__global uint2 * destination,__global u32 *count)
 {
 	const int gid = get_global_id(0);
 	barrier(CLK_LOCAL_MEM_FENCE);
-	for (int i = 0; i < 16; i++)
+	for (int i = 0; i < STEP; i++)
 	{
-		u64 blockNonce = gid * 16 + i;
+		u64 blockNonce = gid * STEP + i;
 		u32 V = edges[blockNonce].x;
 		u32 v1 = edges[blockNonce].y;
 		
@@ -144,21 +136,24 @@ __kernel  void Trimmer02(__global uint2 * edges,__global u32 *indexes,__global u
 
 			int idx = atomic_add(&count[0],1);
 			atomic_add(&count[1],1);
-
-			destination[idx] = edges[blockNonce];
+			if (idx < 1000000){
+					destination[idx] = edges[blockNonce];
+			}
+		
 		}
 	}
 	
 }
 
-__attribute__((reqd_work_group_size(256, 1, 1)))
+
+__attribute__((reqd_work_group_size({{group}}, 1, 1)))
 __kernel  void RecoveryNonce(__global uint2 * edges,__global uint2 *nodes,__global u32 *nonces)
 {
 	const int gid = get_global_id(0);
 	barrier(CLK_LOCAL_MEM_FENCE);
-	for (int i = 0; i < 16; i++)
+	for (int i = 0; i < STEP; i++)
 	{
-		u64 blockNonce = gid * 16 + i;
+		u64 blockNonce = gid * STEP + i;
 		u32 V = edges[blockNonce].x;
 		u32 v1 = edges[blockNonce].y;
 		

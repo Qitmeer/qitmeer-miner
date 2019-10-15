@@ -31,6 +31,7 @@ type BaseDevice interface {
 	SetPool(pool bool)
 	SetNewWork(w BaseWork)
 	Release()
+	GetMinerType() string
 	SubmitShare(substr chan string)
 }
 type Device struct{
@@ -62,6 +63,7 @@ type Device struct{
 	SubmitData chan string //must
 	NewWork    chan BaseWork
 	Err        error
+	MiningType        string
 	Event *cl.Event
 }
 
@@ -78,6 +80,20 @@ func (this *Device)Init(i int,device *cl.Device,pool bool,q chan os.Signal,cfg *
 	this.GlobalItemSize= int(math.Exp2(float64(this.Cfg.OptionConfig.Intensity)))
 	this.Quit=q
 	this.AllDiffOneShares = 0
+}
+
+func (this *Device)GetIsValid() bool {
+	return this.IsValid
+}
+
+func (this *Device)SetNewWork(work BaseWork) {
+	this.HasNewWork = true
+	this.NewWork <- work
+}
+
+
+func (this *Device)GetMinerType() string{
+	return this.MiningType
 }
 
 func (this *Device)Update()  {
@@ -102,18 +118,8 @@ func (this *Device)InitDevice()  {
 	}
 }
 
-func (this *Device)SetNewWork(w BaseWork)  {
-	this.HasNewWork = true
-	this.NewWork <- w
-}
-
-
 func (this *Device)SetPool(b bool)  {
 	this.Pool = b
-}
-
-func (this *Device)GetIsValid() bool {
-	return this.IsValid
 }
 
 func (this *Device)SetIsValid(valid bool) {
@@ -188,10 +194,14 @@ func (this *Device)Status(wg *sync.WaitGroup)  {
 			}
 			//recent stats 95% percent
 			this.AverageHashRate = (this.AverageHashRate*50+averageHashRate*950)/1000
+			unit := " H/s"
+			if this.GetMinerType() != "blake2bd"{
+				unit = " GPS"
+			}
 			common.MinerLoger.Infof("DEVICE_ID #%d (%s) %v",
 				this.MinerId,
 				this.ClDevice.Name(),
-				common.FormatHashRate(this.AverageHashRate),
+				common.FormatHashRate(this.AverageHashRate,unit),
 			)
 			// restats every 2min
 			// Prevention this.AllDiffOneShares was to large
