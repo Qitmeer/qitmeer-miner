@@ -16,4 +16,4 @@ env:
   - GO111MODULE=on
 
 script:
-  - cd lib/cuckoo && cargo build --release && cp lib/cuckoo/release/libcuckoo.so /usr/lib/libcuckoo.so && cd ../../ && ./ci.sh
+  - cd lib/cuckoo && cargo build --release && cp target/release/libcuckoo.so /usr/lib/libcuckoo.so && cd ../../ && ./ci.sh
