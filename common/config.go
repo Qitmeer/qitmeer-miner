@@ -364,8 +364,8 @@ func InitNet(network string,p *params.Params) *params.Params {
 		p = &params.TestNetParams
 	case params.PrivNetParams.Name:
 		p = &params.PrivNetParams
-	case params.TestPowNetParams.Name:
-		p = &params.TestPowNetParams
+	case params.MixNetParams.Name:
+		p = &params.MixNetParams
 	default:
 		log.Fatalln(network, "Please define the network parameter for qitmeer!")
 		return nil

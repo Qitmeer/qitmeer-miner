@@ -116,6 +116,10 @@ func (this *Edges)AddEdges(e Edge1){
 	}
 }
 
+func (this *Edges)GetData() []Edge1{
+	return this.data
+}
+
 func (this *Edges)Check() bool{
 	if len(this.data) != cuckaroo.ProofSize{
 		return false

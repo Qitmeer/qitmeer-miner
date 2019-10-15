@@ -44,8 +44,11 @@ func main() {
     if err != nil {
         fmt.Println(err.Error())
     }
-
-
+    err = os.Setenv("CL_LOG_ERRORS", "stdout")
+    if err != nil {
+        common.MinerLoger.Errorf(err.Error())
+        return
+    }
     clDevices := common.GetDevices(common.DevicesTypesForGPUMining)
 
     devices := make([]*cuckoo.Device,0)

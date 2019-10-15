@@ -101,20 +101,20 @@ func Reverse(src []byte) []byte {
 // FormatHashRate sets the units properly when displaying a hashrate.
 func FormatHashRate(h float64,unit string) string {
 	if h > 1000000000000 {
-		return fmt.Sprintf("%.3fT%s", h/1000000000000,unit)
+		return fmt.Sprintf("%.4fT%s", h/1000000000000,unit)
 	} else if h > 1000000000 {
-		return fmt.Sprintf("%.3fG%s", h/1000000000,unit)
+		return fmt.Sprintf("%.4fG%s", h/1000000000,unit)
 	} else if h > 1000000 {
-		return fmt.Sprintf("%.0fM%s", h/1000000,unit)
+		return fmt.Sprintf("%.4fM%s", h/1000000,unit)
 	} else if h > 1000 {
-		return fmt.Sprintf("%.1fk%s", h/1000,unit)
+		return fmt.Sprintf("%.4fk%s", h/1000,unit)
 	} else if h == 0 {
 		return fmt.Sprintf("0%s",unit)
 	}else if h > 0 {
-		return fmt.Sprintf("%.2f%s",h,unit)
+		return fmt.Sprintf("%.4f%s",h,unit)
 	}
 
-	return fmt.Sprintf("%.1f T%s", h,unit)
+	return fmt.Sprintf("%.4f T%s", h,unit)
 }
 
 func ReverseByWidth(s []byte,width int ) []byte {

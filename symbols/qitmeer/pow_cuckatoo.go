@@ -236,14 +236,14 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 				powStruct.SetCircleEdges(this.Nonces)
 				powStruct.SetNonce(nonce)
 				powStruct.SetEdgeBits(edges_bits)
-				powStruct.SetScale(uint32(params.TestPowNetParams.PowConfig.CuckatooDiffScale))
+				powStruct.SetScale(uint32(params.MixNetParams.PowConfig.CuckatooDiffScale))
 				err := cuckoo.VerifyCuckatoo(hdrkey[:],this.Nonces[:],uint(edges_bits))
 				if err != nil{
 					common.MinerLoger.Errorf("[error]Verify Error!",err)
 					continue
 				}
 				targetDiff := pow.CompactToBig(this.header.HeaderBlock.Difficulty)
-				if pow.CalcCuckooDiff(int64(params.TestPowNetParams.PowConfig.CuckatooDiffScale),powStruct.GetBlockHash([]byte{})) < targetDiff.Uint64(){
+				if pow.CalcCuckooDiff(int64(params.MixNetParams.PowConfig.CuckatooDiffScale),powStruct.GetBlockHash([]byte{})) < targetDiff.Uint64(){
 					common.MinerLoger.Errorf("difficulty is too easy!")
 					continue
 				}
