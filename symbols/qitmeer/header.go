@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"github.com/Qitmeer/qitmeer/common/hash"
 	"github.com/Qitmeer/qitmeer/core/json"
+	"github.com/Qitmeer/qitmeer/core/types/pow"
 	s "github.com/Qitmeer/qitmeer/core/serialization"
 	"github.com/Qitmeer/qitmeer/core/types"
-	"github.com/Qitmeer/qitmeer/core/types/pow"
 	"io"
 	"sync"
 )
