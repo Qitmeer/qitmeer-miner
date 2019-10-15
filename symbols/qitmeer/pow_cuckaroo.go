@@ -292,7 +292,8 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 						return
 					}
 					this.Event.Release()
-					for i:= 0;i<120;i++{
+					_ = this.CommandQueue.Finish()
+					for i:= 0;i<this.Cfg.OptionConfig.TrimmerCount;i++{
 						if this.Event, err = this.CommandQueue.EnqueueNDRangeKernel(this.Trimmer01Kernel, []int{0}, []int{this.LocalSize*this.WorkGroupSize}, []int{this.WorkGroupSize}, nil); err != nil {
 							common.MinerLoger.Infof("Trimmer01Kernel-1058%d,%v", this.MinerId,err)
 							return
@@ -305,6 +306,7 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 						return
 					}
 					this.Event.Release()
+					_ = this.CommandQueue.Finish()
 					this.DestinationEdgesCountBytes = make([]byte,8)
 					this.Event,err = this.CommandQueue.EnqueueReadBufferByte(this.DestinationEdgesCountObj,true,0,this.DestinationEdgesCountBytes,nil)
 					if err != nil {
@@ -313,6 +315,7 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 						return
 					}
 					this.Event.Release()
+					_ = this.CommandQueue.Finish()
 					count := binary.LittleEndian.Uint32(this.DestinationEdgesCountBytes[4:8])
 					if count < cuckaroo.ProofSize*2 {
 						continue
@@ -325,6 +328,7 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 						return
 					}
 					this.Event.Release()
+					_ = this.CommandQueue.Finish()
 					this.Edges = make([]uint32,0)
 					for j:=0;j<len(this.DestinationEdgesBytes);j+=4{
 						blockNonce := binary.LittleEndian.Uint32(this.DestinationEdgesBytes[j:j+4])
