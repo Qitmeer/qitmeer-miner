@@ -6,7 +6,7 @@ matrix:
         - stable
       sudo: false
       script:
-        - cd lib/cuckoo && cargo build --release && cp target/release/libcuckoo.so /usr/lib/libcuckoo.so
+        - cd lib/cuckoo && sudo cargo build --release && sudo cp target/release/libcuckoo.so /usr/lib/libcuckoo.so
 
     - language: go
 
