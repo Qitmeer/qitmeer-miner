@@ -25,6 +25,7 @@ type Device struct {
     DestinationEdgesCountObj              *cl.MemObject
     DestinationEdgesCountBytes            []byte
     EdgesIndexObj         *cl.MemObject
+    EdgesIndex1Obj         *cl.MemObject
     EdgesIndexBytes       []byte
     DestinationEdgesObj   *cl.MemObject
     DestinationEdgesBytes []byte
@@ -78,7 +79,7 @@ func (this *Device) Mine() {
 
     defer this.Release()
     var err error
-    nonce := uint64(13)
+    nonce := uint64(1)
     for {
         if this.HasNewWork {
             break
@@ -183,7 +184,7 @@ func (this *Device) Mine() {
         this.DestinationEdgesCountBytes = make([]byte,8)
         this.Event,err = this.CommandQueue.EnqueueReadBufferByte(this.DestinationEdgesCountObj,true,0,this.DestinationEdgesCountBytes,nil)
         if err != nil {
-            common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
+            common.MinerLoger.Infof("DestinationEdgesCountObj-%d,%v", this.MinerId, err)
             this.IsValid = false
             return
         }
@@ -195,7 +196,7 @@ func (this *Device) Mine() {
         this.DestinationEdgesBytes = make([]byte,count*4)
         this.Event,err = this.CommandQueue.EnqueueReadBufferByte(this.DestinationEdgesObj,true,0,this.DestinationEdgesBytes,nil)
         if err != nil {
-            common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
+            common.MinerLoger.Infof("DestinationEdgesObj-%d,%v", this.MinerId, err)
             this.IsValid = false
             return
         }
@@ -281,15 +282,21 @@ func (this *Device) Release() {
     this.Trimmer02Kernel.Release()
     this.EdgesObj.Release()
     this.EdgesIndexObj.Release()
+    this.EdgesIndex1Obj.Release()
     this.DestinationEdgesObj.Release()
-    this.NoncesObj.Release()
-    this.NodesObj.Release()
 }
 
 func (this *Device) InitParamData() {
     var err error
     this.ClearBytes = make([]byte,4)
-    this.Event,err = this.CommandQueue.EnqueueFillBuffer(this.EdgesIndexObj,unsafe.Pointer(&this.ClearBytes[0]),4,0,Nedge*4*2,nil)
+    this.Event,err = this.CommandQueue.EnqueueFillBuffer(this.EdgesIndexObj,unsafe.Pointer(&this.ClearBytes[0]),4,0,Nedge*4,nil)
+    if err != nil {
+        common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
+        this.IsValid = false
+        return
+    }
+    this.Event.Release()
+    this.Event,err = this.CommandQueue.EnqueueFillBuffer(this.EdgesIndex1Obj,unsafe.Pointer(&this.ClearBytes[0]),4,0,Nedge*4,nil)
     if err != nil {
         common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
         this.IsValid = false
@@ -310,21 +317,7 @@ func (this *Device) InitParamData() {
         return
     }
     this.Event.Release()
-    this.Event,err = this.CommandQueue.EnqueueFillBuffer(this.NodesObj,unsafe.Pointer(&this.ClearBytes[0]),4,0,Cuckoo.ProofSize*8,nil)
-    if err != nil {
-        common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
-        this.IsValid = false
-        return
-    }
-    this.Event.Release()
     this.Event,err = this.CommandQueue.EnqueueFillBuffer(this.DestinationEdgesCountObj,unsafe.Pointer(&this.ClearBytes[0]),4,0,8,nil)
-    if err != nil {
-        common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
-        this.IsValid = false
-        return
-    }
-    this.Event.Release()
-    this.Event,err = this.CommandQueue.EnqueueFillBuffer(this.NoncesObj,unsafe.Pointer(&this.ClearBytes[0]),4,0,Cuckoo.ProofSize*4,nil)
     if err != nil {
         common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
         this.IsValid = false
@@ -333,14 +326,17 @@ func (this *Device) InitParamData() {
     this.Event.Release()
     err = this.CreateEdgeKernel.SetArgBuffer(4,this.EdgesObj)
     err = this.CreateEdgeKernel.SetArgBuffer(5,this.EdgesIndexObj)
+    err = this.CreateEdgeKernel.SetArgBuffer(6,this.EdgesIndex1Obj)
 
     err = this.Trimmer01Kernel.SetArgBuffer(4,this.EdgesObj)
     err = this.Trimmer01Kernel.SetArgBuffer(5,this.EdgesIndexObj)
+    err = this.Trimmer01Kernel.SetArgBuffer(6,this.EdgesIndex1Obj)
 
     err = this.Trimmer02Kernel.SetArgBuffer(4,this.EdgesObj)
     err = this.Trimmer02Kernel.SetArgBuffer(5,this.EdgesIndexObj)
-    err = this.Trimmer02Kernel.SetArgBuffer(6,this.DestinationEdgesObj)
-    err = this.Trimmer02Kernel.SetArgBuffer(7,this.DestinationEdgesCountObj)
+    err = this.Trimmer02Kernel.SetArgBuffer(6,this.EdgesIndex1Obj)
+    err = this.Trimmer02Kernel.SetArgBuffer(7,this.DestinationEdgesObj)
+    err = this.Trimmer02Kernel.SetArgBuffer(8,this.DestinationEdgesCountObj)
 
 }
 
@@ -379,25 +375,19 @@ func (this *Device) InitKernelAndParam() {
         this.IsValid = false
         return
     }
-    this.NodesObj, err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, Cuckoo.ProofSize*4*2)
+    this.EdgesIndexObj, err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, Nedge*4)
     if err != nil {
         common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
         this.IsValid = false
         return
     }
-    this.EdgesIndexObj, err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, Nedge*4*2)
+    this.EdgesIndex1Obj, err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, Nedge*4)
     if err != nil {
         common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
         this.IsValid = false
         return
     }
     this.DestinationEdgesCountObj, err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, 8)
-    if err != nil {
-        common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
-        this.IsValid = false
-        return
-    }
-    this.NoncesObj, err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, Cuckoo.ProofSize*4)
     if err != nil {
         common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
         this.IsValid = false

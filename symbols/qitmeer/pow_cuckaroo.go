@@ -36,6 +36,7 @@ type Cuckaroo struct {
 	DestinationEdgesCountObj              *cl.MemObject
 	DestinationEdgesCountBytes            []byte
 	EdgesIndexObj         *cl.MemObject
+	EdgesIndex1Obj         *cl.MemObject
 	EdgesIndexBytes       []byte
 	DestinationEdgesObj   *cl.MemObject
 	DestinationEdgesBytes []byte
@@ -55,7 +56,7 @@ type Cuckaroo struct {
 	Step            int
 	WorkGroupSize            int
 	LocalSize            int
-	Nedge            uint32
+	Nedge            int
 	Edgemask            uint64
 }
 
@@ -210,8 +211,8 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 						continue
 					}
 				} else{
+					this.DestinationEdgesBytes = make([]byte,0)
 					sip := siphash.Newsip(hdrkey[:])
-
 					this.InitParamData()
 					err = this.CreateEdgeKernel.SetArg(0,uint64(sip.V[0]))
 					if err != nil {
@@ -237,7 +238,6 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 						this.IsValid = false
 						return
 					}
-
 					err = this.Trimmer01Kernel.SetArg(0,uint64(sip.V[0]))
 					if err != nil {
 						common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
@@ -286,26 +286,21 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 						this.IsValid = false
 						return
 					}
-
-					// 2 ^ 24 2 ^ 11 * 2 ^ 8 * 2 * 2 ^ 4 11+8+1+4=24
+					// 2 ^ 24 2 ^ 11 * 2 ^ 8 * 2 * 2 ^ 4 11+8+1+4=24  12 + 8 + 4
 					if this.Event, err = this.CommandQueue.EnqueueNDRangeKernel(this.CreateEdgeKernel, []int{0}, []int{this.LocalSize*this.WorkGroupSize}, []int{this.WorkGroupSize}, nil); err != nil {
-						common.MinerLoger.Infof("CreateEdgeKernel-%d,%v", this.MinerId,err)
+						common.MinerLoger.Infof("CreateEdgeKernel-1058%d,%v", this.MinerId,err)
 						return
 					}
-                    this.Event.Release()
-					_ = this.CommandQueue.Finish()
-
-					for i:= 0;i<this.Cfg.OptionConfig.TrimmerCount;i++{
+					this.Event.Release()
+					for i:= 0;i<120;i++{
 						if this.Event, err = this.CommandQueue.EnqueueNDRangeKernel(this.Trimmer01Kernel, []int{0}, []int{this.LocalSize*this.WorkGroupSize}, []int{this.WorkGroupSize}, nil); err != nil {
-							common.MinerLoger.Infof("Trimmer01Kernel-%d,%v", this.MinerId,err)
+							common.MinerLoger.Infof("Trimmer01Kernel-1058%d,%v", this.MinerId,err)
 							return
 						}
 						this.Event.Release()
 						_ = this.CommandQueue.Finish()
 					}
-					
-
-					if this.Event, err = this.CommandQueue.EnqueueNDRangeKernel(this.Trimmer02Kernel, []int{0},[]int{this.LocalSize*this.WorkGroupSize}, []int{this.WorkGroupSize},  nil); err != nil {
+					if this.Event, err = this.CommandQueue.EnqueueNDRangeKernel(this.Trimmer02Kernel, []int{0}, []int{this.LocalSize*this.WorkGroupSize}, []int{this.WorkGroupSize}, nil); err != nil {
 						common.MinerLoger.Infof("Trimmer02Kernel-1058%d,%v", this.MinerId,err)
 						return
 					}
@@ -318,12 +313,11 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 						return
 					}
 					this.Event.Release()
-					_ = this.CommandQueue.Finish()
 					count := binary.LittleEndian.Uint32(this.DestinationEdgesCountBytes[4:8])
 					if count < cuckaroo.ProofSize*2 {
 						continue
 					}
-					this.DestinationEdgesBytes = make([]byte,count*2*4)
+					this.DestinationEdgesBytes = make([]byte,count*4)
 					this.Event,err = this.CommandQueue.EnqueueReadBufferByte(this.DestinationEdgesObj,true,0,this.DestinationEdgesBytes,nil)
 					if err != nil {
 						common.MinerLoger.Infof("DestinationEdgesObj-%d,%v", this.MinerId, err)
@@ -341,7 +335,6 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 						this.Edges = append(this.Edges,u)
 						this.Edges = append(this.Edges,v)
 					}
-
 					cg := cuckoo.CGraph{}
 					cg.SetEdges(this.Edges,int(count))
 					atomic.AddUint64(&this.AllDiffOneShares, 1)
@@ -350,6 +343,9 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 					}
 					edges := cg.CycleEdges.GetData()
 					this.Nonces = make([]uint32,0)
+					sort.Slice(this.Nonces, func(i, j int) bool {
+						return this.Nonces[i] < this.Nonces[j]
+					})
 					for j:=0;j<len(this.DestinationEdgesBytes);j+=4{
 						blockNonce := binary.LittleEndian.Uint32(this.DestinationEdgesBytes[j:j+4])
 						u00 := siphash.SiphashPRF(&sip.V, uint64(blockNonce<<1))
@@ -427,27 +423,35 @@ func (this *Cuckaroo) Release() {
 	this.Trimmer02Kernel.Release()
 	this.EdgesObj.Release()
 	this.EdgesIndexObj.Release()
+	this.EdgesIndex1Obj.Release()
 	this.DestinationEdgesObj.Release()
 }
 
 func (this *Cuckaroo) InitParamData() {
 	var err error
 	this.ClearBytes = make([]byte,4)
-	this.Event,err = this.CommandQueue.EnqueueFillBuffer(this.EdgesIndexObj,unsafe.Pointer(&this.ClearBytes[0]),4,0,int(this.Nedge*8),nil)
+	this.Event,err = this.CommandQueue.EnqueueFillBuffer(this.EdgesIndexObj,unsafe.Pointer(&this.ClearBytes[0]),4,0,this.Nedge*4,nil)
 	if err != nil {
 		common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
 		this.IsValid = false
 		return
 	}
 	this.Event.Release()
-	this.Event,err = this.CommandQueue.EnqueueFillBuffer(this.EdgesObj,unsafe.Pointer(&this.ClearBytes[0]),4,0,int(this.Nedge*2),nil)
+	this.Event,err = this.CommandQueue.EnqueueFillBuffer(this.EdgesIndex1Obj,unsafe.Pointer(&this.ClearBytes[0]),4,0,this.Nedge*4,nil)
 	if err != nil {
 		common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
 		this.IsValid = false
 		return
 	}
 	this.Event.Release()
-	this.Event,err = this.CommandQueue.EnqueueFillBuffer(this.DestinationEdgesObj,unsafe.Pointer(&this.ClearBytes[0]),4,0,int(this.Nedge*2),nil)
+	this.Event,err = this.CommandQueue.EnqueueFillBuffer(this.EdgesObj,unsafe.Pointer(&this.ClearBytes[0]),4,0,this.Nedge*2,nil)
+	if err != nil {
+		common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
+		this.IsValid = false
+		return
+	}
+	this.Event.Release()
+	this.Event,err = this.CommandQueue.EnqueueFillBuffer(this.DestinationEdgesObj,unsafe.Pointer(&this.ClearBytes[0]),4,0,this.Nedge*2,nil)
 	if err != nil {
 		common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
 		this.IsValid = false
@@ -463,14 +467,17 @@ func (this *Cuckaroo) InitParamData() {
 	this.Event.Release()
 	err = this.CreateEdgeKernel.SetArgBuffer(4,this.EdgesObj)
 	err = this.CreateEdgeKernel.SetArgBuffer(5,this.EdgesIndexObj)
+	err = this.CreateEdgeKernel.SetArgBuffer(6,this.EdgesIndex1Obj)
 
 	err = this.Trimmer01Kernel.SetArgBuffer(4,this.EdgesObj)
 	err = this.Trimmer01Kernel.SetArgBuffer(5,this.EdgesIndexObj)
+	err = this.Trimmer01Kernel.SetArgBuffer(6,this.EdgesIndex1Obj)
 
 	err = this.Trimmer02Kernel.SetArgBuffer(4,this.EdgesObj)
 	err = this.Trimmer02Kernel.SetArgBuffer(5,this.EdgesIndexObj)
-	err = this.Trimmer02Kernel.SetArgBuffer(6,this.DestinationEdgesObj)
-	err = this.Trimmer02Kernel.SetArgBuffer(7,this.DestinationEdgesCountObj)
+	err = this.Trimmer02Kernel.SetArgBuffer(6,this.EdgesIndex1Obj)
+	err = this.Trimmer02Kernel.SetArgBuffer(7,this.DestinationEdgesObj)
+	err = this.Trimmer02Kernel.SetArgBuffer(8,this.DestinationEdgesCountObj)
 }
 
 func (this *Cuckaroo) InitKernelAndParam() {
@@ -496,19 +503,25 @@ func (this *Cuckaroo) InitKernelAndParam() {
 		return
 	}
 
-	this.EdgesObj, err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, int(this.Nedge*2))
+	this.EdgesObj, err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, this.Nedge*2)
 	if err != nil {
 		common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
 		this.IsValid = false
 		return
 	}
-	this.DestinationEdgesObj, err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, int(this.Nedge*2))
+	this.DestinationEdgesObj, err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, this.Nedge*2)
 	if err != nil {
 		common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
 		this.IsValid = false
 		return
 	}
-	this.EdgesIndexObj, err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, int(this.Nedge*8))
+	this.EdgesIndexObj, err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, this.Nedge*4)
+	if err != nil {
+		common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
+		this.IsValid = false
+		return
+	}
+	this.EdgesIndex1Obj, err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, this.Nedge*4)
 	if err != nil {
 		common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
 		this.IsValid = false
