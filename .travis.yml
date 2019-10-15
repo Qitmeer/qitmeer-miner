@@ -16,4 +16,4 @@ env:
   - GO111MODULE=on
 
 script:
-  - cd lib/cuckoo && cargo build --release && cd ../../ && export LD_LIBRARY_PATH=`pwd`/target/release:$LD_LIBRARY_PATH && ./ci.sh
+  - cd lib/cuckoo && cargo build --release && cd ../../ && ./ci.sh
