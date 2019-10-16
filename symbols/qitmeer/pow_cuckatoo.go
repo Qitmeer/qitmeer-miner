@@ -210,6 +210,7 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 					C.free(p)
 				}){
 					//timeout
+					this.AllDiffOneShares += 1
 					continue
 				}
 				// when GPU find cuckoo cycle one time GPS/s

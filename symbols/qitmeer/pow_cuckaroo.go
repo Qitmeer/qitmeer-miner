@@ -317,6 +317,7 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 					_ = this.CommandQueue.Finish()
 					count := binary.LittleEndian.Uint32(this.DestinationEdgesCountBytes[4:8])
 					if count < cuckaroo.ProofSize*2 {
+						this.AllDiffOneShares += 1
 						continue
 					}
 					this.DestinationEdgesBytes = make([]byte,count*4)
