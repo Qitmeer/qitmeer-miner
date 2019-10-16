@@ -162,7 +162,7 @@ func (this *CGraph)Find(parents Edges,k int){
 			}
 			if this.CycleEdges.Check(){
 				this.IsFind = true
-				common.MinerLoger.Infof("Find 42 - Cycles")
+				common.MinerLoger.Debugf("Find 42 - Cycles")
 				return
 			}
 		}
@@ -282,7 +282,6 @@ func (this *CGraph)FindSolutions() bool {
 					if this.CycleEdges.Check(){
 						break
 					}
-					//common.MinerLoger.Infof(len(this.CycleEdges.data),this.CycleEdges)
 					cycle = 5
 				}
 				break
@@ -290,7 +289,7 @@ func (this *CGraph)FindSolutions() bool {
 		}
 
 		if cycle >= 4 && cycle != cuckaroo.ProofSize{
-			common.MinerLoger.Infof(fmt.Sprintf("%d-cycle found!",cycle))
+			common.MinerLoger.Debugf("%d-cycle found!",cycle)
 		} else if cycle == cuckaroo.ProofSize{
 			return true
 		} else{
