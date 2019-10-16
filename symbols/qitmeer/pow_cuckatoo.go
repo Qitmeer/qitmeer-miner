@@ -198,8 +198,6 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 					return
 				}
 				this.Event.Release()
-				//leftEdges := binary.LittleEndian.Uint32(this.ResultBytes[4:8])
-				//common.MinerLoger.Debugf("Trimmed to %d edges",leftEdges)
 				noncesBytes := make([]byte,42*4)
 				if common.Timeout(10*time.Second, func() {
 					p := C.malloc(C.size_t(len(this.ResultBytes)))
