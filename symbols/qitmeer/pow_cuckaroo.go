@@ -196,11 +196,10 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 				break
 			}
 			this.Update()
-			for {
+			for nonce := uint32(0);nonce < ^uint32(0);nonce++{
 				if this.HasNewWork {
 					break
 				}
-				nonce ,_:= common.RandUint32()
 				this.header.HeaderBlock.Pow.SetNonce(nonce)
 				hdrkey := hash.HashH(this.header.HeaderBlock.BlockData())
 				if this.Cfg.OptionConfig.CPUMiner{
@@ -208,6 +207,7 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 					var found = false
 					this.Nonces,found = c.PoW(hdrkey[:])
 					if !found || len(this.Nonces) != cuckaroo.ProofSize{
+						this.AllDiffOneShares += 1
 						continue
 					}
 				} else{
@@ -318,6 +318,7 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 					_ = this.CommandQueue.Finish()
 					count := binary.LittleEndian.Uint32(this.DestinationEdgesCountBytes[4:8])
 					if count < cuckaroo.ProofSize*2 {
+						this.AllDiffOneShares += 1
 						continue
 					}
 					this.DestinationEdgesBytes = make([]byte,count*4)
@@ -343,6 +344,7 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 					cg.SetEdges(this.Edges,int(count))
 					atomic.AddUint64(&this.AllDiffOneShares, 1)
 					if !cg.FindSolutions(){
+						this.AllDiffOneShares += 1
 						continue
 					}
 					edges := cg.CycleEdges.GetData()

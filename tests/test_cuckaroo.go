@@ -1,21 +1,31 @@
-package cuckoo
+package main
 
 import (
-    "encoding/binary"
-    "fmt"
-    "github.com/Qitmeer/go-opencl/cl"
-    "github.com/Qitmeer/qitmeer/common/hash"
-    Cuckoo "github.com/Qitmeer/qitmeer/crypto/cuckoo"
-    "github.com/Qitmeer/qitmeer/crypto/cuckoo/siphash"
+    `encoding/binary`
+    `fmt`
+    `github.com/Qitmeer/go-opencl/cl`
+    `github.com/Qitmeer/qitmeer/common/hash`
+    Cuckaroo `github.com/Qitmeer/qitmeer/crypto/cuckoo`
+    `github.com/Qitmeer/qitmeer/crypto/cuckoo/siphash`
+    go_logger `github.com/phachon/go-logger`
     `log`
-    "qitmeer-miner/common"
-    "qitmeer-miner/core"
+    `math`
+    `os`
+    `qitmeer-miner/common`
+    `qitmeer-miner/core`
+    `qitmeer-miner/cuckoo`
     `qitmeer-miner/kernel`
-    "sort"
+    `sort`
     `strings`
-    "sync/atomic"
-    "unsafe"
+    `sync`
+    `sync/atomic`
+    `time`
+    `unsafe`
 )
+//init the config file
+func init(){
+    common.MinerLoger = go_logger.NewLogger()
+}
 
 type Device struct {
     core.Device
@@ -190,7 +200,7 @@ func (this *Device) Mine() {
         }
         this.Event.Release()
         count := binary.LittleEndian.Uint32(this.DestinationEdgesCountBytes[4:8])
-        if count < Cuckoo.ProofSize*2 {
+        if count < Cuckaroo.ProofSize*2 {
             continue
         }
         this.DestinationEdgesBytes = make([]byte,count*4)
@@ -211,7 +221,7 @@ func (this *Device) Mine() {
             this.Edges = append(this.Edges,u)
             this.Edges = append(this.Edges,v)
         }
-        cg := CGraph{}
+        cg := cuckoo.CGraph{}
         cg.SetEdges(this.Edges,int(count))
         atomic.AddUint64(&this.AllDiffOneShares, 1)
         if !cg.FindSolutions(){
@@ -262,7 +272,7 @@ func (this *Device) Mine() {
             return this.Nonces[i] < this.Nonces[j]
         })
         this.AllDiffOneShares += 1
-        err := Cuckoo.VerifyCuckaroo(hdrkey[:],this.Nonces[:],uint(EdgeBits))
+        err := Cuckaroo.VerifyCuckaroo(hdrkey[:],this.Nonces[:],uint(EdgeBits))
         if err != nil{
             common.MinerLoger.Errorf("[error]Verify Error!%v",err)
             continue
@@ -394,4 +404,70 @@ func (this *Device) InitKernelAndParam() {
         return
     }
 
+}
+
+func main() {
+    err := os.Setenv("GPU_MAX_HEAP_SIZE", "100")
+    if err != nil {
+        fmt.Println(err.Error())
+    }
+    err = os.Setenv("GPU_USE_SYNC_OBJECTS", "1")
+    if err != nil {
+        fmt.Println(err.Error())
+    }
+    err = os.Setenv("GPU_MAX_ALLOC_PERCENT", "100")
+    if err != nil {
+        fmt.Println(err.Error())
+    }
+    err = os.Setenv("GPU_SINGLE_ALLOC_PERCENT", "100")
+    if err != nil {
+        fmt.Println(err.Error())
+    }
+    err = os.Setenv("GPU_64BIT_ATOMICS", "100")
+    if err != nil {
+        fmt.Println(err.Error())
+    }
+    err = os.Setenv("GPU_FORCE_64BIT_PTR", "100")
+    if err != nil {
+        fmt.Println(err.Error())
+    }
+    err = os.Setenv("GPU_MAX_WORKGROUP_SIZE", "1024")
+    if err != nil {
+        fmt.Println(err.Error())
+    }
+    err = os.Setenv("CL_LOG_ERRORS", "stdout")
+    if err != nil {
+        common.MinerLoger.Errorf(err.Error())
+        return
+    }
+    clDevices := common.GetDevices(common.DevicesTypesForGPUMining)
+
+    devices := make([]*Device,0)
+
+    for i, device := range clDevices {
+        deviceMiner := &Device{
+        }
+        deviceMiner.MinerId = uint32(i)
+        deviceMiner.DeviceName=device.Name()
+        deviceMiner.ClDevice=device
+        deviceMiner.CurrentWorkID=0
+        deviceMiner.Started=time.Now().Unix()
+        deviceMiner.GlobalItemSize= int(math.Exp2(float64(24)))
+        devices = append(devices,deviceMiner)
+    }
+    wg := sync.WaitGroup{}
+    for k,d := range devices{
+        if k == 0 {
+            continue
+        }
+        common.MinerLoger.Debugf("one object max mem %d G",d.ClDevice.MaxMemAllocSize()/1000/1000/1000)
+        common.MinerLoger.Debugf("max mem %d G",d.ClDevice.GlobalMemSize()/1000/1000/1000)
+        wg.Add(1)
+        go d.Status(&wg)
+        d.SetIsValid(true)
+        d.InitDevice()
+        d.Mine()
+        break
+    }
+    wg.Wait()
 }

@@ -137,11 +137,10 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 				break
 			}
 			this.Update()
-			for {
+			for nonce := uint32(0);nonce < ^uint32(0);nonce++{
 				if this.HasNewWork {
 					break
 				}
-				nonce ,_:= common.RandUint32()
 				this.header.HeaderBlock.Pow.SetNonce(nonce)
 				hdrkey := hash.HashH(this.header.HeaderBlock.BlockData())
 				sip := siphash.Newsip(hdrkey[:])
@@ -199,8 +198,6 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 					return
 				}
 				this.Event.Release()
-				//leftEdges := binary.LittleEndian.Uint32(this.ResultBytes[4:8])
-				//common.MinerLoger.Debugf("Trimmed to %d edges",leftEdges)
 				noncesBytes := make([]byte,42*4)
 				if common.Timeout(10*time.Second, func() {
 					p := C.malloc(C.size_t(len(this.ResultBytes)))
@@ -211,6 +208,7 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 					C.free(p)
 				}){
 					//timeout
+					this.AllDiffOneShares += 1
 					continue
 				}
 				// when GPU find cuckoo cycle one time GPS/s
