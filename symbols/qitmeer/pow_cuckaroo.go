@@ -196,11 +196,10 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 				break
 			}
 			this.Update()
-			for {
+			for nonce := uint32(0);nonce < ^uint32(0);nonce++{
 				if this.HasNewWork {
 					break
 				}
-				nonce ,_:= common.RandUint32()
 				this.header.HeaderBlock.Pow.SetNonce(nonce)
 				hdrkey := hash.HashH(this.header.HeaderBlock.BlockData())
 				if this.Cfg.OptionConfig.CPUMiner{
