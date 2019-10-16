@@ -13,11 +13,14 @@ $ cargo >= 1.36.0 (c4fcfb725 2019-05-15)
 
 ```bash
 $ git clone git@github.com:Qitmeer/qitmeer-miner.git
+$ cd lib/cuckoo
+$ cargo build --release
 ```
 
 * Ubuntu ENV
 ```bash
 $ sudo apt-get install beignet-dev nvidia-cuda-dev nvidia-cuda-toolkit
+$ sudo copy lib/cuckoo/target/release/libcuckoo.so /usr/lib/
 $ go build 
 ```
         
@@ -26,9 +29,9 @@ $ go build
 $ sudo yum install opencl-headers
 $ sudo yum install ocl-icd
 $ sudo ln -s /usr/lib64/libOpenCL.so.1 /usr/lib/libOpenCL.so
+$ sudo copy lib/cuckoo/target/release/libcuckoo.so /usr/lib/
 $ go build
-```
-        
+```   
 
 * MAC
 
@@ -38,6 +41,7 @@ go build
 
 * Windows ENV
 ```bash
+$ copy lib/cuckoo/target/release/cuckoo.dll to C:/Windows
 $ go build 
 ```
 
@@ -52,7 +56,7 @@ $ cp qitmeer.conf.example qitmeer.conf
 ```bash
 $ ./qitmeer-miner -h
 Usage:
-  qitmeer-miner [OPTIONS]
+    qitmeer-miner [OPTIONS]
 
 Debug Command:
   -l, --listdevices    List number of devices.
@@ -97,11 +101,12 @@ The Optional Config Option:
       --max_sig_count= max sign tx count (5000)
       --log_level=     info|debug|error|warn|trace (debug)
       --stats_server=  stats web server (127.0.0.1:1235)
+      --edge_bits=     edge bits (24)
+      --local_size=    local size (4096)
+      --group_size=    work group size (256)
 
 Help Options:
   -h, --help           Show this help message
-
-Usage to see  ./qitmeer-miner -h
 ```
 ## Stats Web Server
 - add param `stats_server=127.0.0.1:1235` in qitmeer.conf

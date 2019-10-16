@@ -331,6 +331,7 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 					this.Event.Release()
 					_ = this.CommandQueue.Finish()
 					this.Edges = make([]uint32,0)
+					edgeNonces := make(map[string]uint32,0)
 					for j:=0;j<len(this.DestinationEdgesBytes);j+=4{
 						blockNonce := binary.LittleEndian.Uint32(this.DestinationEdgesBytes[j:j+4])
 						u00 := siphash.SiphashPRF(&sip.V, uint64(blockNonce<<1))
@@ -339,6 +340,7 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 						v := (uint32(v00&this.Edgemask) << 1) | 1
 						this.Edges = append(this.Edges,u)
 						this.Edges = append(this.Edges,v)
+						edgeNonces[fmt.Sprintf("%d_%d",u,v)] = blockNonce
 					}
 					cg := cuckoo.CGraph{}
 					cg.SetEdges(this.Edges,int(count))
@@ -349,19 +351,16 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 					}
 					edges := cg.CycleEdges.GetData()
 					this.Nonces = make([]uint32,0)
-					sort.Slice(this.Nonces, func(i, j int) bool {
-						return this.Nonces[i] < this.Nonces[j]
-					})
-					for j:=0;j<len(this.DestinationEdgesBytes);j+=4{
-						blockNonce := binary.LittleEndian.Uint32(this.DestinationEdgesBytes[j:j+4])
-						u00 := siphash.SiphashPRF(&sip.V, uint64(blockNonce<<1))
-						v00 := siphash.SiphashPRF(&sip.V, (uint64(blockNonce)<<1)|1)
-						u := uint32(u00&this.Edgemask) << 1
-						v := (uint32(v00&this.Edgemask) << 1) | 1
-						for i := 0;i < 42;i++{
-							if (u== uint32(edges[i].Item1) && v == uint32(edges[i].Item2)) || (u== uint32(edges[i].Item2) && v == uint32(edges[i].Item1)) {
-								this.Nonces = append(this.Nonces,blockNonce)
-							}
+					for _, e := range edges{
+						k := fmt.Sprintf("%d_%d",uint32(e.Item1),uint32(e.Item2))
+						k1 := fmt.Sprintf("%d_%d",uint32(e.Item2),uint32(e.Item1))
+						if _,ok := edgeNonces[k];ok{
+							this.Nonces = append(this.Nonces,edgeNonces[k])
+							continue
+						}
+						if _,ok := edgeNonces[k1];ok{
+							this.Nonces = append(this.Nonces,edgeNonces[k1])
+							continue
 						}
 					}
 					sort.Slice(this.Nonces, func(i, j int) bool {
