@@ -13,7 +13,6 @@ import (
 	"github.com/Qitmeer/qitmeer/core/types/pow"
 	cuckaroo "github.com/Qitmeer/qitmeer/crypto/cuckoo"
 	"github.com/Qitmeer/qitmeer/crypto/cuckoo/siphash"
-	"github.com/Qitmeer/qitmeer/params"
 	"math/big"
 	`os`
 	"qitmeer-miner/common"
@@ -372,7 +371,6 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 				powStruct := this.header.HeaderBlock.Pow.(*pow.Cuckaroo)
 				powStruct.SetCircleEdges(this.Nonces)
 				powStruct.SetEdgeBits(uint8(this.EdgeBits))
-				powStruct.SetScale(uint32(params.MixNetParams.PowConfig.CuckarooDiffScale))
 				powStruct.SetNonce(nonce)
 				err := cuckaroo.VerifyCuckaroo(hdrkey[:],this.Nonces[:],uint(this.EdgeBits))
 				if err != nil{
@@ -380,7 +378,7 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 					continue
 				}
 				targetDiff := pow.CompactToBig(this.header.HeaderBlock.Difficulty)
-				if pow.CalcCuckooDiff(int64(params.MixNetParams.PowConfig.CuckarooDiffScale),powStruct.GetBlockHash([]byte{})) < targetDiff.Uint64(){
+				if pow.CalcCuckooDiff(pow.GraphWeight(uint32(this.EdgeBits)),powStruct.GetBlockHash([]byte{})).Cmp(targetDiff) < 0{
 					common.MinerLoger.Error("difficulty is too easy!")
 					continue
 				}

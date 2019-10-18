@@ -74,7 +74,6 @@ func (this *QitmeerWork) Get () bool {
 	case POW_CUCKROO29:
 		blockTemplate.Result.Pow = pow.GetInstance(pow.CUCKAROO,0,[]byte{})
 		powStruct := blockTemplate.Result.Pow.(*pow.Cuckaroo)
-		powStruct.SetScale(uint32(blockTemplate.Result.PowDiffReference.CuckarooDiffScale))
 		powStruct.SetEdgeBits(24)
 		n.SetUint64(blockTemplate.Result.PowDiffReference.CuckarooMinDiff)
 		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
@@ -82,7 +81,6 @@ func (this *QitmeerWork) Get () bool {
 	case POW_CUCKTOO:
 		blockTemplate.Result.Pow = pow.GetInstance(pow.CUCKATOO,0,[]byte{})
 		powStruct := blockTemplate.Result.Pow.(*pow.Cuckatoo)
-		powStruct.SetScale(uint32(blockTemplate.Result.PowDiffReference.CuckatooDiffScale))
 		powStruct.SetEdgeBits(29)
 		n.SetUint64(blockTemplate.Result.PowDiffReference.CuckatooMinDiff)
 		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
