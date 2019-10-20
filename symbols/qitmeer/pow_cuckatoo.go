@@ -15,7 +15,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/Qitmeer/go-opencl/cl"
-	"github.com/Qitmeer/qitmeer/common/hash"
 	"github.com/Qitmeer/qitmeer/core/types/pow"
 	"github.com/Qitmeer/qitmeer/crypto/cuckoo"
 	"github.com/Qitmeer/qitmeer/crypto/cuckoo/siphash"
@@ -141,7 +140,7 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 					break
 				}
 				this.header.HeaderBlock.Pow.SetNonce(nonce)
-				hdrkey := hash.HashH(this.header.HeaderBlock.BlockData())
+				hdrkey := this.header.HeaderBlock.Pow.(*pow.Cuckatoo).GetSipHash(this.header.HeaderBlock.BlockData())
 				sip := siphash.Newsip(hdrkey[:])
 				this.InitParamData()
 				err = this.CreateEdgeKernel.SetArg(0,uint64(sip.V[0]))
@@ -239,11 +238,12 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 					continue
 				}
 				targetDiff := pow.CompactToBig(this.header.HeaderBlock.Difficulty)
-				if pow.CalcCuckooDiff(pow.GraphWeight(uint32(edges_bits)),powStruct.GetBlockHash([]byte{})).Cmp(targetDiff) < 0 {
+				h := this.header.HeaderBlock.BlockHash()
+				if pow.CalcCuckooDiff(pow.GraphWeight(uint32(edges_bits)),h).Cmp(targetDiff) < 0 {
 					common.MinerLoger.Errorf("difficulty is too easy!")
 					continue
 				}
-				common.MinerLoger.Infof("[Found Hash]%s",this.header.HeaderBlock.BlockHash())
+				common.MinerLoger.Infof("[Found Hash]%s",h)
 				subm := hex.EncodeToString(BlockDataWithProof(this.header.HeaderBlock))
 				if !this.Pool{
 					subm += common.Int2varinthex(int64(len(this.header.Parents)))
