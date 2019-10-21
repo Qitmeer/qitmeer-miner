@@ -31,10 +31,10 @@ poolpass=
 #[Necessary Config]
 #network privnet|testnet|mainnet|mixnet
 network=testnet
-#trimmerTimes
+#trimmerTimes can ajustment this parameter to keep performance
 #trimmerTimes=60
 # Intensities (the work size is 2^intensity) up to device
 intensity=24
 # The explicitly declared sizes of the work to do up to device (overrides intensity)
 worksize=256
-edges_bits=24
+edge_bits=24
