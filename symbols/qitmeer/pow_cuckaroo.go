@@ -373,16 +373,14 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 				powStruct.SetNonce(nonce)
 				err := cuckaroo.VerifyCuckaroo(hdrkey[:],this.Nonces[:],uint(this.EdgeBits))
 				if err != nil{
-					common.MinerLoger.Errorf("[error]Verify Error!%v",err)
 					continue
 				}
 				targetDiff := pow.CompactToBig(this.header.HeaderBlock.Difficulty)
 				h := this.header.HeaderBlock.BlockHash()
 				if pow.CalcCuckooDiff(pow.GraphWeight(uint32(this.EdgeBits)),h).Cmp(targetDiff) < 0{
-					common.MinerLoger.Error("difficulty is too easy!")
 					continue
 				}
-				common.MinerLoger.Infof("[Found Hash]%s",h)
+				common.MinerLoger.Infof("Found Hash %s",h)
 				subm := hex.EncodeToString(BlockDataWithProof(this.header.HeaderBlock))
 
 				if !this.Pool{
@@ -447,6 +445,7 @@ func (this *Cuckaroo) InitParamData() {
 		return
 	}
 	this.Event.Release()
+	_ = this.CommandQueue.Finish()
 	this.Event,err = this.CommandQueue.EnqueueFillBuffer(this.EdgesObj,unsafe.Pointer(&this.ClearBytes[0]),4,0,this.Nedge*2,nil)
 	if err != nil {
 		common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
@@ -454,6 +453,7 @@ func (this *Cuckaroo) InitParamData() {
 		return
 	}
 	this.Event.Release()
+	_ = this.CommandQueue.Finish()
 	this.Event,err = this.CommandQueue.EnqueueFillBuffer(this.DestinationEdgesObj,unsafe.Pointer(&this.ClearBytes[0]),4,0,this.Nedge*2,nil)
 	if err != nil {
 		common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
@@ -461,6 +461,7 @@ func (this *Cuckaroo) InitParamData() {
 		return
 	}
 	this.Event.Release()
+	_ = this.CommandQueue.Finish()
 	this.Event,err = this.CommandQueue.EnqueueFillBuffer(this.DestinationEdgesCountObj,unsafe.Pointer(&this.ClearBytes[0]),4,0,8,nil)
 	if err != nil {
 		common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
@@ -468,6 +469,7 @@ func (this *Cuckaroo) InitParamData() {
 		return
 	}
 	this.Event.Release()
+	_ = this.CommandQueue.Finish()
 	err = this.CreateEdgeKernel.SetArgBuffer(4,this.EdgesObj)
 	err = this.CreateEdgeKernel.SetArgBuffer(5,this.EdgesIndexObj)
 	err = this.CreateEdgeKernel.SetArgBuffer(6,this.EdgesIndex1Obj)

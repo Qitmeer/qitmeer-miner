@@ -136,7 +136,6 @@ func (this *Blake2bD) Mine(wg *sync.WaitGroup) {
 
 		}
 		if !this.IsValid {
-			common.MinerLoger.Errorf("# %d %s device not use to mining.",this.MinerId,this.DeviceName)
 			time.Sleep(2*time.Second)
 			continue
 		}

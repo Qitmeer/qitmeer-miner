@@ -227,23 +227,20 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 				sort.Slice(this.Nonces, func(i, j int) bool {
 					return this.Nonces[i]<this.Nonces[j]
 				})
-				common.MinerLoger.Errorf("find",nonce)
 				powStruct := this.header.HeaderBlock.Pow.(*pow.Cuckatoo)
 				powStruct.SetCircleEdges(this.Nonces)
 				powStruct.SetNonce(nonce)
 				powStruct.SetEdgeBits(edges_bits)
 				err := cuckoo.VerifyCuckatoo(hdrkey[:],this.Nonces[:],uint(edges_bits))
 				if err != nil{
-					common.MinerLoger.Errorf("[error]Verify Error!",err)
 					continue
 				}
 				targetDiff := pow.CompactToBig(this.header.HeaderBlock.Difficulty)
 				h := this.header.HeaderBlock.BlockHash()
 				if pow.CalcCuckooDiff(pow.GraphWeight(uint32(edges_bits)),h).Cmp(targetDiff) < 0 {
-					common.MinerLoger.Errorf("difficulty is too easy!")
 					continue
 				}
-				common.MinerLoger.Infof("[Found Hash]%s",h)
+				common.MinerLoger.Infof("Found Hash%s",h)
 				subm := hex.EncodeToString(BlockDataWithProof(this.header.HeaderBlock))
 				if !this.Pool{
 					subm += common.Int2varinthex(int64(len(this.header.Parents)))
@@ -361,9 +358,10 @@ func (this *Cuckatoo) Enq(num int) {
 		//common.MinerLoger.Errorf(j,offset)
 		// 2 ^ 24 2 ^ 11 * 2 ^ 8 * 2 * 2 ^ 4 11+8+1+4=24
 		if this.Event, this.Err = this.CommandQueue.EnqueueNDRangeKernel(this.CreateEdgeKernel, []int{offset}, []int{GLOBAL_WORK_SIZE}, []int{LOCAL_WORK_SIZE}, nil); this.Err != nil {
-			common.MinerLoger.Errorf("CreateEdgeKernel-1058 %d %v", this.MinerId,this.Err)
+			common.MinerLoger.Errorf("CreateEdgeKernel- %d %v", this.MinerId,this.Err)
 			return
 		}
 		this.Event.Release()
+		_ = this.CommandQueue.Finish()
 	}
 }
