@@ -38,3 +38,4 @@ intensity=24
 # The explicitly declared sizes of the work to do up to device (overrides intensity)
 worksize=256
 edge_bits=24
+log_level=info

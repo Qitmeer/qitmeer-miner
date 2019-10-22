@@ -289,8 +289,9 @@ func (this *CGraph)FindSolutions() bool {
 		}
 
 		if cycle >= 4 && cycle != cuckaroo.ProofSize{
-			common.MinerLoger.Debugf("%d-cycle found!",cycle)
+			//common.MinerLoger.Debugf("%d-cycle found!",cycle)
 		} else if cycle == cuckaroo.ProofSize{
+			common.MinerLoger.Debugf("Find 42 - Cycles")
 			return true
 		} else{
 			if path1.Count() > path2.Count(){
