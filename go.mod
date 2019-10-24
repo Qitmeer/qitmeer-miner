@@ -20,5 +20,6 @@ replace (
 	golang.org/x/text => github.com/golang/text v0.3.0
 	golang.org/x/exp => github.com/golang/exp v0.0.0-20190125153040-c74c464bbbf2
 	golang.org/x/tools => github.com/golang/tools v0.0.0-20190511041617-99f201b6807e
-
+	gonum.org/v1/gonum => github.com/gonum/gonum v0.0.0-20190608115022-c5f01565d866
+	gonum.org/v1/netlib => github.com/gonum/netlib v0.0.0-20190313105609-8cb42192e0e0
 )
