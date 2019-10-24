@@ -135,138 +135,132 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 				break
 			}
 			this.Update()
-			for nonce := uint32(0);nonce < ^uint32(0);nonce++{
-				if this.HasNewWork {
-					break
+			nonce,_ := common.RandUint32()
+			this.header.HeaderBlock.Pow.SetNonce(nonce)
+			hdrkey := this.header.HeaderBlock.Pow.(*pow.Cuckatoo).GetSipHash(this.header.HeaderBlock.BlockData())
+			sip := siphash.Newsip(hdrkey[:])
+			this.InitParamData()
+			err = this.CreateEdgeKernel.SetArg(0,uint64(sip.V[0]))
+			if err != nil {
+				common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
+				this.IsValid = false
+				return
+			}
+			err = this.CreateEdgeKernel.SetArg(1,uint64(sip.V[1]))
+			if err != nil {
+				common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
+				this.IsValid = false
+				return
+			}
+			err = this.CreateEdgeKernel.SetArg(2,uint64(sip.V[2]))
+			if err != nil {
+				common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
+				this.IsValid = false
+				return
+			}
+			err = this.CreateEdgeKernel.SetArg(3,uint64(sip.V[3]))
+			if err != nil {
+				common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
+				this.IsValid = false
+				return
+			}
+			for l:=uint32(0) ;l<uint32(trims);l++{
+				current_uorv = int(l & 1)
+				current_mode = SetCnt
+				err = this.CreateEdgeKernel.SetArg(7,uint32(current_mode))
+				err = this.CreateEdgeKernel.SetArg(8,uint32(current_uorv))
+				this.Enq(8)
+				current_mode = Trim
+				if int(l) == (trims - 1) {
+					current_mode = Extract
 				}
-				this.header.HeaderBlock.Pow.SetNonce(nonce)
-				hdrkey := this.header.HeaderBlock.Pow.(*pow.Cuckatoo).GetSipHash(this.header.HeaderBlock.BlockData())
-				sip := siphash.Newsip(hdrkey[:])
-				this.InitParamData()
-				err = this.CreateEdgeKernel.SetArg(0,uint64(sip.V[0]))
-				if err != nil {
-					common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
-					this.IsValid = false
-					return
-				}
-				err = this.CreateEdgeKernel.SetArg(1,uint64(sip.V[1]))
-				if err != nil {
-					common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
-					this.IsValid = false
-					return
-				}
-				err = this.CreateEdgeKernel.SetArg(2,uint64(sip.V[2]))
-				if err != nil {
-					common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
-					this.IsValid = false
-					return
-				}
-				err = this.CreateEdgeKernel.SetArg(3,uint64(sip.V[3]))
-				if err != nil {
-					common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
-					this.IsValid = false
-					return
-				}
-				for l:=uint32(0) ;l<uint32(trims);l++{
-					current_uorv = int(l & 1)
-					current_mode = SetCnt
-					err = this.CreateEdgeKernel.SetArg(7,uint32(current_mode))
-					err = this.CreateEdgeKernel.SetArg(8,uint32(current_uorv))
-					this.Enq(8)
-					current_mode = Trim
-					if int(l) == (trims - 1) {
-						current_mode = Extract
-					}
-					err = this.CreateEdgeKernel.SetArg(7,uint32(current_mode))
-					this.Enq(8)
-					this.Event,err = this.CommandQueue.EnqueueFillBuffer(this.CountersObj,unsafe.Pointer(&this.ClearBytes[0]),4,0,el_count*4,nil)
-					if err != nil {
-						common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
-						this.IsValid = false
-						return
-					}
-					this.Event.Release()
-
-				}
-				this.ResultBytes = make([]byte,RES_BUFFER_SIZE*4)
-				this.Event,err = this.CommandQueue.EnqueueReadBufferByte(this.ResultObj,true,0,this.ResultBytes,nil)
+				err = this.CreateEdgeKernel.SetArg(7,uint32(current_mode))
+				this.Enq(8)
+				this.Event,err = this.CommandQueue.EnqueueFillBuffer(this.CountersObj,unsafe.Pointer(&this.ClearBytes[0]),4,0,el_count*4,nil)
 				if err != nil {
 					common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
 					this.IsValid = false
 					return
 				}
 				this.Event.Release()
-				noncesBytes := make([]byte,42*4)
-				if common.Timeout(10*time.Second, func() {
-					p := C.malloc(C.size_t(len(this.ResultBytes)))
-					// copy the data into the buffer, by converting it to a Go array
-					cBuf := (*[1 << 30]byte)(p)
-					copy(cBuf[:], this.ResultBytes)
-					C.search_circle((*C.uint)(p),(C.ulong)(C.size_t(len(this.ResultBytes))),(*C.uint)(unsafe.Pointer(&noncesBytes[0])))
-					C.free(p)
-				}){
-					//timeout
-					this.AllDiffOneShares += 1
-					continue
-				}
-				// when GPU find cuckoo cycle one time GPS/s
-				this.AllDiffOneShares += 1
-				this.Nonces = make([]uint32,0)
-				isFind := true
-				for jj := 0;jj < len(noncesBytes);jj+=4{
-					tj := binary.LittleEndian.Uint32(noncesBytes[jj:jj+4])
-					if tj <=0 {
-						isFind = false
-						break
-					}
-					this.Nonces = append(this.Nonces,tj)
-				}
-				if !isFind{
-					continue
-				}
-				sort.Slice(this.Nonces, func(i, j int) bool {
-					return this.Nonces[i]<this.Nonces[j]
-				})
-				powStruct := this.header.HeaderBlock.Pow.(*pow.Cuckatoo)
-				powStruct.SetCircleEdges(this.Nonces)
-				powStruct.SetNonce(nonce)
-				powStruct.SetEdgeBits(edges_bits)
-				err := cuckoo.VerifyCuckatoo(hdrkey[:],this.Nonces[:],uint(edges_bits))
-				if err != nil{
-					continue
-				}
-				targetDiff := pow.CompactToBig(this.header.HeaderBlock.Difficulty)
-				h := this.header.HeaderBlock.BlockHash()
-				if pow.CalcCuckooDiff(pow.GraphWeight(uint32(edges_bits)),h).Cmp(targetDiff) < 0 {
-					continue
-				}
-				common.MinerLoger.Infof("Found Hash%s",h)
-				subm := hex.EncodeToString(BlockDataWithProof(this.header.HeaderBlock))
-				if !this.Pool{
-					subm += common.Int2varinthex(int64(len(this.header.Parents)))
-					for j := 0; j < len(this.header.Parents); j++ {
-						subm += this.header.Parents[j].Data
-					}
-
-					txCount := len(this.header.Transactions)
-					subm += common.Int2varinthex(int64(txCount))
-
-					for j := 0; j < txCount; j++ {
-						subm += this.header.Transactions[j].Data
-					}
-					txCount -= 1 //real transaction count except coinbase
-					subm += "-" + fmt.Sprintf("%d",txCount) + "-" + fmt.Sprintf("%d",this.Work.Block.Height)
-				} else {
-					subm += "-" + this.header.JobID + "-" + this.Work.PoolWork.ExtraNonce2
-				}
-				this.SubmitData <- subm
-				if !this.Pool{
-					//solo wait new task
-					break
-				}
 
 			}
+			this.ResultBytes = make([]byte,RES_BUFFER_SIZE*4)
+			this.Event,err = this.CommandQueue.EnqueueReadBufferByte(this.ResultObj,true,0,this.ResultBytes,nil)
+			if err != nil {
+				common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
+				this.IsValid = false
+				return
+			}
+			this.Event.Release()
+			noncesBytes := make([]byte,42*4)
+			if common.Timeout(10*time.Second, func() {
+				p := C.malloc(C.size_t(len(this.ResultBytes)))
+				// copy the data into the buffer, by converting it to a Go array
+				cBuf := (*[1 << 30]byte)(p)
+				copy(cBuf[:], this.ResultBytes)
+				C.search_circle((*C.uint)(p),(C.ulong)(C.size_t(len(this.ResultBytes))),(*C.uint)(unsafe.Pointer(&noncesBytes[0])))
+				C.free(p)
+			}){
+				//timeout
+				this.AllDiffOneShares += 1
+				continue
+			}
+			// when GPU find cuckoo cycle one time GPS/s
+			this.AllDiffOneShares += 1
+			this.Nonces = make([]uint32,0)
+			isFind := true
+			for jj := 0;jj < len(noncesBytes);jj+=4{
+				tj := binary.LittleEndian.Uint32(noncesBytes[jj:jj+4])
+				if tj <=0 {
+					isFind = false
+					break
+				}
+				this.Nonces = append(this.Nonces,tj)
+			}
+			if !isFind{
+				continue
+			}
+			sort.Slice(this.Nonces, func(i, j int) bool {
+				return this.Nonces[i]<this.Nonces[j]
+			})
+			powStruct := this.header.HeaderBlock.Pow.(*pow.Cuckatoo)
+			powStruct.SetCircleEdges(this.Nonces)
+			powStruct.SetNonce(nonce)
+			powStruct.SetEdgeBits(edges_bits)
+			err := cuckoo.VerifyCuckatoo(hdrkey[:],this.Nonces[:],uint(edges_bits))
+			if err != nil{
+				continue
+			}
+			targetDiff := pow.CompactToBig(this.header.HeaderBlock.Difficulty)
+			h := this.header.HeaderBlock.BlockHash()
+			if pow.CalcCuckooDiff(pow.GraphWeight(uint32(edges_bits)),h).Cmp(targetDiff) < 0 {
+				continue
+			}
+			common.MinerLoger.Infof("Found Hash%s",h)
+			subm := hex.EncodeToString(BlockDataWithProof(this.header.HeaderBlock))
+			if !this.Pool{
+				subm += common.Int2varinthex(int64(len(this.header.Parents)))
+				for j := 0; j < len(this.header.Parents); j++ {
+					subm += this.header.Parents[j].Data
+				}
 
+				txCount := len(this.header.Transactions)
+				subm += common.Int2varinthex(int64(txCount))
+
+				for j := 0; j < txCount; j++ {
+					subm += this.header.Transactions[j].Data
+				}
+				txCount -= 1 //real transaction count except coinbase
+				subm += "-" + fmt.Sprintf("%d",txCount) + "-" + fmt.Sprintf("%d",this.Work.Block.Height)
+			} else {
+				subm += "-" + this.header.JobID + "-" + this.Work.PoolWork.ExtraNonce2
+			}
+			this.SubmitData <- subm
+			if !this.Pool{
+				//solo wait new task
+				break
+			}
 		}
 	}
 }
