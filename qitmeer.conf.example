@@ -39,3 +39,4 @@ intensity=24
 worksize=256
 edge_bits=24
 log_level=info
+max_sig_count=4000

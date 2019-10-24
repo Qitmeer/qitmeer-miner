@@ -194,220 +194,214 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 				break
 			}
 			this.Update()
-			for nonce := uint32(0);nonce < ^uint32(0);nonce++{
-				if this.HasNewWork {
-					break
-				}
-				this.header.HeaderBlock.Pow.SetNonce(nonce)
-				hdrkey := this.header.HeaderBlock.Pow.(*pow.Cuckaroo).GetSipHash(this.header.HeaderBlock.BlockData())
-				if this.Cfg.OptionConfig.CPUMiner{
-					c := cuckaroo.NewCuckoo()
-					var found = false
-					this.Nonces,found = c.PoW(hdrkey[:])
-					if !found || len(this.Nonces) != cuckaroo.ProofSize{
-						this.AllDiffOneShares += 1
-						continue
-					}
-				} else{
-					this.DestinationEdgesBytes = make([]byte,0)
-					sip := siphash.Newsip(hdrkey[:])
-					this.InitParamData()
-					err = this.CreateEdgeKernel.SetArg(0,uint64(sip.V[0]))
-					if err != nil {
-						common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
-						this.IsValid = false
-						return
-					}
-					err = this.CreateEdgeKernel.SetArg(1,uint64(sip.V[1]))
-					if err != nil {
-						common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
-						this.IsValid = false
-						return
-					}
-					err = this.CreateEdgeKernel.SetArg(2,uint64(sip.V[2]))
-					if err != nil {
-						common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
-						this.IsValid = false
-						return
-					}
-					err = this.CreateEdgeKernel.SetArg(3,uint64(sip.V[3]))
-					if err != nil {
-						common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
-						this.IsValid = false
-						return
-					}
-					err = this.Trimmer01Kernel.SetArg(0,uint64(sip.V[0]))
-					if err != nil {
-						common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
-						this.IsValid = false
-						return
-					}
-					err = this.Trimmer01Kernel.SetArg(1,uint64(sip.V[1]))
-					if err != nil {
-						common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
-						this.IsValid = false
-						return
-					}
-					err = this.Trimmer01Kernel.SetArg(2,uint64(sip.V[2]))
-					if err != nil {
-						common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
-						this.IsValid = false
-						return
-					}
-					err = this.Trimmer01Kernel.SetArg(3,uint64(sip.V[3]))
-					if err != nil {
-						common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
-						this.IsValid = false
-						return
-					}
-					err = this.Trimmer02Kernel.SetArg(0,uint64(sip.V[0]))
-					if err != nil {
-						common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
-						this.IsValid = false
-						return
-					}
-					err = this.Trimmer02Kernel.SetArg(1,uint64(sip.V[1]))
-					if err != nil {
-						common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
-						this.IsValid = false
-						return
-					}
-					err = this.Trimmer02Kernel.SetArg(2,uint64(sip.V[2]))
-					if err != nil {
-						common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
-						this.IsValid = false
-						return
-					}
-					err = this.Trimmer02Kernel.SetArg(3,uint64(sip.V[3]))
-					if err != nil {
-						common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
-						this.IsValid = false
-						return
-					}
-					// 2 ^ 24 2 ^ 11 * 2 ^ 8 * 2 * 2 ^ 4 11+8+1+4=24  12 + 8 + 4
-					if this.Event, err = this.CommandQueue.EnqueueNDRangeKernel(this.CreateEdgeKernel, []int{0}, []int{this.LocalSize*this.WorkGroupSize}, []int{this.WorkGroupSize}, nil); err != nil {
-						common.MinerLoger.Infof("CreateEdgeKernel-1058%d,%v", this.MinerId,err)
-						return
-					}
-					this.Event.Release()
-					_ = this.CommandQueue.Finish()
-					for i:= 0;i<this.Cfg.OptionConfig.TrimmerCount;i++{
-						if this.Event, err = this.CommandQueue.EnqueueNDRangeKernel(this.Trimmer01Kernel, []int{0}, []int{this.LocalSize*this.WorkGroupSize}, []int{this.WorkGroupSize}, nil); err != nil {
-							common.MinerLoger.Infof("Trimmer01Kernel-1058%d,%v", this.MinerId,err)
-							return
-						}
-						this.Event.Release()
-						_ = this.CommandQueue.Finish()
-					}
-					if this.Event, err = this.CommandQueue.EnqueueNDRangeKernel(this.Trimmer02Kernel, []int{0}, []int{this.LocalSize*this.WorkGroupSize}, []int{this.WorkGroupSize}, nil); err != nil {
-						common.MinerLoger.Infof("Trimmer02Kernel-1058%d,%v", this.MinerId,err)
-						return
-					}
-					this.Event.Release()
-					_ = this.CommandQueue.Finish()
-					this.DestinationEdgesCountBytes = make([]byte,8)
-					this.Event,err = this.CommandQueue.EnqueueReadBufferByte(this.DestinationEdgesCountObj,true,0,this.DestinationEdgesCountBytes,nil)
-					if err != nil {
-						common.MinerLoger.Infof("DestinationEdgesCountObj-%d,%v", this.MinerId, err)
-						this.IsValid = false
-						return
-					}
-					this.Event.Release()
-					_ = this.CommandQueue.Finish()
-					count := binary.LittleEndian.Uint32(this.DestinationEdgesCountBytes[4:8])
-					if count < cuckaroo.ProofSize*2 {
-						this.AllDiffOneShares += 1
-						continue
-					}
-					this.DestinationEdgesBytes = make([]byte,count*4)
-					this.Event,err = this.CommandQueue.EnqueueReadBufferByte(this.DestinationEdgesObj,true,0,this.DestinationEdgesBytes,nil)
-					if err != nil {
-						common.MinerLoger.Infof("DestinationEdgesObj-%d,%v", this.MinerId, err)
-						this.IsValid = false
-						return
-					}
-					this.Event.Release()
-					_ = this.CommandQueue.Finish()
-					this.Edges = make([]uint32,0)
-					edgeNonces := make(map[string]uint32,0)
-					for j:=0;j<len(this.DestinationEdgesBytes);j+=4{
-						blockNonce := binary.LittleEndian.Uint32(this.DestinationEdgesBytes[j:j+4])
-						u00 := siphash.SiphashPRF(&sip.V, uint64(blockNonce<<1))
-						v00 := siphash.SiphashPRF(&sip.V, (uint64(blockNonce)<<1)|1)
-						u := uint32(u00&this.Edgemask) << 1
-						v := (uint32(v00&this.Edgemask) << 1) | 1
-						this.Edges = append(this.Edges,u)
-						this.Edges = append(this.Edges,v)
-						edgeNonces[fmt.Sprintf("%d_%d",u,v)] = blockNonce
-					}
-					cg := cuckoo.CGraph{}
-					cg.SetEdges(this.Edges,int(count))
-					atomic.AddUint64(&this.AllDiffOneShares, 1)
-					if !cg.FindSolutions(){
-						this.AllDiffOneShares += 1
-						continue
-					}
-					edges := cg.CycleEdges.GetData()
-					this.Nonces = make([]uint32,0)
-					for _, e := range edges{
-						k := fmt.Sprintf("%d_%d",uint32(e.Item1),uint32(e.Item2))
-						k1 := fmt.Sprintf("%d_%d",uint32(e.Item2),uint32(e.Item1))
-						if _,ok := edgeNonces[k];ok{
-							this.Nonces = append(this.Nonces,edgeNonces[k])
-							continue
-						}
-						if _,ok := edgeNonces[k1];ok{
-							this.Nonces = append(this.Nonces,edgeNonces[k1])
-							continue
-						}
-					}
-					sort.Slice(this.Nonces, func(i, j int) bool {
-						return this.Nonces[i] < this.Nonces[j]
-					})
-				}
-				// when GPU find cuckoo cycle one time GPS/s
-				this.AllDiffOneShares += 1
-				powStruct := this.header.HeaderBlock.Pow.(*pow.Cuckaroo)
-				powStruct.SetCircleEdges(this.Nonces)
-				powStruct.SetEdgeBits(uint8(this.EdgeBits))
-				powStruct.SetNonce(nonce)
-				err := cuckaroo.VerifyCuckaroo(hdrkey[:],this.Nonces[:],uint(this.EdgeBits))
-				if err != nil{
+			nonce,_ := common.RandUint32()
+			this.header.HeaderBlock.Pow.SetNonce(nonce)
+			hdrkey := this.header.HeaderBlock.Pow.(*pow.Cuckaroo).GetSipHash(this.header.HeaderBlock.BlockData())
+			if this.Cfg.OptionConfig.CPUMiner{
+				c := cuckaroo.NewCuckoo()
+				var found = false
+				this.Nonces,found = c.PoW(hdrkey[:])
+				if !found || len(this.Nonces) != cuckaroo.ProofSize{
+					this.AllDiffOneShares += 1
 					continue
 				}
-				targetDiff := pow.CompactToBig(this.header.HeaderBlock.Difficulty)
-				h := this.header.HeaderBlock.BlockHash()
-				if pow.CalcCuckooDiff(pow.GraphWeight(uint32(this.EdgeBits)),h).Cmp(targetDiff) < 0{
+			} else{
+				this.DestinationEdgesBytes = make([]byte,0)
+				sip := siphash.Newsip(hdrkey[:])
+				this.InitParamData()
+				err = this.CreateEdgeKernel.SetArg(0,uint64(sip.V[0]))
+				if err != nil {
+					common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
+					this.IsValid = false
+					return
+				}
+				err = this.CreateEdgeKernel.SetArg(1,uint64(sip.V[1]))
+				if err != nil {
+					common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
+					this.IsValid = false
+					return
+				}
+				err = this.CreateEdgeKernel.SetArg(2,uint64(sip.V[2]))
+				if err != nil {
+					common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
+					this.IsValid = false
+					return
+				}
+				err = this.CreateEdgeKernel.SetArg(3,uint64(sip.V[3]))
+				if err != nil {
+					common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
+					this.IsValid = false
+					return
+				}
+				err = this.Trimmer01Kernel.SetArg(0,uint64(sip.V[0]))
+				if err != nil {
+					common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
+					this.IsValid = false
+					return
+				}
+				err = this.Trimmer01Kernel.SetArg(1,uint64(sip.V[1]))
+				if err != nil {
+					common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
+					this.IsValid = false
+					return
+				}
+				err = this.Trimmer01Kernel.SetArg(2,uint64(sip.V[2]))
+				if err != nil {
+					common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
+					this.IsValid = false
+					return
+				}
+				err = this.Trimmer01Kernel.SetArg(3,uint64(sip.V[3]))
+				if err != nil {
+					common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
+					this.IsValid = false
+					return
+				}
+				err = this.Trimmer02Kernel.SetArg(0,uint64(sip.V[0]))
+				if err != nil {
+					common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
+					this.IsValid = false
+					return
+				}
+				err = this.Trimmer02Kernel.SetArg(1,uint64(sip.V[1]))
+				if err != nil {
+					common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
+					this.IsValid = false
+					return
+				}
+				err = this.Trimmer02Kernel.SetArg(2,uint64(sip.V[2]))
+				if err != nil {
+					common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
+					this.IsValid = false
+					return
+				}
+				err = this.Trimmer02Kernel.SetArg(3,uint64(sip.V[3]))
+				if err != nil {
+					common.MinerLoger.Infof("-%d,%v", this.MinerId, err)
+					this.IsValid = false
+					return
+				}
+				// 2 ^ 24 2 ^ 11 * 2 ^ 8 * 2 * 2 ^ 4 11+8+1+4=24  12 + 8 + 4
+				if this.Event, err = this.CommandQueue.EnqueueNDRangeKernel(this.CreateEdgeKernel, []int{0}, []int{this.LocalSize*this.WorkGroupSize}, []int{this.WorkGroupSize}, nil); err != nil {
+					common.MinerLoger.Infof("CreateEdgeKernel-1058%d,%v", this.MinerId,err)
+					return
+				}
+				this.Event.Release()
+				_ = this.CommandQueue.Finish()
+				for i:= 0;i<this.Cfg.OptionConfig.TrimmerCount;i++{
+					if this.Event, err = this.CommandQueue.EnqueueNDRangeKernel(this.Trimmer01Kernel, []int{0}, []int{this.LocalSize*this.WorkGroupSize}, []int{this.WorkGroupSize}, nil); err != nil {
+						common.MinerLoger.Infof("Trimmer01Kernel-1058%d,%v", this.MinerId,err)
+						return
+					}
+					this.Event.Release()
+					_ = this.CommandQueue.Finish()
+				}
+				if this.Event, err = this.CommandQueue.EnqueueNDRangeKernel(this.Trimmer02Kernel, []int{0}, []int{this.LocalSize*this.WorkGroupSize}, []int{this.WorkGroupSize}, nil); err != nil {
+					common.MinerLoger.Infof("Trimmer02Kernel-1058%d,%v", this.MinerId,err)
+					return
+				}
+				this.Event.Release()
+				_ = this.CommandQueue.Finish()
+				this.DestinationEdgesCountBytes = make([]byte,8)
+				this.Event,err = this.CommandQueue.EnqueueReadBufferByte(this.DestinationEdgesCountObj,true,0,this.DestinationEdgesCountBytes,nil)
+				if err != nil {
+					common.MinerLoger.Infof("DestinationEdgesCountObj-%d,%v", this.MinerId, err)
+					this.IsValid = false
+					return
+				}
+				this.Event.Release()
+				_ = this.CommandQueue.Finish()
+				count := binary.LittleEndian.Uint32(this.DestinationEdgesCountBytes[4:8])
+				if count < cuckaroo.ProofSize*2 {
+					this.AllDiffOneShares += 1
 					continue
 				}
-				common.MinerLoger.Infof("Found Hash %s",h)
-				subm := hex.EncodeToString(BlockDataWithProof(this.header.HeaderBlock))
-
-				if !this.Pool{
-					subm += common.Int2varinthex(int64(len(this.header.Parents)))
-					for j := 0; j < len(this.header.Parents); j++ {
-						subm += this.header.Parents[j].Data
-					}
-
-					txCount := len(this.header.Transactions)
-					subm += common.Int2varinthex(int64(txCount))
-
-					for j := 0; j < txCount; j++ {
-						subm += this.header.Transactions[j].Data
-					}
-					txCount -= 1 //real transaction count except coinbase
-					subm += "-" + fmt.Sprintf("%d",txCount) + "-" + fmt.Sprintf("%d",this.Work.Block.Height)
-				} else {
-					subm += "-" + this.header.JobID + "-" + this.Work.PoolWork.ExtraNonce2
+				this.DestinationEdgesBytes = make([]byte,count*4)
+				this.Event,err = this.CommandQueue.EnqueueReadBufferByte(this.DestinationEdgesObj,true,0,this.DestinationEdgesBytes,nil)
+				if err != nil {
+					common.MinerLoger.Infof("DestinationEdgesObj-%d,%v", this.MinerId, err)
+					this.IsValid = false
+					return
 				}
-				this.SubmitData <- subm
-				if !this.Pool{
-					//solo wait new task
-					break
+				this.Event.Release()
+				_ = this.CommandQueue.Finish()
+				this.Edges = make([]uint32,0)
+				edgeNonces := make(map[string]uint32,0)
+				for j:=0;j<len(this.DestinationEdgesBytes);j+=4{
+					blockNonce := binary.LittleEndian.Uint32(this.DestinationEdgesBytes[j:j+4])
+					u00 := siphash.SiphashPRF(&sip.V, uint64(blockNonce<<1))
+					v00 := siphash.SiphashPRF(&sip.V, (uint64(blockNonce)<<1)|1)
+					u := uint32(u00&this.Edgemask) << 1
+					v := (uint32(v00&this.Edgemask) << 1) | 1
+					this.Edges = append(this.Edges,u)
+					this.Edges = append(this.Edges,v)
+					edgeNonces[fmt.Sprintf("%d_%d",u,v)] = blockNonce
 				}
-
+				cg := cuckoo.CGraph{}
+				cg.SetEdges(this.Edges,int(count))
+				atomic.AddUint64(&this.AllDiffOneShares, 1)
+				if !cg.FindSolutions(){
+					this.AllDiffOneShares += 1
+					continue
+				}
+				edges := cg.CycleEdges.GetData()
+				this.Nonces = make([]uint32,0)
+				for _, e := range edges{
+					k := fmt.Sprintf("%d_%d",uint32(e.Item1),uint32(e.Item2))
+					k1 := fmt.Sprintf("%d_%d",uint32(e.Item2),uint32(e.Item1))
+					if _,ok := edgeNonces[k];ok{
+						this.Nonces = append(this.Nonces,edgeNonces[k])
+						continue
+					}
+					if _,ok := edgeNonces[k1];ok{
+						this.Nonces = append(this.Nonces,edgeNonces[k1])
+						continue
+					}
+				}
+				sort.Slice(this.Nonces, func(i, j int) bool {
+					return this.Nonces[i] < this.Nonces[j]
+				})
 			}
+			// when GPU find cuckoo cycle one time GPS/s
+			this.AllDiffOneShares += 1
+			powStruct := this.header.HeaderBlock.Pow.(*pow.Cuckaroo)
+			powStruct.SetCircleEdges(this.Nonces)
+			powStruct.SetEdgeBits(uint8(this.EdgeBits))
+			powStruct.SetNonce(nonce)
+			err := cuckaroo.VerifyCuckaroo(hdrkey[:],this.Nonces[:],uint(this.EdgeBits))
+			if err != nil{
+				continue
+			}
+			targetDiff := pow.CompactToBig(this.header.HeaderBlock.Difficulty)
+			h := this.header.HeaderBlock.BlockHash()
+			if pow.CalcCuckooDiff(pow.GraphWeight(uint32(this.EdgeBits)),h).Cmp(targetDiff) < 0{
+				continue
+			}
+			common.MinerLoger.Infof("Found Hash %s",h)
+			subm := hex.EncodeToString(BlockDataWithProof(this.header.HeaderBlock))
 
+			if !this.Pool{
+				subm += common.Int2varinthex(int64(len(this.header.Parents)))
+				for j := 0; j < len(this.header.Parents); j++ {
+					subm += this.header.Parents[j].Data
+				}
+
+				txCount := len(this.header.Transactions)
+				subm += common.Int2varinthex(int64(txCount))
+
+				for j := 0; j < txCount; j++ {
+					subm += this.header.Transactions[j].Data
+				}
+				txCount -= 1 //real transaction count except coinbase
+				subm += "-" + fmt.Sprintf("%d",txCount) + "-" + fmt.Sprintf("%d",this.Work.Block.Height)
+			} else {
+				subm += "-" + this.header.JobID + "-" + this.Work.PoolWork.ExtraNonce2
+			}
+			this.SubmitData <- subm
+			if !this.Pool{
+				//solo wait new task
+				break
+			}
 		}
 	}
 }
