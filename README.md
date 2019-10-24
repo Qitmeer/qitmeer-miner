@@ -45,6 +45,11 @@ $ copy lib/cuckoo/target/release/cuckoo.dll to C:/Windows
 $ go build 
 ```
 
+* Other method
+```bash
+$ make
+```
+
 ###### Any questions see [issues](https://github.com/Qitmeer/qitmeer-miner/issues?q=is%3Aissue+is%3Aclosed) or create
 
 ## Run
