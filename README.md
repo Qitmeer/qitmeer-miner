@@ -40,6 +40,11 @@ go build
 ```
 
 * Windows ENV
+##### Prequisite: 
+1. Install **Build Tools for Visual Studio**:  
+https://visualstudio.microsoft.com/thank-you-downloading-visual-studio/?sku=BuildTools&rel=16
+
+2. build
 ```bash
 $ copy lib/cuckoo/target/release/cuckoo.dll to C:/Windows
 $ go build 
