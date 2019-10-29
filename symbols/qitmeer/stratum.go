@@ -10,10 +10,12 @@ import (
 	"errors"
 	"fmt"
 	qitmeer "github.com/Qitmeer/qitmeer/common/hash"
+	`github.com/Qitmeer/qitmeer/core/types/pow`
 	"math/big"
 	"qitmeer-miner/common"
 	"qitmeer-miner/core"
 	"strconv"
+	`strings`
 	"sync/atomic"
 	"time"
 )
@@ -34,6 +36,7 @@ type NotifyRes struct {
 	StateRoot      string
 	Height      int64
 	CB3            string
+	CB4            string
 }
 
 // Submit models a submission message.
@@ -92,6 +95,7 @@ type NotifyWork struct {
 	CB1               string
 	CB2               string
 	CB3               string
+	CB4               string
 	Height            int64
 	NtimeDelta        int64
 	JobID             string
@@ -104,6 +108,8 @@ type NotifyWork struct {
 	MerkleBranches    []string
 	WorkData	[]byte
 	LatestJobTime	uint64
+	PowType pow.PowType
+	CuckooProof [169]byte
 }
 type QitmeerStratum struct {
 	core.Stratum
@@ -228,9 +234,11 @@ func (s *QitmeerStratum) handleNotifyRes(resp interface{}) {
 	s.PoolWork.MerkleBranches = nResp.MerkleBranches
 	s.PoolWork.CB2 = nResp.GenTX2
 	s.PoolWork.CB3 = nResp.CB3
+	s.PoolWork.CB4 = nResp.CB4
 	s.PoolWork.Nbits = nResp.Nbits
 	s.PoolWork.Version = nResp.BlockVersion
-	s.PoolWork.Height = 0
+	s.PoolWork.CuckooProof = [169]byte{}
+	s.PoolWork.PowType = s.PowType
 	stateRoot := make([]byte,32)
 	s.PoolWork.StateRoot = hex.EncodeToString(stateRoot)
 	s.PoolWork.NewWork = true
@@ -373,49 +381,42 @@ func (s *QitmeerStratum) Unmarshal(blob []byte) (interface{}, error) {
 			return nil, core.ErrJsonType
 		}
 		nres.GenTX2 = genTX2
-		//ccminer code also confirms this
-		transactions := resi[4].([]interface {})
-		for _,v := range transactions{
-			nres.MerkleBranches = append(nres.MerkleBranches,v.(string))
-		}
-		blockVersion, ok := resi[5].(string)
-		if !ok {
-			return nil, core.ErrJsonType
-		}
-		nres.BlockVersion = blockVersion
-		nbits, ok := resi[6].(string)
-		if !ok {
-			return nil, core.ErrJsonType
-		}
-		nres.Nbits = nbits
-		ntime, ok := resi[7].(string)
-		if !ok {
-			return nil, core.ErrJsonType
-		}
-		nres.Ntime = ntime
-		cleanJobs, ok := resi[8].(bool)
-		if !ok {
-			return nil, core.ErrJsonType
-		}
-		nres.CleanJobs = cleanJobs
-		if len(resi) < 10{
-			return nres, nil
-		}
-		stateRoot, ok := resi[9].(string)
-		if !ok {
-			return nil, core.ErrJsonType
-		}
-		nres.StateRoot = stateRoot
-		height, ok := resi[10].(float64)
-		if !ok {
-			return nil, core.ErrJsonType
-		}
-		nres.Height = int64(height)
-		cb3, ok := resi[11].(string)
+		cb3, ok := resi[4].(string)
 		if !ok {
 			return nil, core.ErrJsonType
 		}
 		nres.CB3 = cb3
+		cb4, ok := resi[5].(string)
+		if !ok {
+			return nil, core.ErrJsonType
+		}
+		nres.CB4 = cb4
+		//ccminer code also confirms this
+		transactions := resi[6].([]interface {})
+		for _,v := range transactions{
+			nres.MerkleBranches = append(nres.MerkleBranches,v.(string))
+		}
+		blockVersion, ok := resi[7].(string)
+		if !ok {
+			return nil, core.ErrJsonType
+		}
+		nres.BlockVersion = blockVersion
+		nbits, ok := resi[8].(string)
+		if !ok {
+			return nil, core.ErrJsonType
+		}
+		nres.Nbits = nbits
+		ntime, ok := resi[9].(string)
+		if !ok {
+			return nil, core.ErrJsonType
+		}
+		nres.Ntime = ntime
+		cleanJobs, ok := resi[10].(bool)
+		if !ok {
+			return nil, core.ErrJsonType
+		}
+		nres.CleanJobs = cleanJobs
+
 		return nres, nil
 
 	case "mining.set_difficulty":
@@ -455,7 +456,12 @@ func (s *QitmeerStratum) Unmarshal(blob []byte) (interface{}, error) {
 }
 
 func (s *NotifyWork) PrepQitmeerWork() []byte {
-	coinbase:=s.CB1+s.ExtraNonce1 + s.ExtraNonce2+s.CB2
+	cH1 := s.CB2+s.ExtraNonce1+s.ExtraNonce2+s.CB3
+	coinbaseD1,_ := hex.DecodeString(cH1)
+	coinbaseH1 := qitmeer.DoubleHashH(coinbaseD1)
+
+	coinbase:=s.CB1+ hex.EncodeToString(coinbaseH1[:]) + s.CB4
+
 	coinbaseD,_ := hex.DecodeString(coinbase)
 	coinbaseH := qitmeer.DoubleHashH(coinbaseD)
 	coinbase_hash_bin := coinbaseH[:]
@@ -471,37 +477,29 @@ func (s *NotifyWork) PrepQitmeerWork() []byte {
 	ddd = common.Reverse(ddd)
 	merkleRootStr2 := hex.EncodeToString(ddd)
 
-	nonceStr := fmt.Sprintf("%016x",0)
+	nonceStr := fmt.Sprintf("%08x",0)
 	//pool tx hash has converse every 4 bit
 	tmpHash := s.Hash
 	tmpBytes , _ := hex.DecodeString(tmpHash)
 	normalBytes := common.ReverseByWidth(tmpBytes,1)
 	prevHash := hex.EncodeToString(normalBytes)
 	//prevHash :=s.Hash
-	h := make([]byte,8)
-	binary.LittleEndian.PutUint64(h,uint64(s.Height))
-	ctime1 ,_:= hex.DecodeString(s.Ntime)
-	ntime := make([]byte,8)
-	copy(ntime[4:8],ctime1[:])
-	binary.LittleEndian.PutUint64(h,uint64(s.Height))
-	blockheader := s.Version + prevHash + merkleRootStr2 + s.StateRoot + s.Nbits + hex.EncodeToString(h) + hex.EncodeToString(ntime) + nonceStr
-	//fmt.Println("s.PoolWork.Version + prevHash + merkleRootStr + s.PoolWork.StateRoot + s.PoolWork.Nbits + hex.EncodeToString(h) + hex.EncodeToString(ntime) + nonceStr\n",
-	//fmt.Println(s.Version,prevHash,merkleRootStr2,s.StateRoot,s.Nbits,hex.EncodeToString(h),hex.EncodeToString(ntime),nonceStr)
+	ntime ,_:= hex.DecodeString(s.Ntime)
+	blockheader := s.Version + prevHash + merkleRootStr2 + s.StateRoot + s.Nbits + hex.EncodeToString(ntime) + nonceStr + hex.EncodeToString([]byte{uint8(s.PowType)}) + hex.EncodeToString(s.CuckooProof[:])
 	workData ,_:= hex.DecodeString(blockheader)
 	return workData
 }
 
 // PrepWork converts the stratum notify to getwork style data for mining.
 func (s *NotifyWork) PrepWork() error {
-	var givenTs uint64
+	var givenTs uint32
 	s.ExtraNonce2 = fmt.Sprintf("%08x",0)
 	s.WorkData = s.PrepQitmeerWork()
 	if s.WorkData == nil {
 		return errors.New("Not Have New Work")
 	}
-	givenTs = binary.LittleEndian.Uint64(
-		s.WorkData[TIMESTART : TIMEEND])
-	atomic.StoreUint64(&s.LatestJobTime, givenTs)
+	givenTs = binary.LittleEndian.Uint32(s.WorkData[TIMESTART : TIMEEND])
+	atomic.StoreUint64(&s.LatestJobTime, uint64(givenTs))
 	return nil
 }
 
@@ -515,12 +513,17 @@ func (s *QitmeerStratum) PrepSubmit(data []byte,jobID string,ExtraNonce2 string)
 	var timestampStr , nonceStr  string
 	//latestWorkTs := atomic.LoadUint64(&s.PoolWork.LatestJobTime)
 	timeD := data[TIMESTART:TIMEEND]
-	timestampStr = hex.EncodeToString(common.Reverse(timeD[:])[4:8])
+	timestampStr = hex.EncodeToString(common.Reverse(timeD[:])[0:4])
 	nonceStr = hex.EncodeToString(common.Reverse(data[NONCESTART:NONCEEND]))
 	if jobID != s.PoolWork.JobID && s.PoolWork.Clean {
 		return sub, ErrStratumStaleWork
 	}
-	sub.Params = []string{s.Cfg.PoolConfig.PoolUser, jobID, ExtraNonce2, timestampStr,nonceStr}
-	common.MinerLoger.Infof("【submit】{PoolUser, jobID, ExtraNonce2, timestampStr,nonceStr}:%v",sub.Params)
+	workArr := strings.Split(s.Cfg.PoolConfig.PoolUser,".")
+	workId := workArr[0]
+	if len(workArr) > 1{
+		workId = workArr[1]
+	}
+	sub.Params = []string{workId, jobID, ExtraNonce2, timestampStr,nonceStr,hex.EncodeToString(data[113:282])}
+	common.MinerLoger.Infof("【submit】{PoolUser, jobID, ExtraNonce2, timestampStr,nonceStr,proof}:%v",sub.Params)
 	return sub, nil
 }

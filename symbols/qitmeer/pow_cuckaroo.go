@@ -144,7 +144,8 @@ func (this *Cuckaroo) Update() {
 	//update coinbase tx hash
 	this.Device.Update()
 	if this.Pool {
-		this.Work.PoolWork.ExtraNonce2 = fmt.Sprintf("%08x", this.CurrentWorkID)
+		this.Work.PoolWork.ExtraNonce2 = fmt.Sprintf("%08x", this.CurrentWorkID)[:8]
+		this.header.Exnonce2 = this.Work.PoolWork.ExtraNonce2
 		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepQitmeerWork()
 		this.header.PackagePoolHeader(this.Work,pow.CUCKAROO)
 	} else {

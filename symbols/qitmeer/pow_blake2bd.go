@@ -101,14 +101,12 @@ func (this *Blake2bD) Update() {
 	//update coinbase tx hash
 	this.Device.Update()
 	if this.Pool {
-		this.Work.PoolWork.ExtraNonce2 = fmt.Sprintf("%08x", this.CurrentWorkID)
+		this.Work.PoolWork.ExtraNonce2 = fmt.Sprintf("%08x", this.CurrentWorkID)[:8]
+		this.header.Exnonce2 = this.Work.PoolWork.ExtraNonce2
 		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepQitmeerWork()
 		this.header.PackagePoolHeader(this.Work,pow.BLAKE2BD)
 	} else {
 		randStr := fmt.Sprintf("%s%d",this.Cfg.SoloConfig.RandStr,this.CurrentWorkID)
-		this.Work.PoolWork.ExtraNonce2 = fmt.Sprintf("%08x", uint32(this.CurrentWorkID))
-		this.header.Exnonce2 = fmt.Sprintf("%d",this.Work.PoolWork.Height)
-		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepQitmeerWork()
 		txHash := this.Work.Block.CalcCoinBase(this.Cfg,randStr,this.CurrentWorkID,this.Cfg.SoloConfig.MinerAddr)
 		this.header.PackageRpcHeader(this.Work)
 		this.header.HeaderBlock.TxRoot = *txHash
