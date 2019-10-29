@@ -148,17 +148,17 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, 
 	}
 	payToAddress,err := address.DecodeAddress(payAddressS)
 	if err != nil {
-		common.MinerLoger.Errorf("%v",err)
+		common.MinerLoger.Error("DecodeAddress","error",err)
 		return nil
 	}
 	coinbaseScript, err := standardCoinbaseScript(coinbaseStr,h.Height, extraNonce)
 	if err != nil {
-		common.MinerLoger.Errorf("%v",err)
+		common.MinerLoger.Error("standardCoinbaseScript","error",err)
 		return nil
 	}
 	opReturnPkScript, err := standardCoinbaseOpReturn([]byte{})
 	if err != nil {
-		common.MinerLoger.Errorf("%v",err)
+		common.MinerLoger.Error("standardCoinbaseOpReturn","error",err)
 		return nil
 	}
 	//uit := 100000000
@@ -168,7 +168,7 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, 
 		payToAddress,
 		cfg.NecessaryConfig.Param)
 	if err != nil{
-		common.MinerLoger.Errorf("%v",err)
+		common.MinerLoger.Error("createCoinbaseTx","error",err)
 		return nil
 	}
 

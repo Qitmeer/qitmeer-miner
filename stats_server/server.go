@@ -55,7 +55,7 @@ func HandleRouter(cfg *common.GlobalConfig,devices []core.BaseDevice ) {
 		cfg.OptionConfig.Restart = 1
 		_,_ = fmt.Fprintf(w, string("success"))
 	})
-	common.MinerLoger.Infof("stats server %s start",cfg.OptionConfig.StatsServer)
+	common.MinerLoger.Info("stats server start","server",cfg.OptionConfig.StatsServer)
 	go websocket.Manager.Start()
 	http.HandleFunc("/ws", func(writer http.ResponseWriter, request *http.Request) {
 		statsData := &websocket.StatsData{}

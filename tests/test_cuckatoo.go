@@ -13,7 +13,6 @@ import (
     "github.com/Qitmeer/qitmeer/common/hash"
     "github.com/Qitmeer/qitmeer/crypto/cuckoo"
     "github.com/Qitmeer/qitmeer/crypto/cuckoo/siphash"
-    go_logger `github.com/phachon/go-logger`
     "log"
     "os"
     "qitmeer-miner/common"
@@ -30,11 +29,9 @@ const SetCnt = 1
 const Trim = 2
 const Extract = 3
 //init the config file
-func init(){
-    common.MinerLoger = go_logger.NewLogger()
-}
 func main()  {
-
+    common.MinerLoger.Info("123","height",123)
+    return
     var typ = common.DevicesTypesForGPUMining
     clDevices := common.GetDevices(typ)
     deviceMiner := Cuckatoo{}

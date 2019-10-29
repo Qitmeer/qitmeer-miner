@@ -50,10 +50,10 @@ func (this *QitmeerWork) Get () bool {
 		var r map[string]interface{}
 		_ = json.Unmarshal(body,&r)
 		if _,ok := r["error"];ok{
-			common.MinerLoger.Debugf("[getBlockTemplate error]%v",r["error"])
+			common.MinerLoger.Debug("[getBlockTemplate error]","error",r["error"])
 			return false
 		}
-		common.MinerLoger.Debugf("[getBlockTemplate error]%v",string(body))
+		common.MinerLoger.Debug("[getBlockTemplate error]","result",string(body))
 		return false
 	}
 	if this.Block.Height > 0 && this.Block.Height == blockTemplate.Result.Height &&
@@ -97,7 +97,7 @@ func (this *QitmeerWork) Get () bool {
 	this.Started = uint32(time.Now().Unix())
 	this.GetWorkTime = time.Now().Unix()
 	this.Cfg.OptionConfig.Target = this.Block.Target
-	common.MinerLoger.Debugf("getBlockTemplate height:%d , target :%s",this.Block.Height,this.Block.Target)
+	common.MinerLoger.Debug(fmt.Sprintf("getBlockTemplate height:%d , target :%s",this.Block.Height,target))
 	return true
 }
 
@@ -123,7 +123,7 @@ func (this *QitmeerWork) Submit (subm string) error {
 			if time.Now().Unix() - startTime >= 120{
 				break
 			}
-			common.MinerLoger.Errorf("[submit error]"+string(body)+err.Error())
+			common.MinerLoger.Error(fmt.Sprintf("[submit error]"+string(body)+err.Error()))
 			time.Sleep(1*time.Second)
 			continue
 		}
@@ -181,7 +181,7 @@ func (this *QitmeerWork) PoolSubmit (subm string) error {
 	}
 	_, err = this.stra.Conn.Write(m)
 	if err != nil {
-		common.MinerLoger.Debugf("[submit error][pool connect error]%s",err)
+		common.MinerLoger.Debug("[submit error][pool connect error]","error",err)
 		return err
 	}
 	_, err = this.stra.Conn.Write([]byte("\n"))

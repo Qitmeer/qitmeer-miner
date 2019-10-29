@@ -69,14 +69,14 @@ func (this *Cuckatoo) InitDevice() {
 	var err error
 	this.Program, err = this.Context.CreateProgramWithSource([]string{kernel.CuckatooKernel})
 	if err != nil {
-		common.MinerLoger.Errorf("-", this.MinerId, this.DeviceName, err)
+		common.MinerLoger.Error(fmt.Sprintf("-", this.MinerId, this.DeviceName, err))
 		this.IsValid = false
 		return
 	}
 
 	err = this.Program.BuildProgram([]*cl.Device{this.ClDevice}, "")
 	if err != nil {
-		common.MinerLoger.Errorf("- %d %v", this.MinerId, err)
+		common.MinerLoger.Error(fmt.Sprintf("- %d %v", this.MinerId, err))
 		this.IsValid = false
 		return
 	}
@@ -145,25 +145,25 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 			this.InitParamData()
 			err = this.CreateEdgeKernel.SetArg(0,uint64(sip.V[0]))
 			if err != nil {
-				common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
+				common.MinerLoger.Error(fmt.Sprintf("-%d %v", this.MinerId, err))
 				this.IsValid = false
 				return
 			}
 			err = this.CreateEdgeKernel.SetArg(1,uint64(sip.V[1]))
 			if err != nil {
-				common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
+				common.MinerLoger.Error(fmt.Sprintf("-%d %v", this.MinerId, err))
 				this.IsValid = false
 				return
 			}
 			err = this.CreateEdgeKernel.SetArg(2,uint64(sip.V[2]))
 			if err != nil {
-				common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
+				common.MinerLoger.Error(fmt.Sprintf("-%d %v", this.MinerId, err))
 				this.IsValid = false
 				return
 			}
 			err = this.CreateEdgeKernel.SetArg(3,uint64(sip.V[3]))
 			if err != nil {
-				common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
+				common.MinerLoger.Error(fmt.Sprintf("-%d %v", this.MinerId, err))
 				this.IsValid = false
 				return
 			}
@@ -181,7 +181,7 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 				this.Enq(8)
 				this.Event,err = this.CommandQueue.EnqueueFillBuffer(this.CountersObj,unsafe.Pointer(&this.ClearBytes[0]),4,0,el_count*4,nil)
 				if err != nil {
-					common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
+					common.MinerLoger.Error(fmt.Sprintf("-%d %v", this.MinerId, err))
 					this.IsValid = false
 					return
 				}
@@ -191,7 +191,7 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 			this.ResultBytes = make([]byte,RES_BUFFER_SIZE*4)
 			this.Event,err = this.CommandQueue.EnqueueReadBufferByte(this.ResultObj,true,0,this.ResultBytes,nil)
 			if err != nil {
-				common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
+				common.MinerLoger.Error(fmt.Sprintf("-%d %v", this.MinerId, err))
 				this.IsValid = false
 				return
 			}
@@ -241,7 +241,7 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 			if pow.CalcCuckooDiff(pow.GraphWeight(uint32(edges_bits)),h).Cmp(this.header.TargetDiff) < 0 {
 				continue
 			}
-			common.MinerLoger.Infof("Found Hash%s",h)
+			common.MinerLoger.Info(fmt.Sprintf("Found Hash%s",h))
 			subm := hex.EncodeToString(subData)
 			if !this.Pool{
 				subm += common.Int2varinthex(int64(len(this.header.Parents)))
@@ -288,21 +288,21 @@ func (this *Cuckatoo) InitParamData() {
 	allBytes := []byte{255,255,255,255}
 	this.Event,err = this.CommandQueue.EnqueueFillBuffer(this.CountersObj,unsafe.Pointer(&this.ClearBytes[0]),4,0,el_count*4,nil)
 	if err != nil {
-		common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
+		common.MinerLoger.Error(fmt.Sprintf("-%d %v", this.MinerId, err))
 		this.IsValid = false
 		return
 	}
 	this.Event.Release()
 	this.Event,err = this.CommandQueue.EnqueueFillBuffer(this.EdgesObj,unsafe.Pointer(&allBytes[0]),4,0,el_count*4*8,nil)
 	if err != nil {
-		common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
+		common.MinerLoger.Error(fmt.Sprintf("-%d %v", this.MinerId, err))
 		this.IsValid = false
 		return
 	}
 	this.Event.Release()
 	this.Event,err = this.CommandQueue.EnqueueFillBuffer(this.ResultObj,unsafe.Pointer(&this.ClearBytes[0]),4,0,RES_BUFFER_SIZE*4,nil)
 	if err != nil {
-		common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
+		common.MinerLoger.Error(fmt.Sprintf("-%d %v", this.MinerId, err))
 		this.IsValid = false
 		return
 	}
@@ -314,7 +314,7 @@ func (this *Cuckatoo) InitParamData() {
 	err = this.CreateEdgeKernel.SetArg(8,uint32(current_uorv))
 
 	if err != nil {
-		common.MinerLoger.Errorf("-", this.MinerId, err)
+		common.MinerLoger.Error(fmt.Sprintf("-", this.MinerId, err))
 		this.IsValid = false
 		return
 	}
@@ -324,26 +324,26 @@ func (this *Cuckatoo) InitKernelAndParam() {
 	var err error
 	this.CreateEdgeKernel, err = this.Program.CreateKernel("LeanRound")
 	if err != nil {
-		common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
+		common.MinerLoger.Error(fmt.Sprintf("-%d %v", this.MinerId, err))
 		this.IsValid = false
 		return
 	}
 
 	this.EdgesObj, err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, el_count*4*8)
 	if err != nil {
-		common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
+		common.MinerLoger.Error(fmt.Sprintf("-%d %v", this.MinerId, err))
 		this.IsValid = false
 		return
 	}
 	this.CountersObj, err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, el_count*4)
 	if err != nil {
-		common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
+		common.MinerLoger.Error(fmt.Sprintf("-%d %v", this.MinerId, err))
 		this.IsValid = false
 		return
 	}
 	this.ResultObj, err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, RES_BUFFER_SIZE*4)
 	if err != nil {
-		common.MinerLoger.Errorf("-%d %v", this.MinerId, err)
+		common.MinerLoger.Error(fmt.Sprintf("-%d %v", this.MinerId, err))
 		this.IsValid = false
 		return
 	}
@@ -353,10 +353,10 @@ func (this *Cuckatoo) Enq(num int) {
 	offset := 0
 	for j:=0;j<num;j++{
 		offset = j * GLOBAL_WORK_SIZE
-		//common.MinerLoger.Errorf(j,offset)
+		//common.MinerLoger.Error(fmt.Sprintf(j,offset)
 		// 2 ^ 24 2 ^ 11 * 2 ^ 8 * 2 * 2 ^ 4 11+8+1+4=24
 		if this.Event, this.Err = this.CommandQueue.EnqueueNDRangeKernel(this.CreateEdgeKernel, []int{offset}, []int{GLOBAL_WORK_SIZE}, []int{LOCAL_WORK_SIZE}, nil); this.Err != nil {
-			common.MinerLoger.Errorf("CreateEdgeKernel- %d %v", this.MinerId,this.Err)
+			common.MinerLoger.Error(fmt.Sprintf("CreateEdgeKernel- %d %v", this.MinerId,this.Err))
 			return
 		}
 		this.Event.Release()

@@ -105,13 +105,13 @@ func (this *Device)InitDevice()  {
 	this.Context, err = cl.CreateContext([]*cl.Device{this.ClDevice})
 	if err != nil {
 		this.IsValid = false
-		common.MinerLoger.Infof("-%d %v CreateContext", this.MinerId, err)
+		common.MinerLoger.Info("CreateContext", "minerId",this.MinerId,"error", err)
 		return
 	}
 	this.CommandQueue, err = this.Context.CreateCommandQueue(this.ClDevice, 0)
 	if err != nil {
 		this.IsValid = false
-		common.MinerLoger.Infof("-%d %v CreateCommandQueue", this.MinerId,  err)
+		common.MinerLoger.Info("CreateCommandQueue","minerId", this.MinerId, "error", err)
 	}
 }
 
@@ -198,10 +198,10 @@ func (this *Device)Status(wg *sync.WaitGroup)  {
 			if this.GetMinerType() != "blake2bd"{
 				unit = " GPS"
 			}
-			common.MinerLoger.Infof("DEVICE_ID #%d (%s) %v",
-				this.MinerId,
-				this.ClDevice.Name(),
-				common.FormatHashRate(this.AverageHashRate,unit),
+			common.MinerLoger.Info("DEVICE",
+				"device id",this.MinerId,
+				"name",this.ClDevice.Name(),
+				"hash rate",common.FormatHashRate(this.AverageHashRate,unit),
 			)
 			// restats every 2min
 			// Prevention this.AllDiffOneShares was to large

@@ -48,7 +48,7 @@ func (this *MinerRobot)InitDevice()  {
 	}
 	this.ClDevices = common.GetDevices(typ)
 	if this.ClDevices == nil{
-		common.MinerLoger.Infof("some error occurs!")
+		common.MinerLoger.Info("Some GPU drivers error occurs! please check your GPU drivers.")
 		return
 	}
 	this.UseDevices = []string{}
