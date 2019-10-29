@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"errors"
+	`github.com/Qitmeer/qitmeer/core/types/pow`
 	"net"
 	"qitmeer-miner/common"
 	"qitmeer-miner/common/socks"
@@ -35,8 +36,20 @@ type Stratum struct {
 	SubmitIDs	[]uint64
 	SubID	uint64
 	AuthID uint64
+	PowType pow.PowType
 }
 
+func GetPowType(powName string) pow.PowType {
+	switch powName {
+	case "blake2bd":
+		return pow.BLAKE2BD
+	case "cuckaroo":
+		return pow.CUCKAROO
+	case "cuckatoo":
+		return pow.CUCKATOO
+	}
+	return pow.BLAKE2BD
+}
 
 // StratumConn starts the initial connection to a stratum pool and sets defaults
 // in the pool object.
@@ -53,6 +66,7 @@ func (this *Stratum)StratumConn(cfg *common.GlobalConfig) error {
 	}
 	this.Cfg.PoolConfig.Pool = pool
 	this.ID = 1
+	this.PowType = GetPowType(cfg.NecessaryConfig.Pow)
 	this.ConnectRetry()
 	return nil
 }
