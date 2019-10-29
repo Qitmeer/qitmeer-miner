@@ -458,10 +458,9 @@ func (s *QitmeerStratum) Unmarshal(blob []byte) (interface{}, error) {
 func (s *NotifyWork) PrepQitmeerWork() []byte {
 	cH1 := s.CB2+s.ExtraNonce1+s.ExtraNonce2+s.CB3
 	coinbaseD1,_ := hex.DecodeString(cH1)
+
 	coinbaseH1 := qitmeer.DoubleHashH(coinbaseD1)
-
 	coinbase:=s.CB1+ hex.EncodeToString(coinbaseH1[:]) + s.CB4
-
 	coinbaseD,_ := hex.DecodeString(coinbase)
 	coinbaseH := qitmeer.DoubleHashH(coinbaseD)
 	coinbase_hash_bin := coinbaseH[:]
@@ -486,7 +485,11 @@ func (s *NotifyWork) PrepQitmeerWork() []byte {
 	//prevHash :=s.Hash
 	ntime ,_:= hex.DecodeString(s.Ntime)
 	blockheader := s.Version + prevHash + merkleRootStr2 + s.StateRoot + s.Nbits + hex.EncodeToString(ntime) + nonceStr + hex.EncodeToString([]byte{uint8(s.PowType)}) + hex.EncodeToString(s.CuckooProof[:])
+	//fmt.Println("s.Version + prevHash + merkleRootStr2 + s.StateRoot + s.Nbits + hex.EncodeToString(ntime) + nonceStr + hex.EncodeToString([]byte{uint8(s.PowType)}) + hex.EncodeToString(s.CuckooProof[:])",
+	//	s.Version , prevHash , merkleRootStr2 , s.StateRoot , s.Nbits , hex.EncodeToString(ntime) , nonceStr , hex.EncodeToString([]byte{uint8(s.PowType)}) , hex.EncodeToString(s.CuckooProof[:]),)
+	//fmt.Println("block header",blockheader)
 	workData ,_:= hex.DecodeString(blockheader)
+
 	return workData
 }
 
