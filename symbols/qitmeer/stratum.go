@@ -11,6 +11,7 @@ import (
 	"fmt"
 	qitmeer "github.com/Qitmeer/qitmeer/common/hash"
 	`github.com/Qitmeer/qitmeer/core/types/pow`
+	`github.com/Qitmeer/qitmeer/params`
 	"math/big"
 	"qitmeer-miner/common"
 	"qitmeer-miner/core"
@@ -119,7 +120,11 @@ type QitmeerStratum struct {
 }
 
 func (s *QitmeerStratum) CalcBasePowLimit() *big.Int {
-	return new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 232), big.NewInt(1))
+	switch s.PowType {
+	case pow.BLAKE2BD:
+		return params.MainNetParams.PowConfig.Blake2bdPowLimit
+	}
+	return params.MainNetParams.PowConfig.Blake2bdPowLimit
 }
 
 func (this *QitmeerStratum)HandleReply()  {
