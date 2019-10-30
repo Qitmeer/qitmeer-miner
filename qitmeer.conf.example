@@ -23,9 +23,9 @@ notls=true
 rpccert=CA.cert
 
 #[Pool Config]
-#  qitmeer.meerpool.com:3176 blake2bd
+# qitmeer.meerpool.com:3176 blake2bd
 # qitmeer.meerpool.com 3177 cuckaroo
-qitmeer.meerpool.com 3178 cuckatoo
+# qitmeer.meerpool.com 3178 cuckatoo
 #pow type cuckaroo|blake2bd|cuckatoo
 pow=cuckaroo
 pool=stratum+tcp://qitmeer.meerpool.com:3177
