@@ -122,7 +122,7 @@ type QitmeerStratum struct {
 func (s *QitmeerStratum) CalcBasePowLimit() *big.Int {
 	switch s.PowType {
 	case pow.BLAKE2BD:
-		return new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 250), big.NewInt(1))
+		return new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 224), big.NewInt(1))
 	case pow.CUCKAROO:
 		return big.NewInt(1)
 	case pow.CUCKATOO:
