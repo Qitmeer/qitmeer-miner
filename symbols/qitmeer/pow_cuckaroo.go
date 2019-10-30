@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/Qitmeer/go-opencl/cl"
+	`github.com/Qitmeer/qitmeer/common/hash`
 	"github.com/Qitmeer/qitmeer/core/types/pow"
 	cuckaroo "github.com/Qitmeer/qitmeer/crypto/cuckoo"
 	"github.com/Qitmeer/qitmeer/crypto/cuckoo/siphash"
@@ -197,7 +198,8 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 			this.Update()
 			nonce,_ := common.RandUint32()
 			this.header.HeaderBlock.Pow.SetNonce(nonce)
-			hdrkey := this.header.HeaderBlock.Pow.(*pow.Cuckaroo).GetSipHash(this.header.HeaderBlock.BlockData())
+			hData := this.header.HeaderBlock.BlockData()
+			hdrkey := this.header.HeaderBlock.Pow.(*pow.Cuckaroo).GetSipHash(hData)
 			if this.Cfg.OptionConfig.CPUMiner{
 				c := cuckaroo.NewCuckoo()
 				var found = false
@@ -373,13 +375,14 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 			if err != nil{
 				continue
 			}
-			targetDiff := pow.CompactToBig(this.header.HeaderBlock.Difficulty)
-			h := this.header.HeaderBlock.BlockHash()
-			if pow.CalcCuckooDiff(pow.GraphWeight(uint32(this.EdgeBits)),h).Cmp(targetDiff) < 0{
+			h := hash.DoubleHashH(hData[:113])
+			if pow.CalcCuckooDiff(pow.GraphWeight(uint32(this.EdgeBits)),h).Cmp(this.header.TargetDiff) < 0{
 				continue
 			}
 			common.MinerLoger.Infof("Found Hash %s",h)
-			subm := hex.EncodeToString(BlockDataWithProof(this.header.HeaderBlock))
+			subData := BlockDataWithProof(this.header.HeaderBlock)
+			copy(subData[:113],hData[:113])
+			subm := hex.EncodeToString(subData)
 
 			if !this.Pool{
 				subm += common.Int2varinthex(int64(len(this.header.Parents)))
@@ -396,7 +399,7 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 				txCount -= 1 //real transaction count except coinbase
 				subm += "-" + fmt.Sprintf("%d",txCount) + "-" + fmt.Sprintf("%d",this.Work.Block.Height)
 			} else {
-				subm += "-" + this.header.JobID + "-" + this.Work.PoolWork.ExtraNonce2
+				subm += "-" + this.header.JobID + "-" + this.header.Exnonce2
 			}
 			this.SubmitData <- subm
 			if !this.Pool{

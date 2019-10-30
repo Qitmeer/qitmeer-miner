@@ -61,11 +61,12 @@ func (this *QitmeerWork) Get () bool {
 		//not has new work
 		return false
 	}
+	target := ""
 	n := new(big.Int)
 	switch this.Cfg.NecessaryConfig.Pow {
 	case POW_DOUBLE_BLAKE2B:
 		blockTemplate.Result.Pow = pow.GetInstance(pow.BLAKE2BD,0,[]byte{})
-		target := blockTemplate.Result.PowDiffReference.Blake2bTarget
+		target = blockTemplate.Result.PowDiffReference.Blake2bTarget
 		n, _ = n.SetString(target, 16)
 		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
 		blockTemplate.Result.Target = target
@@ -77,14 +78,16 @@ func (this *QitmeerWork) Get () bool {
 		powStruct.SetEdgeBits(24)
 		n.SetUint64(blockTemplate.Result.PowDiffReference.CuckarooMinDiff)
 		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
-		blockTemplate.Result.Target = fmt.Sprintf("min difficulty %d",blockTemplate.Result.PowDiffReference.CuckarooMinDiff)
+		target = fmt.Sprintf("min difficulty %d",blockTemplate.Result.PowDiffReference.CuckarooMinDiff)
+		blockTemplate.Result.Target = fmt.Sprintf("%064x",blockTemplate.Result.PowDiffReference.CuckarooMinDiff)
 	case POW_CUCKTOO:
 		blockTemplate.Result.Pow = pow.GetInstance(pow.CUCKATOO,0,[]byte{})
 		powStruct := blockTemplate.Result.Pow.(*pow.Cuckatoo)
 		powStruct.SetEdgeBits(29)
 		n.SetUint64(blockTemplate.Result.PowDiffReference.CuckatooMinDiff)
 		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
-		blockTemplate.Result.Target = fmt.Sprintf("min difficulty %d",blockTemplate.Result.PowDiffReference.CuckatooMinDiff)
+		target = fmt.Sprintf("min difficulty %d",blockTemplate.Result.PowDiffReference.CuckatooMinDiff)
+		blockTemplate.Result.Target = fmt.Sprintf("%064x",blockTemplate.Result.PowDiffReference.CuckatooMinDiff)
 	}
 
 	blockTemplate.Result.HasCoinbasePack = false
