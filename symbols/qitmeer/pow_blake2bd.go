@@ -231,7 +231,6 @@ func (this *Blake2bD) Mine(wg *sync.WaitGroup) {
 					} else {
 						subm += "-" + this.header.JobID + "-" + this.header.Exnonce2
 					}
-					fmt.Println(subm[:226])
 					this.SubmitData <- subm
 					if !this.Pool{
 						//solo wait new task

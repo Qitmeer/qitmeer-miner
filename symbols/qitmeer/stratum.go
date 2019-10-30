@@ -122,7 +122,11 @@ type QitmeerStratum struct {
 func (s *QitmeerStratum) CalcBasePowLimit() *big.Int {
 	switch s.PowType {
 	case pow.BLAKE2BD:
-		return params.MainNetParams.PowConfig.Blake2bdPowLimit
+		return new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 250), big.NewInt(1))
+	case pow.CUCKAROO:
+		return big.NewInt(1)
+	case pow.CUCKATOO:
+		return big.NewInt(1)
 	}
 	return params.MainNetParams.PowConfig.Blake2bdPowLimit
 }
@@ -133,7 +137,7 @@ func (this *QitmeerStratum)HandleReply()  {
 	this.Stratum.Listen(func(data string) {
 		resp, err = this.Unmarshal([]byte(data))
 		if err != nil {
-			common.MinerLoger.Error(err.Error())
+			common.MinerLoger.Error(data+err.Error())
 			return
 		}
 		switch resp.(type) {
@@ -463,7 +467,6 @@ func (s *QitmeerStratum) Unmarshal(blob []byte) (interface{}, error) {
 func (s *NotifyWork) PrepQitmeerWork() []byte {
 	cH1 := s.CB2+s.ExtraNonce1+s.ExtraNonce2+s.CB3
 	coinbaseD1,_ := hex.DecodeString(cH1)
-
 	coinbaseH1 := qitmeer.DoubleHashH(coinbaseD1)
 	coinbase:=s.CB1+ hex.EncodeToString(coinbaseH1[:]) + s.CB4
 	coinbaseD,_ := hex.DecodeString(coinbase)
@@ -480,7 +483,6 @@ func (s *NotifyWork) PrepQitmeerWork() []byte {
 
 	ddd = common.Reverse(ddd)
 	merkleRootStr2 := hex.EncodeToString(ddd)
-
 	nonceStr := fmt.Sprintf("%08x",0)
 	//pool tx hash has converse every 4 bit
 	tmpHash := s.Hash
@@ -490,9 +492,6 @@ func (s *NotifyWork) PrepQitmeerWork() []byte {
 	//prevHash :=s.Hash
 	ntime ,_:= hex.DecodeString(s.Ntime)
 	blockheader := s.Version + prevHash + merkleRootStr2 + s.StateRoot + s.Nbits + hex.EncodeToString(ntime) + nonceStr + hex.EncodeToString([]byte{uint8(s.PowType)}) + hex.EncodeToString(s.CuckooProof[:])
-	//fmt.Println("s.Version + prevHash + merkleRootStr2 + s.StateRoot + s.Nbits + hex.EncodeToString(ntime) + nonceStr + hex.EncodeToString([]byte{uint8(s.PowType)}) + hex.EncodeToString(s.CuckooProof[:])",
-	//	s.Version , prevHash , merkleRootStr2 , s.StateRoot , s.Nbits , hex.EncodeToString(ntime) , nonceStr , hex.EncodeToString([]byte{uint8(s.PowType)}) , hex.EncodeToString(s.CuckooProof[:]),)
-	//fmt.Println("block header",blockheader)
 	workData ,_:= hex.DecodeString(blockheader)
 
 	return workData
