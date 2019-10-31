@@ -61,11 +61,12 @@ func (this *QitmeerWork) Get () bool {
 		//not has new work
 		return false
 	}
+	target := ""
 	n := new(big.Int)
 	switch this.Cfg.NecessaryConfig.Pow {
 	case POW_DOUBLE_BLAKE2B:
 		blockTemplate.Result.Pow = pow.GetInstance(pow.BLAKE2BD,0,[]byte{})
-		target := blockTemplate.Result.PowDiffReference.Blake2bTarget
+		target = blockTemplate.Result.PowDiffReference.Blake2bTarget
 		n, _ = n.SetString(target, 16)
 		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
 		blockTemplate.Result.Target = target
@@ -77,14 +78,16 @@ func (this *QitmeerWork) Get () bool {
 		powStruct.SetEdgeBits(24)
 		n.SetUint64(blockTemplate.Result.PowDiffReference.CuckarooMinDiff)
 		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
-		blockTemplate.Result.Target = fmt.Sprintf("min difficulty %d",blockTemplate.Result.PowDiffReference.CuckarooMinDiff)
+		target = fmt.Sprintf("min difficulty %d",blockTemplate.Result.PowDiffReference.CuckarooMinDiff)
+		blockTemplate.Result.Target = fmt.Sprintf("%064x",blockTemplate.Result.PowDiffReference.CuckarooMinDiff)
 	case POW_CUCKTOO:
 		blockTemplate.Result.Pow = pow.GetInstance(pow.CUCKATOO,0,[]byte{})
 		powStruct := blockTemplate.Result.Pow.(*pow.Cuckatoo)
 		powStruct.SetEdgeBits(29)
 		n.SetUint64(blockTemplate.Result.PowDiffReference.CuckatooMinDiff)
 		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
-		blockTemplate.Result.Target = fmt.Sprintf("min difficulty %d",blockTemplate.Result.PowDiffReference.CuckatooMinDiff)
+		target = fmt.Sprintf("min difficulty %d",blockTemplate.Result.PowDiffReference.CuckatooMinDiff)
+		blockTemplate.Result.Target = fmt.Sprintf("%064x",blockTemplate.Result.PowDiffReference.CuckatooMinDiff)
 	}
 
 	blockTemplate.Result.HasCoinbasePack = false
@@ -120,7 +123,7 @@ func (this *QitmeerWork) Submit (subm string) error {
 			if time.Now().Unix() - startTime >= 120{
 				break
 			}
-			common.MinerLoger.Errorf("【submit error】"+string(body)+err.Error())
+			common.MinerLoger.Errorf("[submit error]"+string(body)+err.Error())
 			time.Sleep(1*time.Second)
 			continue
 		}
@@ -128,11 +131,11 @@ func (this *QitmeerWork) Submit (subm string) error {
 	}
 
 	if !strings.Contains(res.Result,"Block submitted accepted") {
-		common.MinerLoger.Error("【submit error】 "+string(body))
+		common.MinerLoger.Error("[submit error] "+string(body))
 		if strings.Contains(res.Result,"The tips of block is expired"){
 			return ErrSameWork
 		}
-		return errors.New("【submit data failed】"+res.Result)
+		return errors.New("[submit data failed]"+res.Result)
 	}
 	return nil
 }
@@ -178,7 +181,7 @@ func (this *QitmeerWork) PoolSubmit (subm string) error {
 	}
 	_, err = this.stra.Conn.Write(m)
 	if err != nil {
-		common.MinerLoger.Debugf("【submit error】【pool connect error】%s",err)
+		common.MinerLoger.Debugf("[submit error][pool connect error]%s",err)
 		return err
 	}
 	_, err = this.stra.Conn.Write([]byte("\n"))

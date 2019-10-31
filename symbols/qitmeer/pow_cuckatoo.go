@@ -15,6 +15,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/Qitmeer/go-opencl/cl"
+	`github.com/Qitmeer/qitmeer/common/hash`
 	"github.com/Qitmeer/qitmeer/core/types/pow"
 	"github.com/Qitmeer/qitmeer/crypto/cuckoo"
 	"github.com/Qitmeer/qitmeer/crypto/cuckoo/siphash"
@@ -88,7 +89,8 @@ func (this *Cuckatoo) Update() {
 	this.Transactions = make(map[int][]Transactions)
 	this.Device.Update()
 	if this.Pool {
-		this.Work.PoolWork.ExtraNonce2 = fmt.Sprintf("%08x", this.CurrentWorkID)
+		this.Work.PoolWork.ExtraNonce2 = fmt.Sprintf("%08x", this.CurrentWorkID)[:8]
+		this.header.Exnonce2 = this.Work.PoolWork.ExtraNonce2
 		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepQitmeerWork()
 		this.header.PackagePoolHeader(this.Work,pow.CUCKATOO)
 	} else {
@@ -137,7 +139,12 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 			this.Update()
 			nonce,_ := common.RandUint32()
 			this.header.HeaderBlock.Pow.SetNonce(nonce)
-			hdrkey := this.header.HeaderBlock.Pow.(*pow.Cuckatoo).GetSipHash(this.header.HeaderBlock.BlockData())
+			hData := this.header.HeaderBlock.BlockData()
+			hdrkey := this.header.HeaderBlock.Pow.(*pow.Cuckatoo).GetSipHash(hData)
+			h := hash.DoubleHashH(hData[:113])
+			if pow.CalcCuckooDiff(pow.GraphWeight(uint32(edges_bits)),h).Cmp(this.header.TargetDiff) < 0 {
+				continue
+			}
 			sip := siphash.Newsip(hdrkey[:])
 			this.InitParamData()
 			err = this.CreateEdgeKernel.SetArg(0,uint64(sip.V[0]))
@@ -232,13 +239,11 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 			if err != nil{
 				continue
 			}
-			targetDiff := pow.CompactToBig(this.header.HeaderBlock.Difficulty)
-			h := this.header.HeaderBlock.BlockHash()
-			if pow.CalcCuckooDiff(pow.GraphWeight(uint32(edges_bits)),h).Cmp(targetDiff) < 0 {
-				continue
-			}
+
 			common.MinerLoger.Infof("Found Hash%s",h)
-			subm := hex.EncodeToString(BlockDataWithProof(this.header.HeaderBlock))
+			subData := BlockDataWithProof(this.header.HeaderBlock)
+			copy(subData[:113],hData[:113])
+			subm := hex.EncodeToString(subData)
 			if !this.Pool{
 				subm += common.Int2varinthex(int64(len(this.header.Parents)))
 				for j := 0; j < len(this.header.Parents); j++ {
@@ -254,7 +259,7 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 				txCount -= 1 //real transaction count except coinbase
 				subm += "-" + fmt.Sprintf("%d",txCount) + "-" + fmt.Sprintf("%d",this.Work.Block.Height)
 			} else {
-				subm += "-" + this.header.JobID + "-" + this.Work.PoolWork.ExtraNonce2
+				subm += "-" + this.header.JobID + "-" + this.header.Exnonce2
 			}
 			this.SubmitData <- subm
 			if !this.Pool{

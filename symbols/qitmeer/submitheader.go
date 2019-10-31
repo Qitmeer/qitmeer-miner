@@ -25,28 +25,27 @@ type MinerBlockData struct {
 // Header structure of assembly pool
 func BlockComputePoolData(b []byte) []byte{
 	//the qitmeer order
+	powType := hex.EncodeToString(b[POWTYPE_START:POWTYPE_END])
 	nonce := hex.EncodeToString(b[NONCESTART:NONCEEND])
 	ntime := hex.EncodeToString(b[TIMESTART:TIMEEND])
-	height := hex.EncodeToString(b[HEIGHTSTART:HEIGHTEND])
 	nbits := hex.EncodeToString(b[NBITSTART:NBITEND])
 	state := hex.EncodeToString(b[STATESTART:STATEEND])
 	merkle := hex.EncodeToString(b[MERKLESTART:MERKLEEND])
 	prevhash := hex.EncodeToString(b[PRESTART:PREEND])
 	version := hex.EncodeToString(b[VERSIONSTART:VERSIONEND])
 	//the pool order
-	header := nonce +ntime+height+ nbits + state + merkle + prevhash + version
+	header := powType + nonce +ntime+ nbits + state + merkle + prevhash + version
 
 	bb , _ := hex.DecodeString(header)
 	bb = common.Reverse(bb)
-	heightD := common.Reverse(bb[HEIGHTSTART:HEIGHTEND])
-	copy(bb[HEIGHTSTART:HEIGHTEND],heightD[0:8])
 	return bb
 }
 //the pool work submit structure
 func (this *MinerBlockData)PackagePoolHeader(work *QitmeerWork,powType pow.PowType)  {
 	this.HeaderData = BlockComputePoolData(work.PoolWork.WorkData) // 128
 	this.TargetDiff = work.stra.Target
-	nbitesBy := common.Target2BlockBits(fmt.Sprintf("%064x",this.TargetDiff))
+	nbitesBy ,_:= hex.DecodeString(fmt.Sprintf("%064x",this.TargetDiff))
+	this.Target2 = common.Reverse(nbitesBy[0:32])
 	copy(this.HeaderData[NONCESTART:NONCEEND],nbitesBy[:])
 	instance := pow.GetInstance(powType,0,[]byte{})
 	proofData,_ := hex.DecodeString(instance.GetProofData())

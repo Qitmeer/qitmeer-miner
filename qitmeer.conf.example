@@ -6,8 +6,7 @@
 #[Necessary Config]
 #coin
 symbol=PMEER
-#pow type cuckaroo|blake2bd|cuckatoo
-pow=blake2bd
+
 
 #[Solo Config]
 #miner address
@@ -24,7 +23,12 @@ notls=true
 rpccert=CA.cert
 
 #[Pool Config]
-pool=stratum+tcp://47.93.20.102:3176
+# qitmeer.meerpool.com:3176 blake2bd
+# qitmeer.meerpool.com 3177 cuckaroo
+# qitmeer.meerpool.com 3178 cuckatoo
+#pow type cuckaroo|blake2bd|cuckatoo
+pow=cuckaroo
+pool=stratum+tcp://qitmeer.meerpool.com:3177
 pooluser=TmbCBKbZF8PeSdj5Chm22T4hZRMJY5D8XyX
 poolpass=
 
