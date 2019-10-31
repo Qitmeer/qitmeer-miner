@@ -144,7 +144,7 @@ func (this *QitmeerStratum)HandleReply()  {
 		case StratumMsg:
 			this.handleStratumMsg(resp)
 		case NotifyRes:
-			common.MinerLoger.Debugf("【pool notify message】: %v", data)
+			common.MinerLoger.Debugf("[pool notify message]: %v", data)
 			this.handleNotifyRes(resp)
 		case *SubscribeReply:
 			this.handleSubscribeReply(resp)
@@ -152,7 +152,7 @@ func (this *QitmeerStratum)HandleReply()  {
 			this.HandleSubmitReply(resp)
 		default:
 			this.HandleSubmitReply(resp)
-			common.MinerLoger.Debugf("【Unhandled message】:%v ", data)
+			common.MinerLoger.Debugf("[Unhandled message]:%v ", data)
 		}
 	})
 }
@@ -167,17 +167,17 @@ func (s *QitmeerStratum) HandleSubmitReply(resp interface{}) {
 	aResp := resp.(*BasicReply)
 	if int(aResp.ID.(float64)) == int(s.AuthID) {
 		if aResp.Result {
-			common.MinerLoger.Infof("【pool reply】Logged in")
+			common.MinerLoger.Infof("[pool reply]Logged in")
 		} else {
-			common.MinerLoger.Errorf("【pool reply】Auth failure.")
+			common.MinerLoger.Errorf("[pool reply]Auth failure.")
 		}
 	} else{
 		if aResp.Result {
 			atomic.AddUint64(&s.ValidShares, 1)
-			common.MinerLoger.Infof("【pool reply】Share accepted")
+			common.MinerLoger.Infof("[pool reply]Share accepted")
 		} else {
 			atomic.AddUint64(&s.InvalidShares, 1)
-			common.MinerLoger.Errorf("【pool reply】Share rejected:%v ", aResp.Error)
+			common.MinerLoger.Errorf("[pool reply]Share rejected:%v ", aResp.Error)
 		}
 	}
 }
@@ -451,7 +451,7 @@ func (s *QitmeerStratum) Unmarshal(blob []byte) (interface{}, error) {
 		var param []string
 		param = append(param, diffStr)
 		nres.Params = param
-		common.MinerLoger.Debugf("【pool reply】Stratum difficulty set to %f", difficulty)
+		common.MinerLoger.Debugf("[pool reply]Stratum difficulty set to %f", difficulty)
 		return nres, nil
 	default:
 		resp := &BasicReply{}
@@ -531,6 +531,6 @@ func (s *QitmeerStratum) PrepSubmit(data []byte,jobID string,ExtraNonce2 string)
 		workId = workArr[1]
 	}
 	sub.Params = []string{workId, jobID, ExtraNonce2, timestampStr,nonceStr,hex.EncodeToString(data[113:282])}
-	common.MinerLoger.Infof("【submit】{PoolUser, jobID, ExtraNonce2, timestampStr,nonceStr,proof}:%v",sub.Params)
+	common.MinerLoger.Infof("[submit]{PoolUser, jobID, ExtraNonce2, timestampStr,nonceStr,proof}:%v",sub.Params)
 	return sub, nil
 }

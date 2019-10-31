@@ -301,9 +301,9 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 	}
 
 	if deviceCfg.ListDevices{
-		MinerLoger.Info("【CPU Devices List】:")
+		MinerLoger.Info("[CPU Devices List]:")
 		GetDevices(DevicesTypesForCPUMining)
-		MinerLoger.Info("【GPU Devices List】:")
+		MinerLoger.Info("[GPU Devices List]:")
 		GetDevices(DevicesTypesForGPUMining)
 		os.Exit(0)
 	}

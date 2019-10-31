@@ -123,7 +123,7 @@ func (this *QitmeerWork) Submit (subm string) error {
 			if time.Now().Unix() - startTime >= 120{
 				break
 			}
-			common.MinerLoger.Errorf("【submit error】"+string(body)+err.Error())
+			common.MinerLoger.Errorf("[submit error]"+string(body)+err.Error())
 			time.Sleep(1*time.Second)
 			continue
 		}
@@ -131,11 +131,11 @@ func (this *QitmeerWork) Submit (subm string) error {
 	}
 
 	if !strings.Contains(res.Result,"Block submitted accepted") {
-		common.MinerLoger.Error("【submit error】 "+string(body))
+		common.MinerLoger.Error("[submit error] "+string(body))
 		if strings.Contains(res.Result,"The tips of block is expired"){
 			return ErrSameWork
 		}
-		return errors.New("【submit data failed】"+res.Result)
+		return errors.New("[submit data failed]"+res.Result)
 	}
 	return nil
 }
@@ -181,7 +181,7 @@ func (this *QitmeerWork) PoolSubmit (subm string) error {
 	}
 	_, err = this.stra.Conn.Write(m)
 	if err != nil {
-		common.MinerLoger.Debugf("【submit error】【pool connect error】%s",err)
+		common.MinerLoger.Debugf("[submit error][pool connect error]%s",err)
 		return err
 	}
 	_, err = this.stra.Conn.Write([]byte("\n"))

@@ -22,7 +22,7 @@ func init(){
 	common.MinerLoger = go_logger.NewLogger()
 	cfg, _, err := common.LoadConfig()
 	if err != nil {
-		log.Fatal("[error] config error,please check it.【",err,"】")
+		log.Fatal("[error] config error,please check it.[",err,"]")
 		return
 	}
 	//init miner robot

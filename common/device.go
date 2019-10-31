@@ -9,7 +9,7 @@ var DevicesTypesForCPUMining = cl.DeviceTypeCPU
 func GetDevices(t cl.DeviceType) []*cl.Device {
 	platforms, err := cl.GetPlatforms()
 	if err != nil {
-		MinerLoger.Errorf("Get Graphics card platforms error,please check!【%s】",err.Error())
+		MinerLoger.Errorf("Get Graphics card platforms error,please check![%s]",err.Error())
 		return nil
 	}
 	clDevices := make([]*cl.Device, 0)
