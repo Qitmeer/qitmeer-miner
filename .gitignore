@@ -6,7 +6,7 @@ re
 qitmeer.conf
 CA.cert
 go.sum
-
+start.sh
 lib/cuckoo/target
 lib/cuckoo/target
 cuckatoo/cuckatoo

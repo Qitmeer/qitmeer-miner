@@ -4,7 +4,7 @@ james
 */
 package qitmeer
 /*
-#cgo LDFLAGS: -L./ -lcuckoo
+#cgo LDFLAGS: -L../../lib/cuckoo/target/release -lcuckoo
 #include "../../lib/cuckoo.h"
 #include <stdio.h>
 #include <stdlib.h>
