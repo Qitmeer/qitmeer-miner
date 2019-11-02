@@ -97,10 +97,7 @@ func (this *Device)GetMinerType() string{
 }
 
 func (this *Device)Update()  {
-	this.CurrentWorkID,this.Err = common.RandUint64()
-	if this.Err != nil{
-		this.CurrentWorkID++
-	}
+	this.CurrentWorkID = common.RandUint64()
 }
 
 func (this *Device)InitDevice()  {
@@ -189,6 +186,9 @@ func (this *Device)Status(wg *sync.WaitGroup)  {
 			}
 			averageHashRate := float64(this.AllDiffOneShares) /
 				float64(secondsElapsed)
+			if averageHashRate <= 0{
+				continue
+			}
 			if this.AverageHashRate <= 0{
 				this.AverageHashRate = averageHashRate
 			}

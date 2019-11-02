@@ -31,8 +31,6 @@ func hashMerkleBranches(left *hash.Hash, right *hash.Hash) *hash.Hash {
 	return &newHash
 }
 func (h *BlockHeader)BuildMerkleTreeStore(index int) hash.Hash {
-	h.Lock()
-	defer h.Unlock()
 	// If there's an empty stake tree, return totally zeroed out merkle tree root
 	// only.
 	transactions := make([]hash.Hash,0)

@@ -285,12 +285,8 @@ func GetCurrentDir() string {
 }
 
 
-func RandUint64() (uint64, error) {
-	var b [8]byte
-	if _, err := rand.Read(b[:]); err != nil {
-		return 0, err
-	}
-	return uint64(binary.LittleEndian.Uint64(b[:])), nil
+func RandUint64() uint64 {
+	return rand.Uint64()
 }
 
 
