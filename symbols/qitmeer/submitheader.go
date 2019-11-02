@@ -44,6 +44,7 @@ func BlockComputePoolData(b []byte) []byte{
 func (this *MinerBlockData)PackagePoolHeader(work *QitmeerWork,powType pow.PowType)  {
 	this.HeaderData = BlockComputePoolData(work.PoolWork.WorkData) // 128
 	this.TargetDiff = work.stra.Target
+	fmt.Println("target:",fmt.Sprintf("%064x",this.TargetDiff))
 	nbitesBy ,_:= hex.DecodeString(fmt.Sprintf("%064x",this.TargetDiff))
 	this.Target2 = common.Reverse(nbitesBy[0:32])
 	copy(this.HeaderData[NONCESTART:NONCEEND],nbitesBy[:])

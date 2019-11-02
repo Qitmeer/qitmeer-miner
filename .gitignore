@@ -16,3 +16,6 @@ lib/cuckoo/Cargo.lock
 lib/libcuckoo.a
 solo.conf
 pool.conf
+
+libcuckoo.dylib
+./symbols/qitmeer/libcuckoo.dylib

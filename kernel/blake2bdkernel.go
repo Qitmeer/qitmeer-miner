@@ -35,7 +35,8 @@ __kernel void search(__global ulong *headerIn, __global ulong *nonceOut,__global
 
 	ulong target = targetd4[3];
 	ulong target2 = targetd4[2];
-	uint nonce = (uint)get_global_id(0) + (uint)(randNonce[0]+randNonce[0])/2;
+	uint nonce = get_global_id(0) + 0xF0000000;
+	//uint nonce = get_global_id(0);
 	__global uint * hint = (__global uint *)headerIn;
 	hint[27]=nonce;// nonce position 108 - 112
 	ulong m[16] = {	headerIn[0], headerIn[1],
@@ -2838,7 +2839,7 @@ __kernel void search(__global ulong *headerIn, __global ulong *nonceOut,__global
 	ulong *res3 = (ulong *) d;
 	ulong hash1 = as_ulong(as_uchar8(*res3).s76543210);
 	if (hash0 == target && hash1 <= target2) {
-		*nonceOut = (ulong)nonce;
+		*nonceOut = (ulong)headerIn[13];
 		return;
 	}
 }

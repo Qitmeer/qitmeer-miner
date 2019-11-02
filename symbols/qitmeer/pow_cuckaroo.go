@@ -200,10 +200,7 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 			this.header.HeaderBlock.Pow.SetNonce(nonce)
 			hData := this.header.HeaderBlock.BlockData()
 			hdrkey := this.header.HeaderBlock.Pow.(*pow.Cuckaroo).GetSipHash(hData)
-			h := hash.DoubleHashH(hData[:113])
-			if pow.CalcCuckooDiff(pow.GraphWeight(uint32(this.EdgeBits)),h).Cmp(this.header.TargetDiff) < 0{
-				continue
-			}
+
 			if this.Cfg.OptionConfig.CPUMiner{
 				c := cuckaroo.NewCuckoo()
 				var found = false
@@ -379,10 +376,14 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 			if err != nil{
 				continue
 			}
-
-			common.MinerLoger.Infof("Found Hash %s",h)
 			subData := BlockDataWithProof(this.header.HeaderBlock)
 			copy(subData[:113],hData[:113])
+			h := hash.DoubleHashH(subData)
+			if pow.CalcCuckooDiff(pow.GraphWeight(uint32(this.EdgeBits)),h).Cmp(this.header.TargetDiff) < 0{
+				continue
+			}
+			common.MinerLoger.Infof("Found Hash %s",h)
+
 			subm := hex.EncodeToString(subData)
 
 			if !this.Pool{

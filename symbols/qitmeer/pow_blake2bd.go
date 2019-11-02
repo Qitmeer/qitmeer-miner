@@ -173,7 +173,7 @@ func (this *Blake2bD) Mine(wg *sync.WaitGroup) {
 			if !this.IsValid {
 				break
 			}
-			randNonceBase,_ = common.RandUint64()
+			randNonceBase = common.RandUint64()
 			randNonceBytes = make([]byte,8)
 			binary.LittleEndian.PutUint64(randNonceBytes,randNonceBase)
 			if this.Event, this.Err = this.CommandQueue.EnqueueWriteBufferByte(this.NonceRandObj, true, 0, randNonceBytes, nil); this.Err != nil {
