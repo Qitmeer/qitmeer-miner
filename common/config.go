@@ -264,7 +264,7 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 	}
 
 	if deviceCfg.Version{
-		MinerLoger.Infof("Qitmeer Miner Version:%s",GetVersion())
+		fmt.Printf("Qitmeer Miner Version:%s\n",GetVersion())
 		os.Exit(0)
 	}
 	if fileCfg.ConfigFile == ""{
