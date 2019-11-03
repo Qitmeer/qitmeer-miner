@@ -40,10 +40,12 @@ var (
 	defaultLocalSize = 4096
 	defaultWorkGroupSize = 256
 	defaultEdgeBits = 24
+	version = "0.2.4"
 )
 
-type DeviceConfig struct {
+type CommandConfig struct {
 	ListDevices bool `short:"l" long:"listdevices" description:"List number of devices."`
+	Version bool `short:"v" long:"version" description:"show the version of miner"`
 }
 
 type FileConfig struct {
@@ -106,7 +108,7 @@ type NecessaryConfig struct {
 type GlobalConfig struct {
 	OptionConfig OptionalConfig
 	LogConfig FileConfig
-	DeviceConfig DeviceConfig
+	DeviceConfig CommandConfig
 	SoloConfig SoloConfig
 	PoolConfig PoolConfig
 	NecessaryConfig NecessaryConfig
@@ -180,7 +182,7 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 	}
 	poolCfg := PoolConfig{}
 	// Default config.
-	deviceCfg := DeviceConfig{}
+	deviceCfg := CommandConfig{}
 	// Default config.
 	fileCfg := FileConfig{
 		//ConfigFile:defaultConfigFile,
@@ -221,6 +223,7 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 		MinerLoger.Errorf("%v", err)
 		os.Exit(0)
 	}
+
 	_,err = preParser.AddGroup("The Config File Options", "The Config File Options", &fileCfg)
 	if err != nil {
 		MinerLoger.Errorf("%v", err)
@@ -249,8 +252,19 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 
 	_,err = preParser.Parse()
 	if err != nil{
-		MinerLoger.Errorf("%v", err)
-		MinerLoger.Errorf("Usage to see  ./%s -h",appName)
+		MinerLoger.Infof("%v", err)
+		os.Exit(0)
+	}
+	if deviceCfg.ListDevices{
+		MinerLoger.Info("[CPU Devices List]:")
+		GetDevices(DevicesTypesForCPUMining)
+		MinerLoger.Info("[GPU Devices List]:")
+		GetDevices(DevicesTypesForGPUMining)
+		os.Exit(0)
+	}
+
+	if deviceCfg.Version{
+		MinerLoger.Infof("Qitmeer Miner Version:%s",GetVersion())
 		os.Exit(0)
 	}
 	if fileCfg.ConfigFile == ""{
@@ -300,13 +314,6 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 		_ = MinerLoger.Attach("file", go_logger.LOGGER_LEVEL_DEBUG, fileConfig)
 	}
 
-	if deviceCfg.ListDevices{
-		MinerLoger.Info("[CPU Devices List]:")
-		GetDevices(DevicesTypesForCPUMining)
-		MinerLoger.Info("[GPU Devices List]:")
-		GetDevices(DevicesTypesForGPUMining)
-		os.Exit(0)
-	}
 	if poolCfg.Pool == "" && soloCfg.MinerAddr == ""{
 		MinerLoger.Error("Solo need address -M , pool need -o pool address")
 		preParser.WriteHelp(os.Stderr)
@@ -371,6 +378,10 @@ func InitNet(network string,p *params.Params) *params.Params {
 		return nil
 	}
 	return p
+}
+
+func GetVersion() string {
+	return version
 }
 
 
