@@ -1,74 +1,59 @@
 # Qitmeer Miner
 
-    The Miner of Qitmeer
 [![Build Status](https://travis-ci.com/Qitmeer/qitmeer-miner.svg?token=n9AoZUDqAJmhesf4MYUd&branch=master)](https://travis-ci.com/Qitmeer/qitmeer-miner)
-## Enviroment
 
+> The official GPU miner of the Qitmeer network  
+
+**Qitmeer-miner** is an GPU miner for the Qitmeer netowrk. It's the official reference implement maintained by the Qitmeer team.
+Currently it support 3 Qitmeer POW algorithms including Cuckaroo, Cuckatoo and Blake2bd.
+
+## Table of Contents
+* [Install](#install)
+* [Usage](#usage)
+   - [Run with config file](#run-with-config-file)
+   - [Run by Command line options](#command-line-usage)
+* [Build](#build)
+   - [Building from source](#building-from-source)
+* [Tutorial](#tutorial)    
+* [FAQ](#faq)
+
+
+## Install
+
+[![Releases](https://img.shields.io/github/downloads/Qitmeer/qitmeer-miner/total.svg)][Releases]
+
+Standalone installation archive for *Linux*, *macOS* and *Windows* are provided in
+the [Releases] section. 
+Please download an archive for your operating system and unpack the content to a place
+accessible from command line. 
+
+| Builds | Release | Date |
+| ------ | ------- | ---- |
+| Last   | [![GitHub release](https://img.shields.io/github/release/Qitmeer/qitmeer-miner/all.svg)][Releases] | [![GitHub Release Date](https://img.shields.io/github/release-date-pre/Qitmeer/qitmeer-miner.svg)][Releases] |
+| Stable | [![GitHub release](https://img.shields.io/github/release/Qitmeer/qitmeer-miner.svg)][latest] | [![GitHub Release Date](https://img.shields.io/github/release-date/Qitmeer/qitmeer-miner.svg)][latest] |
+
+## Usage
+
+### Run with config file 
+1. go to your 
+2. create a new config file by copying from the example config file. 
 ```bash
-$ go version >= 1.12
-$ cargo >= 1.36.0 (c4fcfb725 2019-05-15)
+$ cp qitmeer-miner.conf.example qitmeer-miner.conf
 ```
-    
-## Compile
+3. edit the config file which your create, you might need to change the `mineraddress`. 
+you need to create a Qitmeer address if you don't have it. Please see [FAQ](#FAQ)  
+4. run miner with the config file
 
 ```bash
-$ git clone git@github.com:Qitmeer/qitmeer-miner.git
-$ cd lib/cuckoo
-$ cargo build --release
-```
-
-* Ubuntu ENV
-```bash
-$ sudo apt-get install beignet-dev nvidia-cuda-dev nvidia-cuda-toolkit
-$ sudo copy lib/cuckoo/target/release/libcuckoo.so /usr/lib/
-$ go build 
-```
-        
-* Centos ENV
-```bash
-$ sudo yum install opencl-headers
-$ sudo yum install ocl-icd
-$ sudo ln -s /usr/lib64/libOpenCL.so.1 /usr/lib/libOpenCL.so
-$ sudo copy lib/cuckoo/target/release/libcuckoo.so /usr/lib/
-$ go build
-```   
-
-* MAC
-
-```bash
-go build
-```
-
-* Windows ENV
-##### Prequisite: 
-1. Install **Build Tools for Visual Studio**:  
-https://visualstudio.microsoft.com/thank-you-downloading-visual-studio/?sku=BuildTools&rel=16
-
-2. build
-```bash
-$ copy lib/cuckoo/target/release/cuckoo.dll to C:/Windows
-$ go build 
-```
-
-* Other method
-```bash
-$ make
+$ ./qitmeer-miner -C qitmeer-miner.conf
 ```
 
-###### Any questions see [docs](https://qitmeer.github.io/docs/en/reference/qitmeer-miner/)
-###### You can also see mining [tutorial](https://www.qitmeertalk.org/t/qitmeer-2019-11-02/906)
+### Comand line usage
 
-## Run
-```bash
-$ cp qitmeer.conf.example qitmeer.conf
-```
-- 1.run with the config file `qitmeer.conf`
-- 2.run with command
-```bash
-$ ./qitmeer-miner -h
-Usage:
-    qitmeer-miner [OPTIONS]
+The qitmeer-miner is a command line program. This means you can also launch it by provided valid command line options. For a full list of available command optinos, please run:
 
+```bash
+$ ./qitmeer-miner --help 
 Debug Command:
   -l, --listdevices    List number of devices.
 
@@ -101,13 +86,10 @@ The Optional Config Option:
       --proxyuser=     Username for proxy server
       --proxypass=     Password for proxy server
       --trimmerTimes=  the cuckaroo trimmer times (40)
-      --intensity=     Intensities (the work size is 2^intensity) per device. Single global value or a comma
-                       separated list. (24)
-      --worksize=      The explicitly declared sizes of the work to do per device (overrides intensity). Single
-                       global value or a comma separated list. (256)
+      --intensity=     Intensities (the work size is 2^intensity) per device. Single global value or a comma separated list. (24)
+      --worksize=      The explicitly declared sizes of the work to do per device (overrides intensity). Single global value or a comma separated list. (256)
       --timeout=       rpc timeout. (60)
-      --use_devices=   all gpu devices,you can use ./qitmeer-miner -l to see. examples:0,1 use the #0 device
-                       and #1 device
+      --use_devices=   all gpu devices,you can use ./qitmeer-miner -l to see. examples:0,1 use the #0 device and #1 device
       --max_tx_count=  max pack tx count (1000)
       --max_sig_count= max sign tx count (5000)
       --log_level=     info|debug|error|warn|trace (debug)
@@ -118,10 +100,36 @@ The Optional Config Option:
 
 Help Options:
   -h, --help           Show this help message
+ 
 ```
-## Stats Web Server
-- add param `stats_server=127.0.0.1:1235` in qitmeer.conf
-- brower explorer http://127.0.0.1:1235    
-![stats](public/img/miner1.png)  
-![stats](public/img/miner2.png)  
-![stats](public/img/miner3.png)  
+Please see [Qitmeer-Miner User References](https://qitmeer.github.io/docs/en/reference/qitmeer-miner/) for more details
+
+## Build
+### Building from source
+See [BUILD.md](BUILD.md) for build/compilation details.
+
+## Tutorial
+
+### Community Tutorials
+
+* Chinese [Qitmeer挖矿终极指南 https://www.qitmeertalk.org/t/qitmeer-2019-11-02/906](https://www.qitmeertalk.org/t/qitmeer-2019-11-02/906)
+
+## FAQ
+
+### How to create Qitmeer adderss
+There are several ways to create a Qitmeer address. you can use [qx][Qx] command , [qitmeer-wallet][Qitmeer-wallet], etc.
+The most easy way to download the [kafh wallet][kafh.io], which provide a more user friendly GUI to create your address/wallet step by step. 
+
+### Which POW algorithm I should choose to mine ?
+Qitmeer test network support mixing minning, which means your can choice from `Cuckaroo`, `Cuckatoo` and `Blake2bd` anyone you like. 
+But the start difficulty targets are quite different. For the most case you might use `Cuckaroo` as a safe choice at the beginning. 
+
+### Where I can find more documentation ? 
+Please find more documentation from the [Qitmeer doc site at https://qitmeer.github.io](https://qitmeer.github.io/docs/en/reference/qitmeer-miner/)
+
+[Releases]: https://github.com/Qitmeer/qitmeer-miner/releases
+[Latest]: https://github.com/Qitmeer/qitmeer-miner/releases/latest
+[Qx]: https://qitmeer.github.io/docs/en/reference/qxtools/
+[Qitmeer-wallet]: https://github.com/Qitmeer/qitmeer-wallet
+[Kafh.io]:https://www.kahf.io/
+
