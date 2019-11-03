@@ -55,7 +55,8 @@ $ go build
 $ make
 ```
 
-###### Any questions see [issues](https://github.com/Qitmeer/qitmeer-miner/issues?q=is%3Aissue+is%3Aclosed) or create
+###### Any questions see [docs](https://qitmeer.github.io/docs/en/reference/qitmeer-miner/)
+###### You can also see mining [tutorial](https://www.qitmeertalk.org/t/qitmeer-2019-11-02/906)
 
 ## Run
 ```bash
