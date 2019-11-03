@@ -48,7 +48,7 @@ you need to create a Qitmeer address if you don't have it. Please see [FAQ](#FAQ
 $ ./qitmeer-miner -C qitmeer-miner.conf
 ```
 
-### Comand line usage
+### Command line usage
 
 The qitmeer-miner is a command line program. This means you can also launch it by provided valid command line options. For a full list of available command optinos, please run:
 
