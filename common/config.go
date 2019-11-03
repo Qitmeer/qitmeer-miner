@@ -26,16 +26,16 @@ var (
 	defaultConfigFile     = filepath.Join(minerHomeDir, defaultConfigFilename)
 	defaultRPCServer      = "127.0.0.1"
 	defaultIntensity = 24
-	defaultTrimmerCount = 40
+	defaultTrimmerCount = 15
 	defaultWorkSize = 256
 	minIntensity  = 1
 	maxIntensity  = 31
 	maxWorkSize   = uint32(0xFFFFFFFF - 255)
-	defaultPow  ="blake2bd"
+	defaultPow  ="cuckaroo"
 	defaultSymbol  ="PMEER"
 	defaultTimeout  = 60
 	defaultMaxTxCount = 1000
-	defaultMaxSigCount = 5000
+	defaultMaxSigCount = 4000
 	defaultStatsServer = ""
 	defaultLocalSize = 4096
 	defaultWorkGroupSize = 256
@@ -101,7 +101,7 @@ type NecessaryConfig struct {
 	// Config / log options
 	Pow     string `short:"P" long:"pow" description:"blake2bd|cuckaroo|cuckatoo"`
 	Symbol      string   `short:"S" long:"symbol" description:"Symbol" default-mask:"PMEER"`
-	NetWork      string   `short:"N" long:"network" description:"network privnet|testnet|mainnet" default-mask:"mainnet"`
+	NetWork      string   `short:"N" long:"network" description:"network privnet|testnet|mainnet" default-mask:"testnet"`
 	Param      *params.Params
 }
 
