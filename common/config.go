@@ -26,16 +26,16 @@ var (
 	defaultConfigFile     = filepath.Join(minerHomeDir, defaultConfigFilename)
 	defaultRPCServer      = "127.0.0.1"
 	defaultIntensity = 24
-	defaultTrimmerCount = 40
+	defaultTrimmerCount = 15
 	defaultWorkSize = 256
 	minIntensity  = 1
 	maxIntensity  = 31
 	maxWorkSize   = uint32(0xFFFFFFFF - 255)
-	defaultPow  ="blake2bd"
+	defaultPow  ="cuckaroo"
 	defaultSymbol  ="PMEER"
 	defaultTimeout  = 60
 	defaultMaxTxCount = 1000
-	defaultMaxSigCount = 5000
+	defaultMaxSigCount = 4000
 	defaultStatsServer = ""
 	defaultLocalSize = 4096
 	defaultWorkGroupSize = 256
@@ -66,8 +66,8 @@ type OptionalConfig struct {
 	Timeout          int `long:"timeout" description:"rpc timeout." default-mask:"60"`
 	UseDevices       string `long:"use_devices" description:"all gpu devices,you can use ./qitmeer-miner -l to see. examples:0,1 use the #0 device and #1 device"`
 	MaxTxCount       int `long:"max_tx_count" description:"max pack tx count" default-mask:"1000"`
-	MaxSigCount       int `long:"max_sig_count" description:"max sign tx count" default-mask:"5000"`
-	LogLevel       string `long:"log_level" description:"info|debug|error|warn|trace" default-mask:"debug"`
+	MaxSigCount       int `long:"max_sig_count" description:"max sign tx count" default-mask:"4000"`
+	LogLevel       string `long:"log_level" description:"info|debug|error|warn|trace" default-mask:"info"`
 	StatsServer       string `long:"stats_server" description:"stats web server" default-mask:"127.0.0.1:1235"`
 	Restart       int ` description:"restart server" default-mask:"0"`
 	Accept       int ` description:"Accept count" default-mask:"0"`
@@ -101,7 +101,7 @@ type NecessaryConfig struct {
 	// Config / log options
 	Pow     string `short:"P" long:"pow" description:"blake2bd|cuckaroo|cuckatoo"`
 	Symbol      string   `short:"S" long:"symbol" description:"Symbol" default-mask:"PMEER"`
-	NetWork      string   `short:"N" long:"network" description:"network privnet|testnet|mainnet" default-mask:"mainnet"`
+	NetWork      string   `short:"N" long:"network" description:"network privnet|testnet|mainnet" default-mask:"testnet"`
 	Param      *params.Params
 }
 
