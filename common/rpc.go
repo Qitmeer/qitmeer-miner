@@ -79,7 +79,7 @@ func (rpc *RpcClient)RpcResult(method string,params []interface{}) []byte{
 	}
 	paramStr,err := json.Marshal(params)
 	if err != nil {
-		MinerLoger.Errorf("rpc params error:%v",err)
+		MinerLoger.Error("rpc params error","error",err)
 		return nil
 	}
 	url := rpc.Cfg.SoloConfig.RPCServer
@@ -90,7 +90,7 @@ func (rpc *RpcClient)RpcResult(method string,params []interface{}) []byte{
 	bodyBuff := bytes.NewBuffer(jsonStr)
 	httpRequest, err := http.NewRequest("POST", url, bodyBuff)
 	if err != nil {
-		MinerLoger.Errorf("rpc connect failed %v",err)
+		MinerLoger.Error("rpc connect failed ","error",err)
 		return nil
 	}
 	httpRequest.Close = true
@@ -102,13 +102,13 @@ func (rpc *RpcClient)RpcResult(method string,params []interface{}) []byte{
 	// specified options and submit the request.
 	httpClient, err := rpc.newHTTPClient()
 	if err != nil {
-		MinerLoger.Errorf("rpc auth faild %v",err)
+		MinerLoger.Error("rpc auth faild ","error",err)
 		return nil
 	}
 	httpClient.Timeout = time.Duration(rpc.Cfg.OptionConfig.Timeout) * time.Second
 	httpResponse, err := httpClient.Do(httpRequest)
 	if err != nil {
-		MinerLoger.Errorf("rpc request faild %v",err)
+		MinerLoger.Error("rpc request faild ","error",err)
 		return nil
 	}
 	defer func() {
@@ -116,12 +116,12 @@ func (rpc *RpcClient)RpcResult(method string,params []interface{}) []byte{
 	}()
 	body, err := ioutil.ReadAll(httpResponse.Body)
 	if err != nil {
-		MinerLoger.Errorf("error reading json reply:%v", err)
+		MinerLoger.Error("error reading json reply", "error",err)
 		return nil
 	}
 
 	if httpResponse.Status != "200 OK" {
-		MinerLoger.Errorf("error http response :%s %s",  httpResponse.Status, string(body))
+		MinerLoger.Error("error http response",  "status",httpResponse.Status, "body",string(body))
 		return nil
 	}
 	return body

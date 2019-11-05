@@ -1,7 +1,8 @@
-package common
+package main
 
 import (
 	"github.com/Qitmeer/qitmeer/log"
+	"github.com/Qitmeer/qitmeer/services/common"
 )
 
 // log is a logger that is initialized with no output filters.  This
@@ -30,4 +31,10 @@ func (c logClosure) String() string {
 
 func newLogClosure(c func() string) logClosure {
 	return logClosure(c)
+}
+
+func main()  {
+	common.Glogger().Verbosity(log.LvlTrace)
+	MinerLoger.Info("123","height",123)
+	return
 }

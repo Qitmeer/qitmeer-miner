@@ -144,7 +144,7 @@ func (this *QitmeerStratum)HandleReply()  {
 		case StratumMsg:
 			this.handleStratumMsg(resp)
 		case NotifyRes:
-			common.MinerLoger.Debugf("[pool notify message]: %v", data)
+			common.MinerLoger.Debug("[pool notify message]:", "receive",data)
 			this.handleNotifyRes(resp)
 		case *SubscribeReply:
 			this.handleSubscribeReply(resp)
@@ -152,7 +152,7 @@ func (this *QitmeerStratum)HandleReply()  {
 			this.HandleSubmitReply(resp)
 		default:
 			this.HandleSubmitReply(resp)
-			common.MinerLoger.Debugf("[Unhandled message]:%v ", data)
+			common.MinerLoger.Debug("[Unhandled message]: ","data", data)
 		}
 	})
 }
@@ -167,17 +167,17 @@ func (s *QitmeerStratum) HandleSubmitReply(resp interface{}) {
 	aResp := resp.(*BasicReply)
 	if int(aResp.ID.(float64)) == int(s.AuthID) {
 		if aResp.Result {
-			common.MinerLoger.Infof("[pool reply]Logged in")
+			common.MinerLoger.Info("[pool reply]Logged in")
 		} else {
-			common.MinerLoger.Errorf("[pool reply]Auth failure.")
+			common.MinerLoger.Error("[pool reply]Auth failure.")
 		}
 	} else{
 		if aResp.Result {
 			atomic.AddUint64(&s.ValidShares, 1)
-			common.MinerLoger.Infof("[pool reply]Share accepted")
+			common.MinerLoger.Info("[pool reply]Share accepted")
 		} else {
 			atomic.AddUint64(&s.InvalidShares, 1)
-			common.MinerLoger.Errorf("[pool reply]Share rejected:%v ", aResp.Error)
+			common.MinerLoger.Error("[pool reply]Share rejected:%v ", "reason",aResp.Error)
 		}
 	}
 }
@@ -188,7 +188,7 @@ func (s *QitmeerStratum) handleStratumMsg(resp interface{}) {
 	// move stuff other than unmarshalling here.
 	switch nResp.Method {
 	case "client.show_message":
-		common.MinerLoger.Debugf("%v",nResp.Params)
+		common.MinerLoger.Debug("client.show_message","params",nResp.Params)
 	case "client.reconnect":
 		common.MinerLoger.Debug("Reconnect requested")
 		wait, err := strconv.Atoi(nResp.Params[2])
@@ -259,7 +259,6 @@ func (s *QitmeerStratum) handleNotifyRes(resp interface{}) {
 	s.Target, _ = common.DiffToTarget(s.Diff, s.CalcBasePowLimit())
 	s.PoolWork.Ntime = nResp.Ntime
 	s.PoolWork.NtimeDelta = parsedNtime - time.Now().Unix()
-	common.MinerLoger.Debugf("Notify Clean:%v",nResp.CleanJobs)
 	s.PoolWork.Clean = nResp.CleanJobs
 }
 
@@ -367,7 +366,7 @@ func (s *QitmeerStratum) Unmarshal(blob []byte) (interface{}, error) {
 		}
 		var nres = NotifyRes{}
 		if len(resi) < 9 {
-			common.MinerLoger.Debugf("[error pool notify data]%v",resi)
+			common.MinerLoger.Debug("[error pool notify data]","error",resi)
 			return nil, errors.New("data error")
 		}
 		jobID, ok := resi[0].(string)
@@ -451,7 +450,7 @@ func (s *QitmeerStratum) Unmarshal(blob []byte) (interface{}, error) {
 		var param []string
 		param = append(param, diffStr)
 		nres.Params = param
-		common.MinerLoger.Debugf("[pool reply]Stratum difficulty set to %f", difficulty)
+		common.MinerLoger.Debug("[pool reply]Stratum difficulty set to ", "value",difficulty)
 		return nres, nil
 	default:
 		resp := &BasicReply{}
@@ -531,6 +530,6 @@ func (s *QitmeerStratum) PrepSubmit(data []byte,jobID string,ExtraNonce2 string)
 		workId = workArr[1]
 	}
 	sub.Params = []string{workId, jobID, ExtraNonce2, timestampStr,nonceStr,hex.EncodeToString(data[113:282])}
-	common.MinerLoger.Infof("[submit]{PoolUser, jobID, ExtraNonce2, timestampStr,nonceStr,proof}:%v",sub.Params)
+	common.MinerLoger.Info("[submit]{PoolUser, jobID, ExtraNonce2, timestampStr,nonceStr,proof}:","params",sub.Params)
 	return sub, nil
 }

@@ -134,7 +134,7 @@ func createCoinbaseTx(coinBaseVal uint64,coinbaseScript []byte, opReturnPkScript
 }
 
 //calc coinbase
-func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, extraNonce uint64,payAddressS string) *hash.Hash{
+func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, extraNonce uint64,payAddressS string) (*hash.Hash,[]Transactions){
 	transactions := make(Transactionses,0)
 	if !h.HasCoinbasePack {
 		h.TotalFee = 0
@@ -148,18 +148,18 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, 
 	}
 	payToAddress,err := address.DecodeAddress(payAddressS)
 	if err != nil {
-		common.MinerLoger.Errorf("%v",err)
-		return nil
+		common.MinerLoger.Error("DecodeAddress","error",err)
+		return nil,[]Transactions{}
 	}
 	coinbaseScript, err := standardCoinbaseScript(coinbaseStr,h.Height, extraNonce)
 	if err != nil {
-		common.MinerLoger.Errorf("%v",err)
-		return nil
+		common.MinerLoger.Error("standardCoinbaseScript","error",err)
+		return nil,[]Transactions{}
 	}
 	opReturnPkScript, err := standardCoinbaseOpReturn([]byte{})
 	if err != nil {
-		common.MinerLoger.Errorf("%v",err)
-		return nil
+		common.MinerLoger.Error("standardCoinbaseOpReturn","error",err)
+		return nil,[]Transactions{}
 	}
 	//uit := 100000000
 	coinbaseTx, err := createCoinbaseTx(uint64(h.Coinbasevalue)-h.TotalFee,
@@ -168,8 +168,8 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, 
 		payToAddress,
 		cfg.NecessaryConfig.Param)
 	if err != nil{
-		common.MinerLoger.Errorf("%v",err)
-		return nil
+		common.MinerLoger.Error("createCoinbaseTx","error",err)
+		return nil,[]Transactions{}
 	}
 
 	transactions = make(Transactionses,0)
@@ -206,14 +206,13 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, 
 
 	// miner get tx tax
 	coinbaseTx.Tx.TxOut[0].Amount += uint64(totalTxFee)
-
 	h.AddCoinbaseTx(coinbaseTx)
 	coinbaseTx = fillWitnessToCoinBase(h.transactions)
 	txBuf,err := coinbaseTx.Tx.Serialize()
 	if err != nil {
 		context := "Failed to serialize transaction"
 		common.MinerLoger.Error(context)
-		return nil
+		return nil,[]Transactions{}
 	}
 	coinbaseData := fmt.Sprintf("%x",txBuf)
 	if !h.HasCoinbasePack {
@@ -226,7 +225,7 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, 
 		h.Transactions[0] = Transactions{coinbaseTx.Tx.TxHash(),coinbaseData,0}
 	}
 	ha := h.BuildMerkleTreeStore(0)
-	return &ha
+	return &ha,h.Transactions
 }
 
 func (h *BlockHeader) AddCoinbaseTx(coinbaseTx *types.Tx){

@@ -86,7 +86,7 @@ func (this *QitmeerRobot)Run() {
 		}()
 		this.Pool = true
 	}
-	common.MinerLoger.Infof("%s miner start",connectName)
+	common.MinerLoger.Info(fmt.Sprintf("%s miner start",connectName))
 	this.Work = QitmeerWork{}
 	this.Work.Cfg = this.Cfg
 	this.Work.Rpc = this.Rpc
@@ -157,7 +157,8 @@ func (this *QitmeerRobot)ListenWork() {
 					if !dev.GetIsValid(){
 						continue
 					}
-					dev.SetNewWork(&this.Work)
+					newWork := this.Work.CopyNew()
+					dev.SetNewWork(&newWork)
 				}
 			}
 		}
@@ -247,12 +248,12 @@ func (this *QitmeerRobot)Status()  {
 			this.Cfg.OptionConfig.Reject = int(rejected)
 			this.Cfg.OptionConfig.Stale = int(staleShares)
 			total := valid + rejected + staleShares
-			common.MinerLoger.Infof("Global stats: Accepted: %v,Stale: %v, Rejected: %v, Total: %v",
+			common.MinerLoger.Info(fmt.Sprintf("Global stats: Accepted: %v,Stale: %v, Rejected: %v, Total: %v",
 				valid,
 				staleShares,
 				rejected,
 				total,
-			)
+			))
 		}
 	}
 }

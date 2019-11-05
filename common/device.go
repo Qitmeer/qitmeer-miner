@@ -9,7 +9,7 @@ var DevicesTypesForCPUMining = cl.DeviceTypeCPU
 func GetDevices(t cl.DeviceType) []*cl.Device {
 	platforms, err := cl.GetPlatforms()
 	if err != nil {
-		MinerLoger.Errorf("Get Graphics card platforms error,please check![%s]",err.Error())
+		MinerLoger.Error("Get Graphics card platforms error,please check!","error",err.Error())
 		return nil
 	}
 	clDevices := make([]*cl.Device, 0)
@@ -17,13 +17,13 @@ func GetDevices(t cl.DeviceType) []*cl.Device {
 	for _, platform := range platforms {
 		platormDevices, err := cl.GetDevices(platform, t)
 		if err != nil {
-			MinerLoger.Errorf("%s Get Devices Error:%s",platform.Name(),err.Error())
+			MinerLoger.Error("Get Devices Error","platform",platform.Name(),"Error",err.Error())
 			continue
 		}
 		for _, device := range platormDevices {
 			clDevices = append(clDevices, device)
-			MinerLoger.Infof("%s Found Device : %d | name: %s | MaxGroupSize: %d | MaxAllocMemory: %.2f MB | MaxMemory: %0.2f",platform.Name(),i,device.Name(),
-				device.MaxWorkGroupSize(),float64(device.MaxMemAllocSize())/1024.00/1024.00,float64(device.GlobalMemSize())/1024.00/1024.00 )
+			MinerLoger.Info("Found Device","platform",platform.Name(),"minerID",i,"deviceName",device.Name(),
+				"MaxWorkGroupSize(GB)",device.MaxWorkGroupSize(),"MaxMemAllocSize(GB)",float64(device.MaxMemAllocSize())/1024.00/1024.00,float64(device.GlobalMemSize())/1024.00/1024.00 )
 
 			i++
 		}

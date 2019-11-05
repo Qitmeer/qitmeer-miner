@@ -49,6 +49,10 @@ type BlockHeader struct {
 	transactions []*types.Tx
 }
 
+func (h*BlockHeader) SetTxs(transactions []*types.Tx)  {
+	h.transactions = transactions
+}
+
 //qitmeer block header
 func BlockDataWithProof(h *types.BlockHeader) []byte {
 	var buf bytes.Buffer

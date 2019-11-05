@@ -7,13 +7,14 @@ package common
 import (
 	"fmt"
 	"github.com/Qitmeer/qitmeer/core/address"
+	l "github.com/Qitmeer/qitmeer/log"
 	"github.com/Qitmeer/qitmeer/params"
-	go_logger "github.com/phachon/go-logger"
-	"qitmeer-miner/common/go-flags"
-	"log"
+	`github.com/Qitmeer/qitmeer/services/common`
+	`log`
 	"net"
 	"os"
 	"path/filepath"
+	"qitmeer-miner/common/go-flags"
 	"strings"
 )
 
@@ -209,8 +210,7 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 	// Create the home directory if it doesn't already exist.
 	err := os.MkdirAll(minerHomeDir, 0700)
 	if err != nil {
-		_,_ = fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(-1)
+		return nil,[]string{},err
 	}
 	appName := filepath.Base(os.Args[0])
 	appName = strings.TrimSuffix(appName, filepath.Ext(appName))
@@ -220,39 +220,32 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 
 	_,err = preParser.AddGroup("Debug Command", "The Miner Debug tools", &deviceCfg)
 	if err != nil {
-		MinerLoger.Errorf("%v", err)
-		os.Exit(0)
+		return nil,[]string{},err
 	}
 
 	_,err = preParser.AddGroup("The Config File Options", "The Config File Options", &fileCfg)
 	if err != nil {
-		MinerLoger.Errorf("%v", err)
-		os.Exit(0)
+		return nil,[]string{},err
 	}
 	_,err = preParser.AddGroup("The Necessary Config Options", "The Necessary Config Options", &necessaryCfg)
 	if err != nil {
-		MinerLoger.Errorf("%v", err)
-		os.Exit(0)
+		return nil,[]string{},err
 	}
 	_,err = preParser.AddGroup("The Solo Config Option", "The Solo Config Option", &soloCfg)
 	if err != nil {
-		MinerLoger.Errorf("%v", err)
-		os.Exit(0)
+		return nil,[]string{},err
 	}
 	_,err = preParser.AddGroup("The pool Config Option", "The pool Config Option", &poolCfg)
 	if err != nil {
-		MinerLoger.Errorf("%v", err)
-		os.Exit(0)
+		return nil,[]string{},err
 	}
 	_,err = preParser.AddGroup("The Optional Config Option", "The Optional Config Option", &optionalCfg)
 	if err != nil {
-		MinerLoger.Errorf("%v", err)
-		os.Exit(0)
+		return nil,[]string{},err
 	}
-
 	_,err = preParser.Parse()
 	if err != nil{
-		MinerLoger.Infof("%v", err)
+		MinerLoger.Info("config parse error","error", err)
 		os.Exit(0)
 	}
 	if deviceCfg.ListDevices{
@@ -267,8 +260,11 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 		fmt.Printf("Qitmeer Miner Version:%s\n",GetVersion())
 		os.Exit(0)
 	}
+
+	common.Glogger().Verbosity(ConvertLogLevel(optionalCfg.LogLevel))
+
 	if fileCfg.ConfigFile == ""{
-		MinerLoger.Warning("Don't have config file.")
+		MinerLoger.Warn("Don't have config file.")
 	} else {
 		err = flags.NewIniParser(preParser).ParseFile(fileCfg.ConfigFile)
 		if err != nil {
@@ -288,30 +284,8 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 		preParser.WriteHelp(os.Stderr)
 		os.Exit(0)
 	}
-	logFormat := "[%timestamp_format%][%level_string%]%body%"
-	if optionalCfg.LogLevel == "trace"{
-		logFormat = "[%timestamp_format%][%level_string%][%file%][%line%][%function%]%body%"
-	}
-	_ = MinerLoger.Detach("console")
-	consoleConfig := &go_logger.ConsoleConfig{
-		Color: false, //
-		JsonFormat: false, //
-		Format: logFormat, //
-	}
-	_ = MinerLoger.Attach("console", ConvertLogLevel(optionalCfg.LogLevel), consoleConfig)
 	if fileCfg.MinerLogFile != ""{
-		fileConfig := &go_logger.FileConfig {
-			Filename : fileCfg.MinerLogFile,
-			LevelFileName : map[int]string {
-				MinerLoger.LoggerLevel("debug"): fileCfg.MinerLogFile,
-			},
-			MaxSize : 1024 * 1024 * 1024 ,
-			MaxLine : 10000000,
-			DateSlice : "d",
-			JsonFormat: false,
-			Format: "",
-		}
-		_ = MinerLoger.Attach("file", go_logger.LOGGER_LEVEL_DEBUG, fileConfig)
+		common.InitLogRotator(fileCfg.MinerLogFile)
 	}
 
 	if poolCfg.Pool == "" && soloCfg.MinerAddr == ""{
@@ -385,17 +359,19 @@ func GetVersion() string {
 }
 
 
-func ConvertLogLevel(level string) int {
+func ConvertLogLevel(level string) l.Lvl {
 	switch level {
 	case "warn":
-		return go_logger.LOGGER_LEVEL_WARNING
+		return l.LvlWarn
 	case "info":
-		return go_logger.LOGGER_LEVEL_INFO
+		return l.LvlInfo
 	case "debug":
-		return go_logger.LOGGER_LEVEL_DEBUG
+		return l.LvlDebug
 	case "error":
-		return go_logger.LOGGER_LEVEL_ERROR
+		return l.LvlError
+	case "trace":
+		return l.LvlTrace
 	default:
-		return go_logger.LOGGER_LEVEL_DEBUG
+		return l.LvlDebug
 	}
 }

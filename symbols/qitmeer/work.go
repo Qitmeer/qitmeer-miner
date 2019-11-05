@@ -30,10 +30,37 @@ type getSubmitResponseJson struct {
 }
 type QitmeerWork struct {
 	core.Work
-	Block BlockHeader
+	Block *BlockHeader
 	PoolWork NotifyWork
 	stra *QitmeerStratum
 	StartWork bool
+}
+
+func (this *QitmeerWork) CopyNew() QitmeerWork{
+	newWork := QitmeerWork{}
+	newWork.Cfg = this.Cfg
+	if this.Cfg.PoolConfig.Pool != ""{
+		//pool work
+		newWork.stra = this.stra
+		b,_ := json.Marshal(this.PoolWork)
+		var pw NotifyWork
+		_ = json.Unmarshal(b,&pw)
+		newWork.PoolWork = pw
+	} else{
+		newWork.Rpc = this.Rpc
+		newWork.StartWork = this.StartWork
+		b,_ := json.Marshal(this.Block)
+		var w BlockHeader
+		_ = json.Unmarshal(b,&w)
+		newWork.Block = &w
+		newWork.Block.SetTxs(this.Block.transactions)
+		newWork.Block.Pow = this.Block.Pow
+		newWork.Block.ParentRoot = this.Block.ParentRoot
+		newWork.Block.Parents = this.Block.Parents
+		newWork.Block.StateRoot = this.Block.StateRoot
+	}
+
+	return newWork
 }
 
 //GetBlockTemplate
@@ -50,13 +77,13 @@ func (this *QitmeerWork) Get () bool {
 		var r map[string]interface{}
 		_ = json.Unmarshal(body,&r)
 		if _,ok := r["error"];ok{
-			common.MinerLoger.Debugf("[getBlockTemplate error]%v",r["error"])
+			common.MinerLoger.Debug("[getBlockTemplate error]","error",r["error"])
 			return false
 		}
-		common.MinerLoger.Debugf("[getBlockTemplate error]%v",string(body))
+		common.MinerLoger.Debug("[getBlockTemplate error]","result",string(body))
 		return false
 	}
-	if this.Block.Height > 0 && this.Block.Height == blockTemplate.Result.Height &&
+	if this.Block!=nil && this.Block.Height == blockTemplate.Result.Height &&
 		time.Now().Unix() - this.GetWorkTime < 120{
 		//not has new work
 		return false
@@ -91,13 +118,13 @@ func (this *QitmeerWork) Get () bool {
 	}
 
 	blockTemplate.Result.HasCoinbasePack = false
-	_ = blockTemplate.Result.CalcCoinBase(this.Cfg,this.Cfg.SoloConfig.RandStr,uint64(0),this.Cfg.SoloConfig.MinerAddr)
+	_,_ = blockTemplate.Result.CalcCoinBase(this.Cfg,this.Cfg.SoloConfig.RandStr,uint64(0),this.Cfg.SoloConfig.MinerAddr)
 	blockTemplate.Result.BuildMerkleTreeStore(0)
-	this.Block = blockTemplate.Result
+	this.Block = &blockTemplate.Result
 	this.Started = uint32(time.Now().Unix())
 	this.GetWorkTime = time.Now().Unix()
 	this.Cfg.OptionConfig.Target = this.Block.Target
-	common.MinerLoger.Debugf("getBlockTemplate height:%d , target :%s",this.Block.Height,this.Block.Target)
+	common.MinerLoger.Debug(fmt.Sprintf("getBlockTemplate height:%d , target :%s",this.Block.Height,target))
 	return true
 }
 
@@ -123,7 +150,7 @@ func (this *QitmeerWork) Submit (subm string) error {
 			if time.Now().Unix() - startTime >= 120{
 				break
 			}
-			common.MinerLoger.Errorf("[submit error]"+string(body)+err.Error())
+			common.MinerLoger.Error(fmt.Sprintf("[submit error]"+string(body)+err.Error()))
 			time.Sleep(1*time.Second)
 			continue
 		}
@@ -181,7 +208,7 @@ func (this *QitmeerWork) PoolSubmit (subm string) error {
 	}
 	_, err = this.stra.Conn.Write(m)
 	if err != nil {
-		common.MinerLoger.Debugf("[submit error][pool connect error]%s",err)
+		common.MinerLoger.Debug("[submit error][pool connect error]","error",err)
 		return err
 	}
 	_, err = this.stra.Conn.Write([]byte("\n"))

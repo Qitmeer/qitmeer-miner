@@ -4,7 +4,6 @@
 package main
 
 import (
-	go_logger "github.com/phachon/go-logger"
 	"log"
 	"os"
 	"os/signal"
@@ -19,7 +18,6 @@ var robotminer core.Robot
 
 //init the config file
 func init(){
-	common.MinerLoger = go_logger.NewLogger()
 	cfg, _, err := common.LoadConfig()
 	if err != nil {
 		log.Fatal("[error] config error,please check it.[",err,"]")
