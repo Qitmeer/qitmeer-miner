@@ -19,3 +19,4 @@ pool.conf
 
 libcuckoo.dylib
 ./symbols/qitmeer/libcuckoo.dylib
+.idea/
