@@ -262,6 +262,7 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 	}
 
 	common.Glogger().Verbosity(ConvertLogLevel(optionalCfg.LogLevel))
+
 	if fileCfg.ConfigFile == ""{
 		MinerLoger.Warn("Don't have config file.")
 	} else {
@@ -284,7 +285,7 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 		os.Exit(0)
 	}
 	if fileCfg.MinerLogFile != ""{
-		_ = common.Glogger().BacktraceAt(fileCfg.MinerLogFile)
+		common.InitLogRotator(fileCfg.MinerLogFile)
 	}
 
 	if poolCfg.Pool == "" && soloCfg.MinerAddr == ""{
