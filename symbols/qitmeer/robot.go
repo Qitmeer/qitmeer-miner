@@ -209,7 +209,7 @@ func (this *QitmeerRobot)SubmitWork() {
 					if !this.Pool{
 						count ,_ = strconv.Atoi(txCount)
 						this.AllTransactionsCount += int64(count)
-						logContent = fmt.Sprintf("receive block, block height = %s,Including %s transactions(not contain coinbase tx); Received Total transactions = %d\n",
+						logContent = fmt.Sprintf("receive block, block height = %s,Including %s transactions; Received Total transactions = %d\n",
 							height,txCount,this.AllTransactionsCount)
 						common.MinerLoger.Info(logContent)
 					}

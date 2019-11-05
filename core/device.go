@@ -203,12 +203,6 @@ func (this *Device)Status(wg *sync.WaitGroup)  {
 				"name",this.ClDevice.Name(),
 				"hash rate",common.FormatHashRate(this.AverageHashRate,unit),
 			)
-			// restats every 2min
-			// Prevention this.AllDiffOneShares was to large
-			if secondsElapsed > 120{
-				this.Started = time.Now().Unix()
-				this.AllDiffOneShares = 0
-			}
 		}
 	}
 }
