@@ -68,7 +68,6 @@ func (this *QitmeerWork) Get () bool {
 	body := this.Rpc.RpcResult("getBlockTemplate",[]interface{}{[]string{}})
 	if body == nil{
 		common.MinerLoger.Error("network failed")
-		this.Block.Height = 0
 		return false
 	}
 	var blockTemplate getResponseJson

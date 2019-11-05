@@ -2828,19 +2828,19 @@ __kernel void search(__global ulong *headerIn, __global ulong *nonceOut,__global
 	uchar b[8] = {a[7],a[6],a[5],a[4],a[3],a[2],a[1],a[0]};
 	ulong *res1 = (ulong *) b;
 	ulong hash0 = as_ulong(as_uchar8(*res1).s76543210);
-	if (target > 0 && hash0 <= target) {
+	if (target > 0 && hash0 < target) {
 		*nonceOut = (ulong)headerIn[13];
 		return;
-	}
-
-	ulong res2 = 0x3c6ef372fe94f82b ^ v[2] ^ v[10];
-	uchar *c = (uchar *) &res2;
-	uchar d[8] = {c[7],c[6],c[5],c[4],c[3],c[2],c[1],c[0]};
-	ulong *res3 = (ulong *) d;
-	ulong hash1 = as_ulong(as_uchar8(*res3).s76543210);
-	if (hash0 == target && hash1 <= target2) {
-		*nonceOut = (ulong)headerIn[13];
-		return;
+	} else if( target <= 0 ){
+		ulong res2 = 0x3c6ef372fe94f82b ^ v[2] ^ v[10];
+		uchar *c = (uchar *) &res2;
+		uchar d[8] = {c[7],c[6],c[5],c[4],c[3],c[2],c[1],c[0]};
+		ulong *res3 = (ulong *) d;
+		ulong hash1 = as_ulong(as_uchar8(*res3).s76543210);
+		if (hash0 == target && hash1 <= target2) {
+			*nonceOut = (ulong)headerIn[13];
+			return;
+		}
 	}
 }
 `

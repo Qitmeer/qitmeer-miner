@@ -17,6 +17,7 @@ import (
 	"qitmeer-miner/core"
 	"qitmeer-miner/kernel"
 	"sync"
+	`sync/atomic`
 	"time"
 )
 
@@ -204,7 +205,7 @@ func (this *Blake2bD) Mine(wg *sync.WaitGroup) {
 				return
 			}
 			this.Event.Release()
-			this.AllDiffOneShares += uint64(this.GlobalItemSize)
+			atomic.AddUint64(&this.AllDiffOneShares,uint64(this.GlobalItemSize))
 			xnonce := binary.LittleEndian.Uint32(this.NonceOut[4:8])
 			if xnonce >0 {
 				//Found Hash
@@ -228,8 +229,7 @@ func (this *Blake2bD) Mine(wg *sync.WaitGroup) {
 						for j = 0; j < txCount; j++ {
 							subm += this.header.Transactions[j].Data
 						}
-						txCount -= 1
-						subm += "-" + fmt.Sprintf("%d",txCount) + "-" + fmt.Sprintf("%s",this.header.Exnonce2)
+						subm += "-" + fmt.Sprintf("%d",txCount) + "-" + fmt.Sprintf("%d",this.Work.Block.Height)
 					} else {
 						subm += "-" + this.header.JobID + "-" + this.header.Exnonce2
 					}
