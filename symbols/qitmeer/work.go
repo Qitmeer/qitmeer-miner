@@ -30,10 +30,37 @@ type getSubmitResponseJson struct {
 }
 type QitmeerWork struct {
 	core.Work
-	Block BlockHeader
+	Block *BlockHeader
 	PoolWork NotifyWork
 	stra *QitmeerStratum
 	StartWork bool
+}
+
+func (this *QitmeerWork) CopyNew() QitmeerWork{
+	newWork := QitmeerWork{}
+	newWork.Cfg = this.Cfg
+	if this.Cfg.PoolConfig.Pool != ""{
+		//pool work
+		newWork.stra = this.stra
+		b,_ := json.Marshal(this.PoolWork)
+		var pw NotifyWork
+		_ = json.Unmarshal(b,&pw)
+		newWork.PoolWork = pw
+	} else{
+		newWork.Rpc = this.Rpc
+		newWork.StartWork = this.StartWork
+		b,_ := json.Marshal(this.Block)
+		var w BlockHeader
+		_ = json.Unmarshal(b,&w)
+		newWork.Block = &w
+		newWork.Block.SetTxs(this.Block.transactions)
+		newWork.Block.Pow = this.Block.Pow
+		newWork.Block.ParentRoot = this.Block.ParentRoot
+		newWork.Block.Parents = this.Block.Parents
+		newWork.Block.StateRoot = this.Block.StateRoot
+	}
+
+	return newWork
 }
 
 //GetBlockTemplate
@@ -56,7 +83,7 @@ func (this *QitmeerWork) Get () bool {
 		common.MinerLoger.Debug("[getBlockTemplate error]","result",string(body))
 		return false
 	}
-	if this.Block.Height > 0 && this.Block.Height == blockTemplate.Result.Height &&
+	if this.Block!=nil && this.Block.Height == blockTemplate.Result.Height &&
 		time.Now().Unix() - this.GetWorkTime < 120{
 		//not has new work
 		return false
@@ -91,9 +118,9 @@ func (this *QitmeerWork) Get () bool {
 	}
 
 	blockTemplate.Result.HasCoinbasePack = false
-	_ = blockTemplate.Result.CalcCoinBase(this.Cfg,this.Cfg.SoloConfig.RandStr,uint64(0),this.Cfg.SoloConfig.MinerAddr)
+	_,_ = blockTemplate.Result.CalcCoinBase(this.Cfg,this.Cfg.SoloConfig.RandStr,uint64(0),this.Cfg.SoloConfig.MinerAddr)
 	blockTemplate.Result.BuildMerkleTreeStore(0)
-	this.Block = blockTemplate.Result
+	this.Block = &blockTemplate.Result
 	this.Started = uint32(time.Now().Unix())
 	this.GetWorkTime = time.Now().Unix()
 	this.Cfg.OptionConfig.Target = this.Block.Target

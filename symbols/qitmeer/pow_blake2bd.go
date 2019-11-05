@@ -101,14 +101,14 @@ func (this *Blake2bD) Update() {
 	//update coinbase tx hash
 	this.Device.Update()
 	if this.Pool {
-		this.Work.PoolWork.ExtraNonce2 = fmt.Sprintf("%08x", this.CurrentWorkID)[:8]
+		this.Work.PoolWork.ExtraNonce2 = fmt.Sprintf("%08x", this.CurrentWorkID<<this.MinerId)[:8]
 		this.header.Exnonce2 = this.Work.PoolWork.ExtraNonce2
 		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepQitmeerWork()
 		this.header.PackagePoolHeader(this.Work,pow.BLAKE2BD)
 	} else {
-		randStr := fmt.Sprintf("%s%d",this.Cfg.SoloConfig.RandStr,this.CurrentWorkID)
-		txHash := this.Work.Block.CalcCoinBase(this.Cfg,randStr,this.CurrentWorkID,this.Cfg.SoloConfig.MinerAddr)
-		this.header.PackageRpcHeader(this.Work)
+		randStr := fmt.Sprintf("%s%d%d",this.Cfg.SoloConfig.RandStr,this.MinerId,this.CurrentWorkID)
+		txHash ,txs := this.Work.Block.CalcCoinBase(this.Cfg,randStr,this.CurrentWorkID,this.Cfg.SoloConfig.MinerAddr)
+		this.header.PackageRpcHeader(this.Work,txs)
 		this.header.HeaderBlock.TxRoot = *txHash
 	}
 }
@@ -140,6 +140,7 @@ func (this *Blake2bD) Mine(wg *sync.WaitGroup) {
 		if !this.HasNewWork || this.Work == nil{
 			continue
 		}
+
 		if len(this.Work.PoolWork.WorkData) <= 0 && this.Work.Block.Height <= 0 {
 			continue
 		}
@@ -208,9 +209,10 @@ func (this *Blake2bD) Mine(wg *sync.WaitGroup) {
 			if xnonce >0 {
 				//Found Hash
 				this.header.HeaderBlock.Pow.SetNonce(xnonce)
-				h = this.header.HeaderBlock.BlockHash()
-				headerData := BlockDataWithProof(this.header.HeaderBlock)
 				copy(hData[104:112],this.NonceOut)
+				h = hash.DoubleHashH(hData[:113])
+				headerData := BlockDataWithProof(this.header.HeaderBlock)
+				copy(headerData[0:113],hData[0:113])
 				if HashToBig(&h).Cmp(this.header.TargetDiff) <= 0 {
 					common.MinerLoger.Debug(fmt.Sprintf("device #%d found hash:%s nonce:%d target:%064x",this.MinerId,h,xnonce,this.header.TargetDiff))
 					subm = hex.EncodeToString(headerData)
@@ -235,7 +237,6 @@ func (this *Blake2bD) Mine(wg *sync.WaitGroup) {
 					if !this.Pool{
 						//solo wait new task
 						this.ClearNonceData()
-						break
 					}
 				}
 			}

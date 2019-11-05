@@ -65,15 +65,15 @@ func (this *MinerBlockData)PackagePoolHeaderByNonce(work *QitmeerWork,nonce uint
 }
 
 //the solo work submit structure
-func (this *MinerBlockData)PackageRpcHeader(work *QitmeerWork)  {
+func (this *MinerBlockData)PackageRpcHeader(work *QitmeerWork,txs []Transactions)  {
 	bitesBy ,_:= hex.DecodeString(work.Block.Target)
 	this.Target2 = common.Reverse(bitesBy[0:32])
 	bitesBy = common.Reverse(bitesBy[:8])
 	this.Parents = work.Block.Parents
 	this.Transactions = make([]Transactions,0)
-	for i:=0;i<len(work.Block.Transactions);i++{
+	for i:=0;i<len(txs);i++{
 		this.Transactions = append(this.Transactions,Transactions{
-			work.Block.Transactions[i].Hash,work.Block.Transactions[i].Data,work.Block.Transactions[i].Fee,
+			txs[i].Hash,txs[i].Data,txs[i].Fee,
 		})
 	}
 	b1 , _ := hex.DecodeString(work.Block.Target)

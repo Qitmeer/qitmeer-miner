@@ -138,7 +138,7 @@ func (this *QitmeerRobot)Run() {
 // ListenWork
 func (this *QitmeerRobot)ListenWork() {
 	common.MinerLoger.Info("listen new work server")
-	t := time.NewTicker(time.Second * 5)
+	t := time.NewTicker(time.Second * 2)
 	defer t.Stop()
 	r := false
 	for {
@@ -157,7 +157,8 @@ func (this *QitmeerRobot)ListenWork() {
 					if !dev.GetIsValid(){
 						continue
 					}
-					dev.SetNewWork(&this.Work)
+					newWork := this.Work.CopyNew()
+					dev.SetNewWork(&newWork)
 				}
 			}
 		}
