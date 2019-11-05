@@ -168,7 +168,7 @@ func (d *Device)Release()  {
 
 func (this *Device)Status(wg *sync.WaitGroup)  {
 	defer wg.Done()
-	t := time.NewTicker(time.Second * 5)
+	t := time.NewTicker(time.Second * 10)
 	defer t.Stop()
 	for {
 		select{
