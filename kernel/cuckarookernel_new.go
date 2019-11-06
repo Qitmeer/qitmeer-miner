@@ -32,8 +32,6 @@ typedef u64 nonce_t;
     v1 ^= v2; v3 ^= v0; v2 = rotate(v2,(ulong)32); \
   } while(0)
 
-constant u8 zero = 0;
-
 static u32 dipnode(ulong v0, ulong v1, ulong v2, ulong v3, u64 nce, bool uorv) {
 		v3 ^= nce;
 		for (int r = 0; r < 2; r++)
