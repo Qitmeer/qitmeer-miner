@@ -112,6 +112,7 @@ See [BUILD.md](BUILD.md) for build/compilation details.
 
 ### Community Tutorials
 
+* Chinese [中文教程：windows系统qitmeer-miner编译及环境准备指导](https://github.com/Qitmeer/qitmeer-miner/issues/88)
 * Chinese [Qitmeer挖矿终极指南 https://www.qitmeertalk.org/t/qitmeer-2019-11-02/906](https://www.qitmeertalk.org/t/qitmeer-2019-11-02/906)
 
 ## FAQ
