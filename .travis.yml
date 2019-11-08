@@ -5,10 +5,15 @@ language: go
 go:
   - "1.12.x"
 
+addons:
+  homebrew:
+    packages:
+      - rust
+      - FiloSottile/musl-cross/musl-cross
+      - mingw-w64
+    update: true
+
 install:
-  - brew install rust
-  - brew install FiloSottile/musl-cross/musl-cross
-  - brew install mingw-w64
   - rustup target add x86_64-pc-windows-gnu
   - rustup target add x86_64-unknown-linux-musl
   - rustup target add x86_64-apple-darwin
