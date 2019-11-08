@@ -20,3 +20,8 @@ pool.conf
 libcuckoo.dylib
 ./symbols/qitmeer/libcuckoo.dylib
 .idea/
+mac-miner
+win-miner.exe
+libOpenCL.zip
+linux-miner
+lib/opencl/*

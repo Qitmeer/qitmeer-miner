@@ -4,7 +4,15 @@ james
 */
 package qitmeer
 /*
-#cgo LDFLAGS: -L../../lib/cuckoo/target/release -lcuckoo
+#cgo LDFLAGS: -lcuckoo
+#cgo darwin LDFLAGS: -L../../lib/cuckoo/target/x86_64-apple-darwin/release
+#cgo windows LDFLAGS: -L../../lib/cuckoo/target/x86_64-pc-windows-gnu/release
+#cgo linux LDFLAGS: -L../../lib/cuckoo/target/x86_64-unknown-linux-musl/release
+#cgo windows LDFLAGS: -L../../lib/opencl/windows
+#cgo linux LDFLAGS: -L../../lib/opencl/linux
+#cgo darwin LDFLAGS: -L../../lib/opencl/osx
+#cgo windows LDFLAGS: -lws2_32
+#cgo windows LDFLAGS: -luserenv
 #include "../../lib/cuckoo.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -255,16 +263,12 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 				for j := 0; j < txCount; j++ {
 					subm += this.header.Transactions[j].Data
 				}
-				txCount -= 1 //real transaction count except coinbase
 				subm += "-" + fmt.Sprintf("%d",txCount) + "-" + fmt.Sprintf("%d",this.Work.Block.Height)
 			} else {
 				subm += "-" + this.header.JobID + "-" + this.header.Exnonce2
 			}
 			this.SubmitData <- subm
-			if !this.Pool{
-				//solo wait new task
-				break
-			}
+
 		}
 	}
 }
