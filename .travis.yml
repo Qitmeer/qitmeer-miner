@@ -5,8 +5,6 @@ language: go
 go:
   - "1.12.x"
 
-sudo: true
-
 install:
   - brew install rust
   - brew install FiloSottile/musl-cross/musl-cross
@@ -24,9 +22,8 @@ script:
 deploy:
   provider: releases
   api_key:
-    secure: B+BON+9abG1qs+sZwf61bPA2F9x3N1aMNBh+JyE+Xxv99AiGBsG3ge7bJnF4LW1uHY4SiX8qNVmVCbO8U6ayxjAl2bFDgWoICtkWToPcayXhnooNYnmzm8vZn4Ft+SX+DeUIBM73jLTyZVudCNCU1T/SSSv3CbomvnG3sdCeeaoCW1GXRRPWnLqbLJs7y73PsHvYA8LZaxffHo9n/iRWiZrFiGo6LYL2+QYEjsuC7VjHAQUrJlYfGwqOvRVhy++gibnS3WUP1086J95jzZExhmW/+xSSDtgmCA+wvVFgRjKaSYRfJDEjLrWoWMh+nWCqjHk43OMNRKGSO+IGNKEcP2XPhtwZYScF8yiLDjTrno5n5M4weKOHbdWJSAI7phC6QjOPixAQ5FRS7NMLOJMIvS3uGn5O9h2OD0EtxzU5k0Byvr1rXodDcVN03MQBSsyHDHqGygAzjub4zeE6dgu0ffz0lqkV7f/alk/lSmX8VLkgodLzqPA7K4sqGAGudDrfZkoLNDTX/O8UR3ND8hq+hOceDqzs/kJHbqtb2KKgInXsEJ7GsB5MZmJ2vCP073uvTjv0u5Jm/QmHQJEBiQ8YLjzFM0rwjxbtMYbVkvYDMt4sM9fYbfu9vot5m2AJf2ASggX199A9e6VxiDKFe30HJNiuriSdY5B2aWtmlogur04=
-  file: *.zip
+    secure: "B+BON+9abG1qs+sZwf61bPA2F9x3N1aMNBh+JyE+Xxv99AiGBsG3ge7bJnF4LW1uHY4SiX8qNVmVCbO8U6ayxjAl2bFDgWoICtkWToPcayXhnooNYnmzm8vZn4Ft+SX+DeUIBM73jLTyZVudCNCU1T/SSSv3CbomvnG3sdCeeaoCW1GXRRPWnLqbLJs7y73PsHvYA8LZaxffHo9n/iRWiZrFiGo6LYL2+QYEjsuC7VjHAQUrJlYfGwqOvRVhy++gibnS3WUP1086J95jzZExhmW/+xSSDtgmCA+wvVFgRjKaSYRfJDEjLrWoWMh+nWCqjHk43OMNRKGSO+IGNKEcP2XPhtwZYScF8yiLDjTrno5n5M4weKOHbdWJSAI7phC6QjOPixAQ5FRS7NMLOJMIvS3uGn5O9h2OD0EtxzU5k0Byvr1rXodDcVN03MQBSsyHDHqGygAzjub4zeE6dgu0ffz0lqkV7f/alk/lSmX8VLkgodLzqPA7K4sqGAGudDrfZkoLNDTX/O8UR3ND8hq+hOceDqzs/kJHbqtb2KKgInXsEJ7GsB5MZmJ2vCP073uvTjv0u5Jm/QmHQJEBiQ8YLjzFM0rwjxbtMYbVkvYDMt4sM9fYbfu9vot5m2AJf2ASggX199A9e6VxiDKFe30HJNiuriSdY5B2aWtmlogur04="
+  file: "*.zip"
   file_glob: true
-  skip_cleanup: true
   on:
     tags: true
