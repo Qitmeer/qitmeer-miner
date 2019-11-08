@@ -14,9 +14,9 @@
 # cmake -DOPENCL_ICD_LOADER_HEADERS_DIR=../inc/OpenCL-Headers/ -DBUILD_SHARED_LIBS=OFF ..
 #
 
- wget https://github.com/Qitmeer/cuckoo-lib/releases/download/v0.0.1/libcuckoo.zip -O libcuckoo.zip
- unzip libcuckoo.zip -d lib/cuckoo/target/
-wget https://github.com/Qitmeer/OpenCL-ICD-Loader/releases/download/v0.0.1/libopencl.zip -O libOpenCL.zip
+wget -O libcuckoo.zip https://github.com/Qitmeer/cuckoo-lib/releases/download/v0.0.1/libcuckoo.zip
+unzip libcuckoo.zip -d lib/cuckoo/target/
+wget -O libOpenCL.zip https://github.com/Qitmeer/OpenCL-ICD-Loader/releases/download/v0.0.1/libopencl.zip
 unzip libOpenCL.zip -d lib/opencl/
 
 rm -rf linux-miner mac-miner win-miner.exe libOpenCL.zip libcuckoo.zip
