@@ -5,6 +5,7 @@ james
 package qitmeer
 /*
 #cgo LDFLAGS: -lcuckoo
+#cgo LDFLAGS: -L../../lib/cuckoo/target/release
 #cgo darwin LDFLAGS: -L../../lib/cuckoo/target/x86_64-apple-darwin/release
 #cgo windows LDFLAGS: -L../../lib/cuckoo/target/x86_64-pc-windows-gnu/release
 #cgo linux LDFLAGS: -L../../lib/cuckoo/target/x86_64-unknown-linux-musl/release
