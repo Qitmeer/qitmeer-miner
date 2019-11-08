@@ -14,22 +14,21 @@
 # cmake -DOPENCL_ICD_LOADER_HEADERS_DIR=../inc/OpenCL-Headers/ -DBUILD_SHARED_LIBS=OFF ..
 #
 
-wget https://github.com/jamesvan2019/OpenCL-ICD-Loader/releases/download/v0.0.1/libOpenCL.zip
+ wget https://github.com/Qitmeer/cuckoo-lib/releases/download/v0.0.1/libcuckoo.zip -O libcuckoo.zip
+ unzip libcuckoo.zip -d lib/cuckoo/target/
+wget https://github.com/Qitmeer/OpenCL-ICD-Loader/releases/download/v0.0.1/libopencl.zip -O libOpenCL.zip
 unzip libOpenCL.zip -d lib/opencl/
 
-rm -rf linux-miner mac-miner win-miner.exe libOpenCL.zip
+rm -rf linux-miner mac-miner win-miner.exe libOpenCL.zip libcuckoo.zip
 
 #### mac miner
-cd lib/cuckoo && cargo rustc --release --target=x86_64-apple-darwin
-cd ../../ && CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -o mac-miner main.go
+CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -o mac-miner main.go
 
 #### linux miner
-cd lib/cuckoo && cargo rustc --release --target=x86_64-unknown-linux-musl
-cd ../../ && CGO_ENABLED=1 CC=x86_64-linux-musl-gcc CXX=x86_64-linux-musl-g++ GOOS=linux GOARCH=amd64 go build -ldflags '-extldflags "-static"' -o linux-miner main.go
+CGO_ENABLED=1 CC=x86_64-linux-musl-gcc CXX=x86_64-linux-musl-g++ GOOS=linux GOARCH=amd64 go build -ldflags '-extldflags "-static"' -o linux-miner main.go
 
 #### win miner
-cd lib/cuckoo && cargo rustc --release --target=x86_64-pc-windows-gnu -- -C linker=x86_64-w64-mingw32-gcc
-cd ../../ && CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ GOOS=windows GOARCH=amd64 go build -ldflags '-extldflags "-static"' -o win-miner.exe main.go
+CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ GOOS=windows GOARCH=amd64 go build -ldflags '-extldflags "-static"' -o win-miner.exe main.go
 
 cp example.pool.conf pool.conf
 cp example.solo.conf solo.conf
