@@ -55,15 +55,18 @@ $ git clone git@github.com:Qitmeer/qitmeer-miner.git
 
 ```bash
 $ cd qitmeer-miner 
-$ cd lib/cuckoo
-$ cargo build --release
+$ sh installLibrary.sh
 ```
 
 ### 3. Build qitmeer-miner  
 
 ```bash
-$ cd ..\.. 
+//# mac
 $ go build
+//# linux apt install musl-tools g++ -y
+$ CGO_ENABLED=1 CC=musl-gcc CXX=g++ GOOS=linux
+//# windows 
+$ CGO_ENABLED=1 GOOS=windows GOARCH=amd64 go build -ldflags '-extldflags "-static"' -o win-miner.exe main.go
 ```
 
 ### 4. Verify Build OK
@@ -76,11 +79,13 @@ $ ./qitmeer-miner --version
 
 Before step 3, do following 
 ```bash
-$ copy lib/cuckoo/target/release/cuckoo.dll to C:/Windows
+$ copy lib/cuckoo/target/release/x86_64-pc-windows-gnu/cuckoo.lib to C:/mingw64/lib
+$ copy lib/opencl/windows/libOpenCL.a to C:/mingw64/lib
 ```
 ### Linux-additional step
 
 Before step 3, do following 
 ```bash
-$ sudo copy lib/cuckoo/target/release/libcuckoo.so /usr/lib/
+$ sudo copy lib/cuckoo/target/x86_64-unknown-linux-musl/release/libcuckoo.a /usr/lib/x86_64-linux-musl
+$ sudo copy lib/opencl/linux/libOpenCL.a /usr/lib/x86_64-linux-musl
 ```
