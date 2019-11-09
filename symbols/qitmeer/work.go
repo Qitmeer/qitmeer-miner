@@ -57,6 +57,7 @@ func (this *QitmeerWork) CopyNew() QitmeerWork{
 		newWork.Block.Pow = this.Block.Pow
 		newWork.Block.ParentRoot = this.Block.ParentRoot
 		newWork.Block.Parents = this.Block.Parents
+		newWork.Block.Transactions = this.Block.Transactions
 		newWork.Block.StateRoot = this.Block.StateRoot
 	}
 
