@@ -1,6 +1,6 @@
 ---
-name: Bug report
-about: Create a report to help us improve
+name: qitmeer-miner Bug report
+about: Please help us to submit bug reprot to improve software quality and user experience 
 ---
 
 **Describe the bug**
