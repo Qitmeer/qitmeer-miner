@@ -123,7 +123,7 @@ func (this *QitmeerWork) Get () bool {
 	this.Started = uint32(time.Now().Unix())
 	this.GetWorkTime = time.Now().Unix()
 	this.Cfg.OptionConfig.Target = this.Block.Target
-	common.MinerLoger.Debug(fmt.Sprintf("getBlockTemplate height:%d , target :%s",this.Block.Height,target))
+	common.MinerLoger.Info(fmt.Sprintf("getBlockTemplate height:%d , target :%s",this.Block.Height,target))
 	return true
 }
 

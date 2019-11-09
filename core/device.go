@@ -5,6 +5,7 @@ james
 package core
 
 import (
+	`fmt`
 	"github.com/Qitmeer/go-opencl/cl"
 	"math"
 	"os"
@@ -198,11 +199,7 @@ func (this *Device)Status(wg *sync.WaitGroup)  {
 			if this.GetMinerType() != "blake2bd"{
 				unit = " GPS"
 			}
-			common.MinerLoger.Info("DEVICE",
-				"device id",this.MinerId,
-				"name",this.ClDevice.Name(),
-				"hash rate",common.FormatHashRate(this.AverageHashRate,unit),
-			)
+			common.MinerLoger.Info(fmt.Sprintf("# %d [%s] : %s",this.MinerId,this.ClDevice.Name(),common.FormatHashRate(this.AverageHashRate,unit)))
 		}
 	}
 }
