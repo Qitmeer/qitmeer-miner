@@ -1,6 +1,6 @@
 ---
 name: qitmeer-miner Bug report
-about: Please help us to submit bug reprot to improve software quality and user experience 
+about: Please submit bug reprot to help us improve software quality and user experience 
 ---
 
 **Describe the bug**

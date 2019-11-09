@@ -19,7 +19,7 @@ about: 提交BUG以帮助我们改善挖矿软件的质量和使用体验
 **截屏(如有)**
 如果有，可以使用截屏来帮助描述问题所在。
 
-**环境信息 (please complete the following information):**
+**环境信息 (请尽可能提供完整信息):**
 - 操作系统 [e.g. Windows 10]
 - 显卡 [e.g. GTX 1070]
   你可以使用`./qitmeer-miner -l`命令获得输出粘贴在这里，如:
