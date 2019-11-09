@@ -398,16 +398,11 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 				for j := 0; j < txCount; j++ {
 					subm += this.header.Transactions[j].Data
 				}
-				txCount -= 1 //real transaction count except coinbase
 				subm += "-" + fmt.Sprintf("%d",txCount) + "-" + fmt.Sprintf("%d",this.Work.Block.Height)
 			} else {
 				subm += "-" + this.header.JobID + "-" + this.header.Exnonce2
 			}
 			this.SubmitData <- subm
-			if !this.Pool{
-				//solo wait new task
-				break
-			}
 		}
 	}
 }

@@ -138,7 +138,7 @@ func (this *QitmeerRobot)Run() {
 // ListenWork
 func (this *QitmeerRobot)ListenWork() {
 	common.MinerLoger.Info("listen new work server")
-	t := time.NewTicker(time.Second * 2)
+	t := time.NewTicker(time.Second * 5)
 	defer t.Stop()
 	r := false
 	for {
