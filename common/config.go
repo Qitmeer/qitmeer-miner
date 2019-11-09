@@ -41,7 +41,7 @@ var (
 	defaultLocalSize = 4096
 	defaultWorkGroupSize = 256
 	defaultEdgeBits = 24
-	version = "0.2.5"
+	version = "0.2.6"
 )
 
 type CommandConfig struct {
