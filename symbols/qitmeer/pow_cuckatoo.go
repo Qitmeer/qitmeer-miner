@@ -5,6 +5,14 @@ james
 package qitmeer
 /*
 #cgo LDFLAGS: -L../../lib/cuckoo/target/release -lcuckoo
+#cgo darwin LDFLAGS: -L../../lib/cuckoo/target/x86_64-apple-darwin/release
+#cgo windows LDFLAGS: -L../../lib/cuckoo/target/x86_64-pc-windows-gnu/release
+#cgo linux LDFLAGS: -L../../lib/cuckoo/target/x86_64-unknown-linux-musl/release
+#cgo windows LDFLAGS: -L../../lib/opencl/windows
+#cgo linux LDFLAGS: -L../../lib/opencl/linux
+#cgo darwin LDFLAGS: -L../../lib/opencl/osx
+#cgo windows LDFLAGS: -lws2_32
+#cgo windows LDFLAGS: -luserenv
 #include "../../lib/cuckoo.h"
 #include <stdio.h>
 #include <stdlib.h>
