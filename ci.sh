@@ -1,7 +1,16 @@
 #!/usr/bin/env bash
 set -ex
 export GO111MODULE=on
-./installLibrary.sh
+
+rm -rf lib/cuckoo/target/*
+rm -rf lib/opencl/*
+rm -rf libOpenCL.zip libcuckoo.zip
+
+wget -O libcuckoo.zip https://github.com/Qitmeer/cuckoo-lib/releases/download/v0.0.1/libcuckoo.zip
+unzip libcuckoo.zip -d lib/cuckoo/target/
+wget -O libOpenCL.zip https://github.com/Qitmeer/OpenCL-ICD-Loader/releases/download/v0.0.1/libopencl.zip
+unzip libOpenCL.zip -d lib/opencl/
+
 export LD_LIBRARY_PATH=`pwd`/lib/cuckoo/target/x86_64-unknown-linux-musl/release:`pwd`/lib/opencl/linux:$LD_LIBRARY_PATH
 echo $LD_LIBRARY_PATH
 sudo cp `pwd`/lib/opencl/linux/libOpenCL.a /usr/lib/x86_64-linux-musl/
