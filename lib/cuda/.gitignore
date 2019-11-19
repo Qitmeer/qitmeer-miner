@@ -2,3 +2,6 @@ libtest.so
 test.dll
 test.exp
 test.lib
+lib/cuda/libcudacuckoo.so
+cudacuckoo.dll
+libcudacuckoo.dylib

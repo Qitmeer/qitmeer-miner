@@ -78,6 +78,7 @@ type OptionalConfig struct {
 	EdgeBits       int `long:"edge_bits" description:"edge bits" default-mask:"24"`
 	LocalSize       int `long:"local_size" description:"local size" default-mask:"4096"`
 	GroupSize       int `long:"group_size" description:"work group size" default-mask:"256"`
+	Cuda       bool `long:"cuda" description:"is cuda" default-mask:"false"`
 }
 
 type PoolConfig struct {

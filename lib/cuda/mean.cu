@@ -710,7 +710,9 @@ CALL_CONVENTION int run_solver(SolverCtx* ctx,
                                u32 nonce,
                                u32 range,
                                SolverSolutions *solutions,
-                               SolverStats *stats
+                               SolverStats *stats,
+							   unsigned int * Nonce,
+							   unsigned int * cycleNonces
                                )
 {
   u64 time0, time1;
@@ -748,8 +750,10 @@ CALL_CONVENTION int run_solver(SolverCtx* ctx,
     for (unsigned s = 0; s < nsols; s++) {
       print_log("Solution");
       u32* prf = &ctx->sols[s * PROOFSIZE];
-      for (u32 i = 0; i < PROOFSIZE; i++)
+      for (u32 i = 0; i < PROOFSIZE; i++){
         print_log(" %jx", (uintmax_t)prf[i]);
+		cycleNonces[i] = (unsigned int)prf[i];
+	  }
       print_log("\n");
       if (solutions != NULL){
         solutions->edge_bits = EDGEBITS;
@@ -757,17 +761,11 @@ CALL_CONVENTION int run_solver(SolverCtx* ctx,
         solutions->sols[sumnsols+s].nonce = nonce + r;
         for (u32 i = 0; i < PROOFSIZE; i++)
           solutions->sols[sumnsols+s].proof[i] = (u64) prf[i];
-
       }
       int pow_rc = verify(prf, &ctx->trimmer.sipkeys);
       if (pow_rc == POW_OK) {
-        print_log("Verified with cyclehash ");
-        unsigned char cyclehash[32];
-        blake2b((void *)cyclehash, sizeof(cyclehash), (const void *)prf, sizeof(proof), 0, 0);
-        for (int i=0; i<32; i++)
-          print_log("%02x", cyclehash[i]);
-        print_log("\n");
-        print_log("Found 42-cycles");
+		Nonce[0] = nonce+r;
+        print_log("\nFound 42-cycles\n");
         isFound = true;
         break;
       } else {
@@ -784,7 +782,6 @@ CALL_CONVENTION int run_solver(SolverCtx* ctx,
         break;
     }
   }
-  print_log("%d total solutions\n", sumnsols);
   return sumnsols > 0;
 }
 
@@ -850,7 +847,7 @@ extern "C" {
 #ifdef ISWINDOWS
     __declspec(dllexport)
 #endif
-      	int test_cuda(u32 device,char* input){
+      	int cuda_search(u32 device,char* input,unsigned int *isFind,unsigned int *Nonce,u32 *CycleNonces){
         trimparams tp;
         u32 nonce = 0;
         u32 range = (unsigned int)(1<<32-1);
@@ -860,8 +857,6 @@ extern "C" {
         // set defaults
         SolverParams params;
         fill_default_params(&params);
-
-
         int nDevices;
         if checkCudaErrors(cudaGetDeviceCount(&nDevices)) return 36;
         assert(device < nDevices);
@@ -884,7 +879,7 @@ extern "C" {
         for (unit=0; bytes >= 102400; bytes>>=10,unit++) ;
         print_log("Using %d%cB of global memory.\n", (u32)bytes, " KMGT"[unit]);
 
-        run_solver(ctx, header, sizeof(header), nonce, range, NULL, NULL);
+        isFind[0] = run_solver(ctx, header, sizeof(header), nonce, range, NULL, NULL,Nonce,CycleNonces);
 
         return 0;
       }
