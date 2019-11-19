@@ -8,11 +8,16 @@
 $ sudo apt-get gcc g++
 $ sudo apt-get install beignet-dev nvidia-cuda-dev nvidia-cuda-toolkit
 ```
+
+## Mac
+- Install [**Cuda**](https://developer.nvidia.com/cuda-downloads)
+- Install [**Command Line Tools**](https://developer.apple.com/downloads/)
+
 ## Windows 
 
 - Install [**Build Tools for Visual Studio**](https://visualstudio.microsoft.com/thank-you-downloading-visual-studio/?sku=BuildTools&rel=16)
 - Install [**Cuda**](https://developer.nvidia.com/cuda-downloads)
-- Install **Mingw64**
+- Install [**Mingw64**](https://mingw-w64.org/)
 - Set Environment variables
 - `PATH` 
     - D:\VS\2019\VC\Tools\MSVC\14.23.28105\bin\Hostx64\x64

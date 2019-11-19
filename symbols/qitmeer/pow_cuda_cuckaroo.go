@@ -4,6 +4,7 @@ james
 */
 package qitmeer
 /*
+#cgo LDFLAGS: -L../../lib/cuda
 #cgo LDFLAGS: -lcudacuckoo
 #include "../../lib/cuckoo.h"
 */
