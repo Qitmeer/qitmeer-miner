@@ -648,7 +648,6 @@ struct solver_ctx {
 			const u32 min = nu < nv ? nu : nv;
 			for (nu -= min, nv -= min; us[nu] != vs[nv]; nu++, nv++) ;
 			const u32 len = nu + nv + 1;
-			print_log("%4d-cycle found\n", len);
 			if (len == PROOFSIZE)
 			 solution(us, nu, vs, nv);
 			// if (len == 2) print_log("edge %x %x\n", edge.x, edge.y);
@@ -863,16 +862,12 @@ extern "C" {
 			u64 dbytes = prop.totalGlobalMem;
 			int dunit;
 			for (dunit=0; dbytes >= 102400; dbytes>>=10,dunit++) ;
-			print_log("%s with %d%cB @ %d bits x %dMHz\n", prop.name, (u32)dbytes, " KMGT"[dunit], prop.memoryBusWidth, prop.memoryClockRate/1000);
-
-			print_log(") with 50%% edges, %d*%d buckets, %d trims, and %d thread blocks.\n", NX, NY, params.ntrims, NX);
 
 			SolverCtx* ctx = create_solver_ctx(&params);
 
 			u64 bytes = ctx->trimmer.globalbytes();
 			int unit;
 			for (unit=0; bytes >= 102400; bytes>>=10,unit++) ;
-			print_log("Using %d%cB of global memory.\n", (u32)bytes, " KMGT"[unit]);
 
 			isFind[0] = run_solver(ctx, header, sizeof(header), nonce, range, NULL, NULL,Nonce,CycleNonces,average);
 			destroy_solver_ctx(ctx);
