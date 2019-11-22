@@ -2,6 +2,8 @@ package common
 
 import (
 	"github.com/Qitmeer/go-opencl/cl"
+	`github.com/Qitmeer/qitmeer-miner/common`
+	`strings`
 )
 
 var DevicesTypesForGPUMining = cl.DeviceTypeGPU
@@ -15,6 +17,11 @@ func GetDevices(t cl.DeviceType) []*cl.Device {
 	clDevices := make([]*cl.Device, 0)
 	i := 0
 	for _, platform := range platforms {
+		if !strings.Contains(platform.Name(),"CUDA"){
+			common.MinerLoger.Debug("don't support cuda")
+			continue
+		}
+
 		platormDevices, err := cl.GetDevices(platform, t)
 		if err != nil {
 			MinerLoger.Error("Get Devices Error","platform",platform.Name(),"Error",err.Error())

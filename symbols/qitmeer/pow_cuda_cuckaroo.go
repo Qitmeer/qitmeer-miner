@@ -22,7 +22,6 @@ import (
 	"qitmeer-miner/common"
 	"qitmeer-miner/core"
 	`sort`
-	`strings`
 	"sync"
 	"time"
 	`unsafe`
@@ -59,11 +58,6 @@ func (this *CudaCuckaroo) Update() {
 }
 
 func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
-	if !strings.Contains(this.ClDevice.Name(),"CUDA"){
-		common.MinerLoger.Info("don't support cuda")
-		return
-	}
-
 	defer this.Release()
 	defer wg.Done()
 
@@ -109,7 +103,7 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 			resultBytes := make([]byte,4)
 			average := []float64{this.AverageHashRate}
 			if common.Timeout(120*time.Second, func() {
-				_ = C.cuda_search((C.int)(0),(*C.uchar)(unsafe.Pointer(&hData[0])),(*C.uint)(unsafe.Pointer(&resultBytes[0])),(*C.uint)(unsafe.Pointer(&nonceBytes[0])),
+				_ = C.cuda_search((C.int)(this.MinerId),(*C.uchar)(unsafe.Pointer(&hData[0])),(*C.uint)(unsafe.Pointer(&resultBytes[0])),(*C.uint)(unsafe.Pointer(&nonceBytes[0])),
 					(*C.uint)(unsafe.Pointer(&cycleNoncesBytes[0])),(*C.double)(unsafe.Pointer(&average[0])))
 			}){
 				//timeout
