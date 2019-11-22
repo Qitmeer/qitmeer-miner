@@ -30,10 +30,8 @@ const Trim = 2
 const Extract = 3
 //init the config file
 func main()  {
-    common.MinerLoger.Info("123","height",123)
-    return
     var typ = common.DevicesTypesForGPUMining
-    clDevices := common.GetDevices(typ)
+    clDevices := common.GetDevices(typ,"")
     deviceMiner := Cuckatoo{}
     for i, device := range clDevices {
         q := make(chan os.Signal)

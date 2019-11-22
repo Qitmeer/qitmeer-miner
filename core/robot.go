@@ -46,7 +46,11 @@ func (this *MinerRobot)InitDevice()  {
 	if this.Cfg.OptionConfig.CPUMiner{
 		typ = common.DevicesTypesForCPUMining
 	}
-	this.ClDevices = common.GetDevices(typ)
+	needPlatform := ""
+	if this.Cfg.OptionConfig.Cuda {
+		needPlatform = "CUDA"
+	}
+	this.ClDevices = common.GetDevices(typ,needPlatform)
 	if this.ClDevices == nil{
 		common.MinerLoger.Info("Some GPU drivers error occurs! please check your GPU drivers.")
 		return

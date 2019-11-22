@@ -7,7 +7,7 @@ import (
 
 var DevicesTypesForGPUMining = cl.DeviceTypeGPU
 var DevicesTypesForCPUMining = cl.DeviceTypeCPU
-func GetDevices(t cl.DeviceType) []*cl.Device {
+func GetDevices(t cl.DeviceType,needPlatform string) []*cl.Device {
 	platforms, err := cl.GetPlatforms()
 	if err != nil {
 		MinerLoger.Error("Get Graphics card platforms error,please check!","error",err.Error())
@@ -16,7 +16,8 @@ func GetDevices(t cl.DeviceType) []*cl.Device {
 	clDevices := make([]*cl.Device, 0)
 	i := 0
 	for _, platform := range platforms {
-		if !strings.Contains(platform.Name(),"CUDA"){
+
+		if needPlatform != "" && !strings.Contains(platform.Name(),needPlatform){
 			MinerLoger.Debug("don't support cuda")
 			continue
 		}
