@@ -464,7 +464,6 @@ struct edgetrimmer {
 	 cudaEventSynchronize(stop); cudaEventElapsedTime(&durationB, start, stop);
 	 if checkCudaErrors(cudaEventDestroy(start)) return false;
 	 if checkCudaErrors(cudaEventDestroy(stop)) return false;
-	 print_log("Seeding completed in %.0f + %.0f ms\n", durationA, durationB);
 	 if (abort) return false;
 
 	 for (u32 i = 0; i < NB; i++) cudaMemset(indexesE[1+i], 0, indexesSize);
@@ -687,7 +686,6 @@ struct solver_ctx {
 	 time0 = timestamp();
 	 findcycles(edges, nedges);
 	 time1 = timestamp(); timems2 = (time1 - time0) / 1000000;
-	 print_log("findcycles edges %d time %d ms total %d ms\n", nedges, timems2, timems+timems2);
 	 return sols.size() / PROOFSIZE;
 	}
 
