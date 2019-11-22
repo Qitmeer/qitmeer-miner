@@ -109,7 +109,7 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 				//timeout
 				continue
 			}
-
+			this.AverageHashRate = average[0]
 			isFind := binary.LittleEndian.Uint32(resultBytes)
 
 			if isFind != 1 {
