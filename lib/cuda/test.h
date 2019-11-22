@@ -1,0 +1,1 @@
+int cuda_search(int deviceID,unsigned char* header,unsigned int *isFind,unsigned int *Nonce,unsigned int *CycleNonces);

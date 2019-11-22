@@ -7,6 +7,8 @@ package qitmeer
 #cgo LDFLAGS: -L../../lib/cuda
 #cgo LDFLAGS: -lcudacuckoo
 #include "../../lib/cuckoo.h"
+#include <stdio.h>
+#include <stdlib.h>
 */
 import "C"
 import (
@@ -19,6 +21,8 @@ import (
 	"math/big"
 	"qitmeer-miner/common"
 	"qitmeer-miner/core"
+	`sort`
+	`strings`
 	"sync"
 	"time"
 	`unsafe`
@@ -35,6 +39,7 @@ type CudaCuckaroo struct {
 	LocalSize            int
 	Nedge            int
 	Edgemask            uint64
+	Nonces           []uint32
 }
 
 func (this *CudaCuckaroo) Update() {
@@ -54,6 +59,10 @@ func (this *CudaCuckaroo) Update() {
 }
 
 func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
+	if !strings.Contains(this.ClDevice.Name(),"CUDA"){
+		common.MinerLoger.Info("don't support cuda")
+		return
+	}
 
 	defer this.Release()
 	defer wg.Done()
@@ -73,7 +82,6 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 		if len(this.Work.PoolWork.WorkData) <= 0 && this.Work.Block.Height <= 0 {
 			continue
 		}
-
 		this.HasNewWork = false
 		this.CurrentWorkID = 0
 		this.header = MinerBlockData{
@@ -91,26 +99,56 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 				break
 			}
 			this.Update()
-
+			this.Nonces = make([]uint32,0)
 			hData := this.header.HeaderBlock.BlockData()[:types.MaxBlockHeaderPayload-pow.PROOF_DATA_CIRCLE_NONCE_END]
-			s := C.CString(string(hData))
+
+			powStruct := this.header.HeaderBlock.Pow.(*pow.Cuckaroo)
+
 			cycleNoncesBytes := make([]byte,42*4)
 			nonceBytes := make([]byte,4)
 			resultBytes := make([]byte,4)
-			C.cuda_search((C.int)(0),s,(*C.uint)(unsafe.Pointer(&resultBytes[0])),(*C.uint)(unsafe.Pointer(&nonceBytes[0])),(*C.uint)(unsafe.Pointer(&cycleNoncesBytes[0])))
+			average := []float64{this.AverageHashRate}
+			if common.Timeout(120*time.Second, func() {
+				_ = C.cuda_search((C.int)(0),(*C.uchar)(unsafe.Pointer(&hData[0])),(*C.uint)(unsafe.Pointer(&resultBytes[0])),(*C.uint)(unsafe.Pointer(&nonceBytes[0])),
+					(*C.uint)(unsafe.Pointer(&cycleNoncesBytes[0])),(*C.double)(unsafe.Pointer(&average[0])))
+			}){
+				//timeout
+				continue
+			}
+
 			isFind := binary.LittleEndian.Uint32(resultBytes)
+
 			if isFind != 1 {
 				continue
 			}
-			//nonce
-			copy(hData[104:112],nonceBytes)
 
+			//nonce
+			copy(hData[108:112],nonceBytes)
+			for jj := 0;jj < len(cycleNoncesBytes);jj+=4{
+				tj := binary.LittleEndian.Uint32(cycleNoncesBytes[jj:jj+4])
+				if tj <=0 {
+					isFind = 0
+					break
+				}
+				this.Nonces = append(this.Nonces,tj)
+			}
+
+			if isFind != 1{
+				continue
+			}
+			sort.Slice(this.Nonces, func(i, j int) bool {
+				return this.Nonces[i]<this.Nonces[j]
+			})
+			powStruct.SetCircleEdges(this.Nonces)
+			powStruct.SetNonce(binary.LittleEndian.Uint32(nonceBytes))
+			powStruct.SetEdgeBits(edges_bits)
 			subData := BlockDataWithProof(this.header.HeaderBlock)
 			copy(subData[:113],hData[:113])
 			h := hash.DoubleHashH(subData)
-			if pow.CalcCuckooDiff(pow.GraphWeight(uint32(this.EdgeBits)),h).Cmp(this.header.TargetDiff) < 0{
+			if pow.CalcCuckooDiff(pow.GraphWeight(uint32(edges_bits)),h).Cmp(this.header.TargetDiff) < 0{
 				continue
 			}
+
 			common.MinerLoger.Info(fmt.Sprintf("Found Hash %s",h))
 
 			subm := hex.EncodeToString(subData)
@@ -138,4 +176,28 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 
 func (this *CudaCuckaroo) SubmitShare(substr chan string) {
 	this.Device.SubmitShare(substr)
+}
+
+func (this *CudaCuckaroo)Status(wg *sync.WaitGroup)  {
+	defer wg.Done()
+	t := time.NewTicker(time.Second * 10)
+	defer t.Stop()
+	for {
+		select{
+		case <- this.Quit:
+			return
+		case <- t.C:
+			if !this.IsValid{
+				time.Sleep(2*time.Second)
+				continue
+			}
+			//diffOneShareHashesAvg := uint64(0x00000000FFFFFFFF)
+			if this.AverageHashRate <= 0{
+				continue
+			}
+			//recent stats 95% percent
+			unit := " GPS"
+			common.MinerLoger.Info(fmt.Sprintf("# %d [%s] : %s",this.MinerId,this.ClDevice.Name(),common.FormatHashRate(this.AverageHashRate,unit)))
+		}
+	}
 }
