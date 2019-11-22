@@ -2,7 +2,6 @@ package common
 
 import (
 	"github.com/Qitmeer/go-opencl/cl"
-	`github.com/Qitmeer/qitmeer-miner/common`
 	`strings`
 )
 
@@ -18,7 +17,7 @@ func GetDevices(t cl.DeviceType) []*cl.Device {
 	i := 0
 	for _, platform := range platforms {
 		if !strings.Contains(platform.Name(),"CUDA"){
-			common.MinerLoger.Debug("don't support cuda")
+			MinerLoger.Debug("don't support cuda")
 			continue
 		}
 
