@@ -257,7 +257,7 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 			if pow.CalcCuckooDiff(pow.GraphWeight(uint32(edges_bits)),h).Cmp(this.header.TargetDiff) < 0 {
 				continue
 			}
-			common.MinerLoger.Info(fmt.Sprintf("Found Hash%s",h))
+			common.MinerLoger.Info(fmt.Sprintf("Found Hash %s",h))
 			subm := hex.EncodeToString(subData)
 			if !this.Pool{
 				subm += common.Int2varinthex(int64(len(this.header.Parents)))
