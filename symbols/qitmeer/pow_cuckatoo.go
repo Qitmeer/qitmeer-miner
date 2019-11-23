@@ -79,7 +79,7 @@ func (this *Cuckatoo) InitDevice() {
 	edges_bits = uint(this.Cfg.OptionConfig.EdgeBits)
 	el_count = (1024 * 1024 * 512 / 32) << (edges_bits - 29)
 	trims = 128 << (edges_bits - 29)
-	common.MinerLoger.Debug(fmt.Sprintf("==============Mining Cuckaroo: deviceID:%d edge bits:%d ==============",this.MinerId,edges_bits))
+	common.MinerLoger.Debug(fmt.Sprintf("==============Mining Cuckatoo: deviceID:%d edge bits:%d ==============",this.MinerId,edges_bits))
 	var err error
 	kernelStr := strings.ReplaceAll(kernel.CuckatooKernel,"{{edge_bits}}",fmt.Sprintf("%d",edges_bits))
 	this.Program, err = this.Context.CreateProgramWithSource([]string{kernelStr})
