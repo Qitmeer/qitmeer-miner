@@ -110,6 +110,12 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 			var stop = make(chan int,1)
 			closed := false
 			go func() {
+				defer func() {
+					if err := recover(); err != nil {
+						fmt.Println("recover success.",err)
+						return
+					}
+				}()
 				for{
 					select {
 					case <- stop:
