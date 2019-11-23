@@ -74,6 +74,7 @@ func (this *Cuckatoo) InitDevice() {
 	}
 	if this.Cfg.OptionConfig.EdgeBits < 29{
 		common.MinerLoger.Error("cuckatoo edge_bits cannot less than 29!")
+		this.IsValid = false
 		return
 	}
 	edges_bits = uint(this.Cfg.OptionConfig.EdgeBits)
