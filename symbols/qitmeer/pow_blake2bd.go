@@ -88,6 +88,7 @@ func (this *Blake2bD) InitDevice() {
 	}
 	_ = this.Kernel.SetArgBuffer(2, this.NonceRandObj)
 	_ = this.Kernel.SetArgBuffer(3, this.Target2Obj)
+	common.MinerLoger.Debug(fmt.Sprintf("==============Mining Blake2bd=============="))
 	common.MinerLoger.Debug(fmt.Sprintf("- Device ID:%d- Global item size:%d- Local item size:%d",this.MinerId, this.GlobalItemSize, this.LocalItemSize))
 	this.NonceOut = make([]byte, 8)
 	if this.Event, this.Err = this.CommandQueue.EnqueueWriteBufferByte(this.NonceOutObj, true, 0, this.NonceOut, nil); this.Err != nil {
