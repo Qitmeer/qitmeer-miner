@@ -819,10 +819,6 @@ void destroy_solver_ctx(SolverCtx* ctx) {
 	delete ctx;
 }
 
-void stop_solver(SolverCtx* ctx) {
-	ctx->abort();
-}
-
 void fill_default_params(SolverParams* params) {
 	trimparams tp;
 	params->device = 0;
@@ -841,6 +837,9 @@ extern "C" {
 #ifdef ISWINDOWS
 	 __declspec(dllexport)
 #endif
+    void stop_solver(SolverCtx* ctx) {
+        ctx->abort();
+    }
 	 int cuda_search(u32 device,unsigned char* input,unsigned int *isFind,unsigned int *Nonce,u32 *CycleNonces,double *average){
 			trimparams tp;
 			u32 nonce = 0;

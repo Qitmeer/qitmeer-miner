@@ -102,14 +102,9 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 			nonceBytes := make([]byte,4)
 			resultBytes := make([]byte,4)
 			average := []float64{this.AverageHashRate}
-			if common.Timeout(120*time.Second, func() {
-				common.MinerLoger.Info("[mining]","miner id",this.MinerId)
-				_ = C.cuda_search((C.int)(this.MinerId),(*C.uchar)(unsafe.Pointer(&hData[0])),(*C.uint)(unsafe.Pointer(&resultBytes[0])),(*C.uint)(unsafe.Pointer(&nonceBytes[0])),
-					(*C.uint)(unsafe.Pointer(&cycleNoncesBytes[0])),(*C.double)(unsafe.Pointer(&average[0])))
-			}){
-				//timeout
-				continue
-			}
+			var solverCtx unsafe.Pointer
+			_ = C.cuda_search((C.int)(this.MinerId),(*C.uchar)(unsafe.Pointer(&hData[0])),(*C.uint)(unsafe.Pointer(&resultBytes[0])),(*C.uint)(unsafe.Pointer(&nonceBytes[0])),
+				(*C.uint)(unsafe.Pointer(&cycleNoncesBytes[0])),(*C.double)(unsafe.Pointer(&average[0])))
 			this.AverageHashRate = average[0]
 			isFind := binary.LittleEndian.Uint32(resultBytes)
 
