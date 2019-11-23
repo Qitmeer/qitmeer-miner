@@ -43,7 +43,7 @@ $  nvcc -m64 -arch=sm_35 -o libcudacuckoo.dylib --shared -Xcompiler -fPIC -DEDGE
 # ubuntu
 $  nvcc -m64 -arch=sm_35 -o libcudacuckoo.so --shared -Xcompiler -fPIC -DEDGEBITS=29 -DSIPHASH_COMPAT=1 mean.cu ./crypto/blake2b-ref.c
 # or below 
-$  nvcc -m64 -arch=sm_35 -o libcudacuckoo.so --shared -Xcompiler "-std=c++0x" -fPIC -DEDGEBITS=29 -DSIPHASH_COMPAT=1 mean.cu ./crypto/blake2b-ref.c
+$  nvcc -m64 -arch=sm_35 -o libcudacuckoo.so --shared -std=c++11 -Xcompiler -fPIC -DEDGEBITS=29 -DSIPHASH_COMPAT=1 mean.cu ./crypto/blake2b-ref.c
 # windows 
 $  nvcc -m64 -arch=sm_35 -o cudacuckoo.dll --shared -Xcompiler -fPIC -DEDGEBITS=29 -DSIPHASH_COMPAT=1 -DISWINDOWS=1 mean.cu ./crypto/blake2b-ref.c
 ```
