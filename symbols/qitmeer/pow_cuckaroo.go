@@ -119,7 +119,7 @@ func (this *Cuckaroo) InitDevice() {
 	this.Step = 1 << (uint(this.EdgeBits)-20)
 	this.WorkGroupSize = this.Cfg.OptionConfig.GroupSize
 	this.LocalSize = this.Cfg.OptionConfig.LocalSize
-	common.MinerLoger.Debug(fmt.Sprintf("mining edge bits:%d local size:%d work size:%d",this.EdgeBits,this.LocalSize,this.WorkGroupSize))
+	common.MinerLoger.Debug(fmt.Sprintf("==============Mining Cuckaroo: deviceID:%d edge bits:%d trimmerTimes:%d==============",this.MinerId,this.EdgeBits,this.Cfg.OptionConfig.TrimmerCount))
 	kernelStr := strings.ReplaceAll(kernel.CuckarooKernelNew,"{{edge_bits}}",fmt.Sprintf("%d",this.EdgeBits))
 	kernelStr = strings.Replace(kernelStr,"{{step}}",fmt.Sprintf("%d",this.Step),1)
 	kernelStr = strings.ReplaceAll(kernelStr,"{{group}}",fmt.Sprintf("%d",this.WorkGroupSize))
