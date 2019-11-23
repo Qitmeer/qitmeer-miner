@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/Qitmeer/go-opencl/cl"
 	"log"
+	`os`
 	"qitmeer-miner/common"
 	"qitmeer-miner/core"
 	"qitmeer-miner/stats_server"
@@ -153,12 +154,18 @@ func (this *QitmeerRobot)ListenWork() {
 				r = this.Work.Get() // get new work
 			}
 			if r {
+				validDeviceCount := 0
 				for _, dev := range this.Devices {
 					if !dev.GetIsValid(){
 						continue
 					}
+					validDeviceCount++
 					newWork := this.Work.CopyNew()
 					dev.SetNewWork(&newWork)
+				}
+				if validDeviceCount <=0{
+					common.MinerLoger.Error("There is no valid device to mining,please check your config!")
+					os.Exit(1)
 				}
 			}
 		}
