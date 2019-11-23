@@ -837,10 +837,11 @@ extern "C" {
 #ifdef ISWINDOWS
 	 __declspec(dllexport)
 #endif
-    void stop_solver(SolverCtx* ctx) {
+    void stop_solver(void* ctxInfo) {
+        SolverCtx * pDetectInfo = (SolverCtx *)ctxInfo;
         ctx->abort();
     }
-	 int cuda_search(u32 device,unsigned char* input,unsigned int *isFind,unsigned int *Nonce,u32 *CycleNonces,double *average){
+	 int cuda_search(u32 device,unsigned char* input,unsigned int *isFind,unsigned int *Nonce,u32 *CycleNonces,double *average,void **ctxInfo){
 			trimparams tp;
 			u32 nonce = 0;
 			u32 range = (unsigned int)(1<<32-1);
@@ -861,7 +862,7 @@ extern "C" {
 			for (dunit=0; dbytes >= 102400; dbytes>>=10,dunit++) ;
 
 			SolverCtx* ctx = create_solver_ctx(&params);
-
+            *ctxInfo = ctx;
 			u64 bytes = ctx->trimmer.globalbytes();
 			int unit;
 			for (unit=0; bytes >= 102400; bytes>>=10,unit++) ;
