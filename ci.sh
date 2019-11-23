@@ -17,7 +17,7 @@ sudo cp `pwd`/lib/opencl/linux/libOpenCL.a /usr/lib/x86_64-linux-musl/
 
 cd lib/cuda
 
-nvcc -m64 -arch=sm_35 -o libcudacuckoo.so --shared -Xcompiler -fPIC -DEDGEBITS=29 -DSIPHASH_COMPAT=1 mean.cu ./crypto/blake2b-ref.c
+nvcc -m64 -arch=sm_35 -o libcudacuckoo.so --shared -Xcompiler "-std=c++0x" -fPIC -DEDGEBITS=29 -DSIPHASH_COMPAT=1 mean.cu ./crypto/blake2b-ref.c
 sudo cp `pwd`/lib/cuda/libcudacuckoo.a /usr/lib/x86_64-linux-musl/
 cd ../../
 

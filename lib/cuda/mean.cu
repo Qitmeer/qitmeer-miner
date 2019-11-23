@@ -670,11 +670,8 @@ struct solver_ctx {
 	}
 
 	int solve() {
-	 u64 time0, time1;
-	 u32 timems,timems2;
 
 	 trimmer.abort = false;
-	 time0 = timestamp();
 	 u32 nedges = trimmer.trim();
 	 if (!nedges)
 		return 0;
@@ -683,10 +680,7 @@ struct solver_ctx {
 		nedges = MAXEDGES;
 	 }
 	 cudaMemcpy(edges, trimmer.bufferB, sizeof(uint2)*nedges, cudaMemcpyDeviceToHost);
-	 time1 = timestamp(); timems	= (time1 - time0) / 1000000;
-	 time0 = timestamp();
 	 findcycles(edges, nedges);
-	 time1 = timestamp(); timems2 = (time1 - time0) / 1000000;
 	 return sols.size() / PROOFSIZE;
 	}
 
