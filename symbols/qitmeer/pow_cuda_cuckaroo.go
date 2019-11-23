@@ -41,6 +41,10 @@ type CudaCuckaroo struct {
 	Nonces           []uint32
 }
 
+func (this *CudaCuckaroo) InitDevice() {
+	this.EdgeBits = this.Cfg.OptionConfig.EdgeBits
+}
+
 func (this *CudaCuckaroo) Update() {
 	//update coinbase tx hash
 	this.Device.Update()
@@ -104,23 +108,30 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 			average := []float64{this.AverageHashRate}
 			var solverCtx unsafe.Pointer
 			var stop = make(chan int,1)
+			closed := false
 			go func() {
 				for{
 					select {
-					case _ = <- stop:
+					case <- stop:
 						return
 					default:
 						if this.HasNewWork && solverCtx != nil{
 							C.stop_solver(solverCtx)
+							closed = true
+							return
 						}
 					}
 				}
 			}()
 			_ = C.cuda_search((C.int)(this.MinerId),(*C.uchar)(unsafe.Pointer(&hData[0])),(*C.uint)(unsafe.Pointer(&resultBytes[0])),(*C.uint)(unsafe.Pointer(&nonceBytes[0])),
 				(*C.uint)(unsafe.Pointer(&cycleNoncesBytes[0])),(*C.double)(unsafe.Pointer(&average[0])),&solverCtx)
-			C.free(solverCtx)
-			stop <- 1
 			this.AverageHashRate = average[0]
+
+			if closed{
+				continue
+			}
+			stop <- 1
+
 			isFind := binary.LittleEndian.Uint32(resultBytes)
 
 			if isFind != 1 {
@@ -146,21 +157,21 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 			})
 			powStruct.SetCircleEdges(this.Nonces)
 			powStruct.SetNonce(binary.LittleEndian.Uint32(nonceBytes))
-			powStruct.SetEdgeBits(edges_bits)
+			powStruct.SetEdgeBits(uint8(this.EdgeBits))
 			subData := BlockDataWithProof(this.header.HeaderBlock)
 			copy(subData[:113],hData[:113])
 			h := hash.DoubleHashH(subData)
-			if pow.CalcCuckooDiff(pow.GraphWeight(uint32(edges_bits)),h).Cmp(this.header.TargetDiff) < 0{
+			common.MinerLoger.Info(fmt.Sprintf("Calc Hash %s  target diff:%d",h,this.header.TargetDiff.Uint64()))
+			if pow.CalcCuckooDiff(pow.GraphWeight(uint32(this.EdgeBits)),h).Cmp(this.header.TargetDiff) < 0{
 				continue
 			}
-
-			common.MinerLoger.Info(fmt.Sprintf("Found Hash %s",h))
 
 			subm := hex.EncodeToString(subData)
 
 			if !this.Pool{
 				subm += common.Int2varinthex(int64(len(this.header.Parents)))
 				for j := 0; j < len(this.header.Parents); j++ {
+					fmt.Println("parent:",this.header.Parents[j].Hash)
 					subm += this.header.Parents[j].Data
 				}
 

@@ -25,6 +25,7 @@ typedef u64 nonce_t;
 #define NNODES ((node_t)1 << NODEBITS)
 #define NODEMASK (NNODES - 1)
 
+static int DID = 0;
 const u32 NX			= 1 << XBITS;
 const u32 NX2		 = NX * NX;
 const u32 XMASK		= NX - 1;
@@ -308,7 +309,7 @@ __global__ void Tail(const uint2 *source, uint2 *destination, const u32 *srcIdx,
 #define checkCudaErrors(ans) (gpuAssert((ans), __FILE__, __LINE__) != cudaSuccess)
 
 inline int gpuAssert(cudaError_t code, const char *file, int line, bool abort=true) {
-	int device_id;
+	int device_id = DID;
 	cudaGetDevice(&device_id);
 	if (code != cudaSuccess) {
 	 snprintf(LAST_ERROR_REASON, MAX_NAME_LEN, "Device %d GPUassert: %s %s %d", device_id, cudaGetErrorString(code), file, line);
@@ -716,7 +717,7 @@ int run_solver(SolverCtx* ctx,
 	u64 time0, time1;
 	u32 timems;
 	u32 sumnsols = 0;
-	int device_id;
+	int device_id = DID;
 	if (stats != NULL) {
 	 cudaGetDevice(&device_id);
 	 cudaDeviceProp props;
@@ -737,6 +738,9 @@ int run_solver(SolverCtx* ctx,
 	}
 
 	for (u32 r = 0; r < range; r++) {
+	if(ctx->trimmer.abort){
+	    break;
+	}
 	 time0 = timestamp();
 	 ctx->setheadernonce(header, header_length, nonce + r);
 	 u32 nsols = ctx->solve();
@@ -838,9 +842,12 @@ extern "C" {
 	 __declspec(dllexport)
 #endif
     void stop_solver(void* ctxInfo) {
-        SolverCtx * pDetectInfo = (SolverCtx *)ctxInfo;
+        SolverCtx * ctx = (SolverCtx *)ctxInfo;
         ctx->abort();
     }
+#ifdef ISWINDOWS
+	 __declspec(dllexport)
+#endif
 	 int cuda_search(u32 device,unsigned char* input,unsigned int *isFind,unsigned int *Nonce,u32 *CycleNonces,double *average,void **ctxInfo){
 			trimparams tp;
 			u32 nonce = 0;
@@ -860,13 +867,12 @@ extern "C" {
 			u64 dbytes = prop.totalGlobalMem;
 			int dunit;
 			for (dunit=0; dbytes >= 102400; dbytes>>=10,dunit++) ;
-
+			DID = (int)device;
 			SolverCtx* ctx = create_solver_ctx(&params);
             *ctxInfo = ctx;
 			u64 bytes = ctx->trimmer.globalbytes();
 			int unit;
 			for (unit=0; bytes >= 102400; bytes>>=10,unit++) ;
-
 			isFind[0] = run_solver(ctx, header, sizeof(header), nonce, range, NULL, NULL,Nonce,CycleNonces,average);
 			destroy_solver_ctx(ctx);
 			return 0;

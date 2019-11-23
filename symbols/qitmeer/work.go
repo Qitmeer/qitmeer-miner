@@ -83,6 +83,7 @@ func (this *QitmeerWork) Get () bool {
 		common.MinerLoger.Debug("[getBlockTemplate error]","result",string(body))
 		return false
 	}
+
 	if this.Block!=nil && this.Block.Height == blockTemplate.Result.Height &&
 		(time.Now().Unix() - this.GetWorkTime) < int64(this.Cfg.OptionConfig.Timeout)*10{
 		//not has new work
