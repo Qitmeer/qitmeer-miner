@@ -29,6 +29,7 @@ import (
 	"qitmeer-miner/core"
 	"qitmeer-miner/kernel"
 	"sort"
+	`strings`
 	"sync"
 	"time"
 	"unsafe"
@@ -39,7 +40,7 @@ const GLOBAL_WORK_SIZE = 1024 * LOCAL_WORK_SIZE
 const SetCnt = 1
 const Trim = 2
 const Extract = 3
-const edges_bits = 29
+var edges_bits = uint(29)
 var el_count = (1024 * 1024 * 512 / 32) << (edges_bits - 29)
 var current_mode = SetCnt
 var current_uorv = 0
@@ -71,8 +72,18 @@ func (this *Cuckatoo) InitDevice() {
 	if !this.IsValid {
 		return
 	}
+	if this.Cfg.OptionConfig.EdgeBits < 29{
+		common.MinerLoger.Error("cuckatoo edge_bits cannot less than 29!")
+		this.IsValid = false
+		return
+	}
+	edges_bits = uint(this.Cfg.OptionConfig.EdgeBits)
+	el_count = (1024 * 1024 * 512 / 32) << (edges_bits - 29)
+	trims = 128 << (edges_bits - 29)
+	common.MinerLoger.Debug(fmt.Sprintf("==============Mining Cuckatoo: deviceID:%d edge bits:%d ==============",this.MinerId,edges_bits))
 	var err error
-	this.Program, err = this.Context.CreateProgramWithSource([]string{kernel.CuckatooKernel})
+	kernelStr := strings.ReplaceAll(kernel.CuckatooKernel,"{{edge_bits}}",fmt.Sprintf("%d",edges_bits))
+	this.Program, err = this.Context.CreateProgramWithSource([]string{kernelStr})
 	if err != nil {
 		common.MinerLoger.Error(fmt.Sprintf("-", this.MinerId, this.DeviceName, err))
 		this.IsValid = false
@@ -235,7 +246,7 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 			powStruct := this.header.HeaderBlock.Pow.(*pow.Cuckatoo)
 			powStruct.SetCircleEdges(this.Nonces)
 			powStruct.SetNonce(nonce)
-			powStruct.SetEdgeBits(edges_bits)
+			powStruct.SetEdgeBits(uint8(edges_bits))
 			err := cuckoo.VerifyCuckatoo(hdrkey[:],this.Nonces[:],uint(edges_bits))
 			if err != nil{
 				continue
@@ -246,7 +257,7 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 			if pow.CalcCuckooDiff(pow.GraphWeight(uint32(edges_bits)),h).Cmp(this.header.TargetDiff) < 0 {
 				continue
 			}
-			common.MinerLoger.Info(fmt.Sprintf("Found Hash%s",h))
+			common.MinerLoger.Info(fmt.Sprintf("Found Hash %s",h))
 			subm := hex.EncodeToString(subData)
 			if !this.Pool{
 				subm += common.Int2varinthex(int64(len(this.header.Parents)))

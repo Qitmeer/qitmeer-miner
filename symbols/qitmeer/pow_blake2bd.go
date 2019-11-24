@@ -88,6 +88,7 @@ func (this *Blake2bD) InitDevice() {
 	}
 	_ = this.Kernel.SetArgBuffer(2, this.NonceRandObj)
 	_ = this.Kernel.SetArgBuffer(3, this.Target2Obj)
+	common.MinerLoger.Debug(fmt.Sprintf("==============Mining Blake2bd=============="))
 	common.MinerLoger.Debug(fmt.Sprintf("- Device ID:%d- Global item size:%d- Local item size:%d",this.MinerId, this.GlobalItemSize, this.LocalItemSize))
 	this.NonceOut = make([]byte, 8)
 	if this.Event, this.Err = this.CommandQueue.EnqueueWriteBufferByte(this.NonceOutObj, true, 0, this.NonceOut, nil); this.Err != nil {
@@ -215,7 +216,7 @@ func (this *Blake2bD) Mine(wg *sync.WaitGroup) {
 				headerData := BlockDataWithProof(this.header.HeaderBlock)
 				copy(headerData[0:113],hData[0:113])
 				if HashToBig(&h).Cmp(this.header.TargetDiff) <= 0 {
-					common.MinerLoger.Debug(fmt.Sprintf("device #%d found hash:%s nonce:%d target:%064x",this.MinerId,h,xnonce,this.header.TargetDiff))
+					common.MinerLoger.Debug(fmt.Sprintf("device #%d found hash : %s nonce:%d target:%064x",this.MinerId,h,xnonce,this.header.TargetDiff))
 					subm = hex.EncodeToString(headerData)
 					if !this.Pool{
 						subm += common.Int2varinthex(int64(len(this.header.Parents)))

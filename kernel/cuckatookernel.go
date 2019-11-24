@@ -9,7 +9,7 @@ typedef u32 node_t;
 typedef u64 nonce_t;
 #define DEBUG 0
 // this define should be set from host code to be completely universal
-#define EDGEBITS 29
+#define EDGEBITS {{edge_bits}}
 // number of edges
 #define NEDGES ((u64)1 << EDGEBITS)
 // used to mask siphash output

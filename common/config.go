@@ -246,7 +246,7 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 	}
 	_,err = preParser.Parse()
 	if err != nil{
-		MinerLoger.Info("config parse error","error", err)
+		_,_ = fmt.Fprintln(os.Stderr, err)
 		os.Exit(0)
 	}
 	if deviceCfg.ListDevices{

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/Qitmeer/go-opencl/cl"
 	"log"
+	`os`
 	"qitmeer-miner/common"
 	"qitmeer-miner/core"
 	"qitmeer-miner/stats_server"
@@ -103,11 +104,12 @@ func (this *QitmeerRobot)Run() {
 	// Device Miner
 	for _,dev := range this.Devices{
 		dev.SetIsValid(true)
-		dev.InitDevice()
-		dev.SetPool(this.Pool)
 		if len(this.UseDevices) > 0 && !common.InArray(strconv.Itoa(dev.GetMinerId()),this.UseDevices){
 			dev.SetIsValid(false)
+			continue
 		}
+		dev.SetPool(this.Pool)
+		dev.InitDevice()
 		this.Wg.Add(1)
 		go dev.Mine(this.Wg)
 		this.Wg.Add(1)
@@ -160,12 +162,18 @@ func (this *QitmeerRobot)ListenWork() {
 				r = this.Work.Get() // get new work
 			}
 			if r {
+				validDeviceCount := 0
 				for _, dev := range this.Devices {
 					if !dev.GetIsValid(){
 						continue
 					}
+					validDeviceCount++
 					newWork := this.Work.CopyNew()
 					dev.SetNewWork(&newWork)
+				}
+				if validDeviceCount <=0{
+					common.MinerLoger.Error("There is no valid device to mining,please check your config!")
+					os.Exit(1)
 				}
 			}
 			time.Sleep(5*time.Second)
