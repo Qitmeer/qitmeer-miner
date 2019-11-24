@@ -43,6 +43,7 @@ type CudaCuckaroo struct {
 
 func (this *CudaCuckaroo) InitDevice() {
 	this.EdgeBits = this.Cfg.OptionConfig.EdgeBits
+	common.MinerLoger.Debug(fmt.Sprintf("==============Mining Cuckaroo with CUDA: deviceID:%d edge bits:%d ============== module=miner",this.MinerId,this.EdgeBits))
 }
 
 func (this *CudaCuckaroo) Update() {
