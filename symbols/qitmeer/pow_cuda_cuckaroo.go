@@ -134,7 +134,7 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 			this.AverageHashRate = average[0]
 
 			if closed{
-				continue
+				break
 			}
 			stop <- 1
 
@@ -192,6 +192,7 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 				subm += "-" + this.header.JobID + "-" + this.header.Exnonce2
 			}
 			this.SubmitData <- subm
+			break
 		}
 	}
 }

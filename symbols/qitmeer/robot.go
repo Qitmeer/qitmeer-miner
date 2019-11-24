@@ -147,14 +147,12 @@ func (this *QitmeerRobot)Run() {
 // ListenWork
 func (this *QitmeerRobot)ListenWork() {
 	common.MinerLoger.Info("listen new work server")
-	t := time.NewTicker(time.Second * 5)
-	defer t.Stop()
 	r := false
 	for {
 		select {
 		case <-this.Quit:
 			return
-		case <-t.C:
+		default:
 			r = false
 			if this.Pool {
 				r = this.Work.PoolGet() // get new work
@@ -170,6 +168,7 @@ func (this *QitmeerRobot)ListenWork() {
 					dev.SetNewWork(&newWork)
 				}
 			}
+			time.Sleep(5*time.Second)
 		}
 	}
 }
