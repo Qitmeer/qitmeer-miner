@@ -95,11 +95,12 @@ func (this *QitmeerRobot)Run() {
 	// Device Miner
 	for _,dev := range this.Devices{
 		dev.SetIsValid(true)
-		dev.InitDevice()
-		dev.SetPool(this.Pool)
 		if len(this.UseDevices) > 0 && !common.InArray(strconv.Itoa(dev.GetMinerId()),this.UseDevices){
 			dev.SetIsValid(false)
+			continue
 		}
+		dev.SetPool(this.Pool)
+		dev.InitDevice()
 		this.Wg.Add(1)
 		go dev.Mine(this.Wg)
 		this.Wg.Add(1)
