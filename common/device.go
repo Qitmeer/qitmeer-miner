@@ -2,6 +2,7 @@ package common
 
 import (
 	"github.com/Qitmeer/go-opencl/cl"
+	`golang.org/x/exp/errors/fmt`
 )
 
 var DevicesTypesForGPUMining = cl.DeviceTypeGPU
@@ -22,9 +23,8 @@ func GetDevices(t cl.DeviceType) []*cl.Device {
 		}
 		for _, device := range platormDevices {
 			clDevices = append(clDevices, device)
-			MinerLoger.Info("Found Device","platform",platform.Name(),"minerID",i,"deviceName",device.Name(),
-				"MaxWorkGroupSize(MB)",device.MaxWorkGroupSize(),"MaxMemAllocSize(MB)",float64(device.MaxMemAllocSize())/1024.00/1024.00 )
-
+			MinerLoger.Info(fmt.Sprintf("Platform:%s DeviceID:# %d DeviceName:%s MaxAllocSize:%.2f MB MaxMemSize:%.2f MB",platform.Name(),i,device.Name(),
+				float64(device.MaxMemAllocSize())/1024.00/1024.00,float64(device.GlobalMemSize())/1024.00/1024.00))
 			i++
 		}
 	}
