@@ -41,7 +41,7 @@ var (
 	defaultLocalSize = 4096
 	defaultWorkGroupSize = 256
 	defaultEdgeBits = 24
-	version = "0.2.7"
+	version = "0.3.0"
 )
 
 type CommandConfig struct {
@@ -78,6 +78,7 @@ type OptionalConfig struct {
 	EdgeBits       int `long:"edge_bits" description:"edge bits" default-mask:"24"`
 	LocalSize       int `long:"local_size" description:"local size" default-mask:"4096"`
 	GroupSize       int `long:"group_size" description:"work group size" default-mask:"256"`
+	Cuda       bool `long:"cuda" description:"is cuda" default-mask:"false"`
 }
 
 type PoolConfig struct {
@@ -250,9 +251,9 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 	}
 	if deviceCfg.ListDevices{
 		MinerLoger.Info("[CPU Devices List]:")
-		GetDevices(DevicesTypesForCPUMining)
+		GetDevices(DevicesTypesForCPUMining,"")
 		MinerLoger.Info("[GPU Devices List]:")
-		GetDevices(DevicesTypesForGPUMining)
+		GetDevices(DevicesTypesForGPUMining,"")
 		os.Exit(0)
 	}
 

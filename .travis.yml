@@ -10,7 +10,8 @@ sudo: true
 install:
   - curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin v1.16.0
   - sudo apt-get install musl-tools -y
-  - sudo apt-get install g++ -y
+  - sudo apt-get install gcc g++ -y
+  - sudo apt-get install beignet-dev nvidia-cuda-dev nvidia-cuda-toolkit
 
 env:
   - GO111MODULE=on

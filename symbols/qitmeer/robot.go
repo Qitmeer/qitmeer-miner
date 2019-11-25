@@ -35,11 +35,20 @@ type QitmeerRobot struct {
 func (this *QitmeerRobot)GetPow(i int ,device *cl.Device) core.BaseDevice{
 	switch this.Cfg.NecessaryConfig.Pow {
 	case POW_CUCKROO:
-		deviceMiner := &Cuckaroo{}
-		deviceMiner.MiningType = "cuckaroo"
-		deviceMiner.Init(i,device,this.Pool,this.Quit,this.Cfg)
-		this.Devices = append(this.Devices,deviceMiner)
-		return deviceMiner
+		if !this.Cfg.OptionConfig.Cuda{
+			deviceMiner := &Cuckaroo{}
+			deviceMiner.MiningType = "cuckaroo"
+			deviceMiner.Init(i,device,this.Pool,this.Quit,this.Cfg)
+			this.Devices = append(this.Devices,deviceMiner)
+			return deviceMiner
+		} else{
+			deviceMiner := &CudaCuckaroo{}
+			deviceMiner.MiningType = "cuckaroo"
+			deviceMiner.Init(i,device,this.Pool,this.Quit,this.Cfg)
+			this.Devices = append(this.Devices,deviceMiner)
+			return deviceMiner
+		}
+
 	case POW_CUCKTOO:
 		deviceMiner := &Cuckatoo{}
 		deviceMiner.MiningType = "cuckatoo"
@@ -140,14 +149,12 @@ func (this *QitmeerRobot)Run() {
 // ListenWork
 func (this *QitmeerRobot)ListenWork() {
 	common.MinerLoger.Info("listen new work server")
-	t := time.NewTicker(time.Second * 5)
-	defer t.Stop()
 	r := false
 	for {
 		select {
 		case <-this.Quit:
 			return
-		case <-t.C:
+		default:
 			r = false
 			if this.Pool {
 				r = this.Work.PoolGet() // get new work
@@ -169,6 +176,7 @@ func (this *QitmeerRobot)ListenWork() {
 					os.Exit(1)
 				}
 			}
+			time.Sleep(5*time.Second)
 		}
 	}
 }

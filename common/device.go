@@ -1,13 +1,14 @@
 package common
 
 import (
+	`fmt`
 	"github.com/Qitmeer/go-opencl/cl"
-	`golang.org/x/exp/errors/fmt`
+	`strings`
 )
 
 var DevicesTypesForGPUMining = cl.DeviceTypeGPU
 var DevicesTypesForCPUMining = cl.DeviceTypeCPU
-func GetDevices(t cl.DeviceType) []*cl.Device {
+func GetDevices(t cl.DeviceType,needPlatform string) []*cl.Device {
 	platforms, err := cl.GetPlatforms()
 	if err != nil {
 		MinerLoger.Error("Get Graphics card platforms error,please check!","error",err.Error())
@@ -16,6 +17,12 @@ func GetDevices(t cl.DeviceType) []*cl.Device {
 	clDevices := make([]*cl.Device, 0)
 	i := 0
 	for _, platform := range platforms {
+
+		if needPlatform != "" && !strings.Contains(platform.Name(),needPlatform){
+			MinerLoger.Debug("don't support cuda")
+			continue
+		}
+
 		platormDevices, err := cl.GetDevices(platform, t)
 		if err != nil {
 			MinerLoger.Error("Get Devices Error","platform",platform.Name(),"Error",err.Error())
