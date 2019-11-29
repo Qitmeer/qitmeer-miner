@@ -28,7 +28,7 @@ if [ ! -x "$(type -p golangci-lint)" ]; then
 fi
 
 golangci-lint --version
-CGO_ENABLED=1 CGO_ENABLED=1 CC=musl-gcc CXX=g++ GOOS=linux GOARCH=amd64 go build -o linux-miner main.go
+CGO_ENABLED=1 CGO_ENABLED=1 CC=musl-gcc CXX=g++ GOOS=linux GOARCH=amd64 go build -o linux-miner -tags cuda main.go
 echo -e "\n Success!"
 
 

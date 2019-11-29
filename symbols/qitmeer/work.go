@@ -34,6 +34,7 @@ type QitmeerWork struct {
 	PoolWork NotifyWork
 	stra *QitmeerStratum
 	StartWork bool
+	ForceUpdate bool
 }
 
 func (this *QitmeerWork) CopyNew() QitmeerWork{
@@ -66,6 +67,7 @@ func (this *QitmeerWork) CopyNew() QitmeerWork{
 
 //GetBlockTemplate
 func (this *QitmeerWork) Get () bool {
+	this.ForceUpdate = false
 	body := this.Rpc.RpcResult("getBlockTemplate",[]interface{}{[]string{}})
 	if body == nil{
 		common.MinerLoger.Error("network failed")
@@ -81,6 +83,7 @@ func (this *QitmeerWork) Get () bool {
 			return false
 		}
 		common.MinerLoger.Debug("[getBlockTemplate error]","result",string(body))
+		this.ForceUpdate = true
 		return false
 	}
 
