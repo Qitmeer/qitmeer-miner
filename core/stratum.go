@@ -72,11 +72,9 @@ func (this *Stratum)StratumConn(cfg *common.GlobalConfig) error {
 }
 
 func (this *Stratum)ConnectRetry(){
-	t := time.NewTicker(time.Second * 2)
-	defer t.Stop()
 	var err error
 	for{
-		<-t.C
+		common.Usleep(2000)
 		err = this.Reconnect()
 		if err != nil {
 			common.MinerLoger.Debug("[Connect error , It will reconnect after 2s].","error",err.Error())
@@ -131,7 +129,7 @@ func (s *Stratum) Reconnect() error {
 		return nil
 	}
 	// Should NOT need this.
-	time.Sleep(5 * time.Second)
+	common.Usleep(5000)
 	// XXX Do I really need to re-auth here?
 	err = s.Auth()
 	if err != nil {
