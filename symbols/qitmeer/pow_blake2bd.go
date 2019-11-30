@@ -136,8 +136,7 @@ func (this *Blake2bD) Mine(wg *sync.WaitGroup) {
 
 		}
 		if !this.IsValid {
-			time.Sleep(2*time.Second)
-			continue
+			return
 		}
 		if !this.HasNewWork || this.Work == nil{
 			continue

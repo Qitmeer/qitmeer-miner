@@ -205,16 +205,13 @@ func (this *CudaCuckaroo) SubmitShare(substr chan string) {
 
 func (this *CudaCuckaroo)Status(wg *sync.WaitGroup)  {
 	defer wg.Done()
-	t := time.NewTicker(time.Second * 10)
-	defer t.Stop()
 	for {
 		select{
 		case <- this.Quit:
 			return
-		case <- t.C:
+		default:
 			if !this.IsValid{
-				time.Sleep(2*time.Second)
-				continue
+				return
 			}
 			//diffOneShareHashesAvg := uint64(0x00000000FFFFFFFF)
 			if this.AverageHashRate <= 0{
@@ -223,6 +220,7 @@ func (this *CudaCuckaroo)Status(wg *sync.WaitGroup)  {
 			//recent stats 95% percent
 			unit := " GPS"
 			common.MinerLoger.Info(fmt.Sprintf("# %d [%s] : %s",this.MinerId,this.ClDevice.Name(),common.FormatHashRate(this.AverageHashRate,unit)))
+			common.Usleep(10*1000)
 		}
 	}
 }

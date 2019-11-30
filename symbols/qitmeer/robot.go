@@ -15,7 +15,6 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
-	"time"
 )
 
 const (
@@ -180,7 +179,7 @@ func (this *QitmeerRobot)ListenWork() {
 					dev.SetForceUpdate()
 				}
 			}
-			time.Sleep(5*time.Second)
+			common.Usleep(5*1000)
 		}
 	}
 }
@@ -245,14 +244,12 @@ func (this *QitmeerRobot)SubmitWork() {
 
 // stats the submit result
 func (this *QitmeerRobot)Status()  {
-	t := time.NewTicker(time.Second * 30)
 	var valid,rejected,staleShares uint64
-	defer t.Stop()
 	for {
 		select {
 		case <-this.Quit:
 			return
-		case <-t.C:
+		default:
 			if this.Work.stra == nil && this.Work.Block == nil{
 				continue
 			}
@@ -274,6 +271,7 @@ func (this *QitmeerRobot)Status()  {
 				rejected,
 				total,
 			))
+			common.Usleep(20*1000)
 		}
 	}
 }

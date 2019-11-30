@@ -196,7 +196,7 @@ func (s *QitmeerStratum) handleStratumMsg(resp interface{}) {
 			common.MinerLoger.Debug(err.Error())
 			return
 		}
-		time.Sleep(time.Duration(wait) * time.Second)
+		common.Usleep(wait*1000)
 		pool := nResp.Params[0] + ":" + nResp.Params[1]
 		s.Cfg.PoolConfig.Pool = pool
 		err = s.Reconnect()

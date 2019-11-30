@@ -182,8 +182,7 @@ func (this *Device)Status(wg *sync.WaitGroup)  {
 			return
 		case <- t.C:
 			if !this.IsValid{
-				time.Sleep(2*time.Second)
-				continue
+				return
 			}
 			secondsElapsed := time.Now().Unix() - this.Started
 			//diffOneShareHashesAvg := uint64(0x00000000FFFFFFFF)
