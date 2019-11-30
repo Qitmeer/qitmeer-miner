@@ -175,6 +175,10 @@ func (this *QitmeerRobot)ListenWork() {
 					common.MinerLoger.Error("There is no valid device to mining,please check your config!")
 					os.Exit(1)
 				}
+			} else if this.Work.ForceUpdate {
+				for _, dev := range this.Devices {
+					dev.SetForceUpdate()
+				}
 			}
 			time.Sleep(5*time.Second)
 		}

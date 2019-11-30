@@ -51,22 +51,36 @@ Install [**Build Tools for Visual Studio**](https://visualstudio.microsoft.com/t
 $ git clone git@github.com:Qitmeer/qitmeer-miner.git
 ```
 
-### 2. Build the curkoo library 
+### 2. Build the cuckatoo library 
 
 ```bash
 $ cd qitmeer-miner 
 $ sh installLibrary.sh
 ```
 
+### 3. Build the cudacuckaroo library 
+
+```bash
+$ cd lib/cuda
+# mac
+$  nvcc -m64 -arch=sm_35 -o libcudacuckoo.dylib --shared -Xcompiler -fPIC -DEDGEBITS=29 -DSIPHASH_COMPAT=1 mean.cu ./crypto/blake2b-ref.c
+# ubuntu
+$  nvcc -m64 -arch=sm_35 -o libcudacuckoo.so --shared -Xcompiler -fPIC -DEDGEBITS=29 -DSIPHASH_COMPAT=1 mean.cu ./crypto/blake2b-ref.c
+# or below 
+$  nvcc -m64 -arch=sm_35 -o libcudacuckoo.so --shared -std=c++11 -Xcompiler -fPIC -DEDGEBITS=29 -DSIPHASH_COMPAT=1 mean.cu ./crypto/blake2b-ref.c
+# windows 
+$  nvcc -m64 -arch=sm_35 -o cudacuckoo.dll --shared -Xcompiler -fPIC -DEDGEBITS=29 -DSIPHASH_COMPAT=1 -DISWINDOWS=1 mean.cu ./crypto/blake2b-ref.c
+```
+
 ### 3. Build qitmeer-miner  
 
 ```bash
 //# mac
-$ go build
+$ go build --tags opencl
 //# linux apt install musl-tools g++ -y
-$ CGO_ENABLED=1 CC=musl-gcc CXX=g++ GOOS=linux
+$ CGO_ENABLED=1 CC=musl-gcc CXX=g++ GOOS=linux go build -tags cuda -o linux-miner main.go
 //# windows 
-$ CGO_ENABLED=1 GOOS=windows GOARCH=amd64 go build -ldflags '-extldflags "-static"' -o win-miner.exe main.go
+$ CGO_ENABLED=1 GOOS=windows GOARCH=amd64 go build -tags cuda -o win-miner.exe main.go
 ```
 
 ### 4. Verify Build OK

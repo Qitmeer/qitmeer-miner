@@ -1,3 +1,5 @@
+//+build cuda,!opencl
+
 /**
 Qitmeer
 james
@@ -178,7 +180,6 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 			if !this.Pool{
 				subm += common.Int2varinthex(int64(len(this.header.Parents)))
 				for j := 0; j < len(this.header.Parents); j++ {
-					fmt.Println("parent:",this.header.Parents[j].Hash)
 					subm += this.header.Parents[j].Data
 				}
 

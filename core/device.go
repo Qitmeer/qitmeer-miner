@@ -31,6 +31,7 @@ type BaseDevice interface {
 	SetWorkSize(lsize int)
 	SetPool(pool bool)
 	SetNewWork(w BaseWork)
+	SetForceUpdate()
 	Release()
 	GetMinerType() string
 	SubmitShare(substr chan string)
@@ -90,6 +91,10 @@ func (this *Device)GetIsValid() bool {
 func (this *Device)SetNewWork(work BaseWork) {
 	this.HasNewWork = true
 	this.NewWork <- work
+}
+
+func (this *Device)SetForceUpdate() {
+	this.HasNewWork = true
 }
 
 
