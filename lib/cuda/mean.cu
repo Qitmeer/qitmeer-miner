@@ -756,8 +756,7 @@ int run_solver(SolverCtx* ctx,
 		}
 		int pow_rc = verify(prf, &ctx->trimmer.sipkeys);
 		if (pow_rc == POW_OK) {
-		Nonce[0] = nonce+r;
-			print_log("\nFound 42-cycles\n");
+			Nonce[0] = nonce+r;
 			isFound = true;
 			break;
 		} else {
@@ -819,7 +818,7 @@ void destroy_solver_ctx(SolverCtx* ctx) {
 
 void fill_default_params(SolverParams* params) {
 	trimparams tp;
-	params->device = 0;
+	params->device = DID;
 	params->ntrims = tp.ntrims;
 	params->expand = tp.expand;
 	params->genablocks = min(tp.genA.blocks, NEDGES/tp.genA.tpb);
@@ -849,7 +848,7 @@ extern "C" {
 			char header[HEADERLEN];
 			memset(header, 0, sizeof(header));
 			memcpy(header,input,HEADERLEN);
-
+            DID = (int)device;
 			// set defaults
 			SolverParams params;
 			fill_default_params(&params);
@@ -861,7 +860,7 @@ extern "C" {
 			u64 dbytes = prop.totalGlobalMem;
 			int dunit;
 			for (dunit=0; dbytes >= 102400; dbytes>>=10,dunit++) ;
-			DID = (int)device;
+
 			SolverCtx* ctx = create_solver_ctx(&params);
             *ctxInfo = ctx;
 			u64 bytes = ctx->trimmer.globalbytes();
