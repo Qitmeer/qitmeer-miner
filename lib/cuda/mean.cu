@@ -730,8 +730,8 @@ int run_solver(SolverCtx* ctx,
 	 timems = (time1 - time0) / 1000000;
 	 average[0] = 1000.00/(double)timems;
 	 u64 end = (time1-start) / 1000000 ;
-	 if(end%5000 == 0){ //every 5 second
-	    print_log("************** [info] # %d HashRate:%f **************",device_id,average[0]);
+	 if(end%5000 < 10){ //every 5 second
+	    print_log("\n************** [info] # %d HashRate:%f **************\n",device_id,average[0]);
 	 }
 	 bool isFound = false;
 	 for (unsigned s = 0; s < nsols; s++) {
@@ -766,6 +766,7 @@ int run_solver(SolverCtx* ctx,
 					isFound = true;
 					break;
 				} else if(cyclehash[j]>target[j]){
+				    print_log("\nhash diff is easy!\n");
 					isFound = false;
 					break;
 				}
