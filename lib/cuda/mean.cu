@@ -766,7 +766,7 @@ int run_solver(SolverCtx* ctx,
 					isFound = true;
 					break;
 				} else if(cyclehash[j]>target[j]){
-				    print_log("\nhash diff is easy!\n");
+				    print_log("\n************** [info] # Found 42-cycles ,But difficulty is not match! **************\n");
 					isFound = false;
 					break;
 				}
