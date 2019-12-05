@@ -174,16 +174,14 @@ func (d *Device)Release()  {
 
 func (this *Device)Status(wg *sync.WaitGroup)  {
 	defer wg.Done()
-	t := time.NewTicker(time.Second * 10)
-	defer t.Stop()
 	for {
 		select{
 		case <- this.Quit:
 			return
-		case <- t.C:
+		default:
+			common.Usleep(10*1000)
 			if !this.IsValid{
-				time.Sleep(2*time.Second)
-				continue
+				return
 			}
 			secondsElapsed := time.Now().Unix() - this.Started
 			//diffOneShareHashesAvg := uint64(0x00000000FFFFFFFF)

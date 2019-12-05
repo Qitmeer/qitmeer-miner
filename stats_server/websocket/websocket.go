@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"qitmeer-miner/common"
 	"qitmeer-miner/core"
-	"time"
 )
 
 type StatsData struct {
@@ -99,8 +98,6 @@ func (c *Client) write(data *StatsData) {
 	defer func() {
 		_ = c.socket.Close()
 	}()
-	t := time.NewTicker(time.Second * 5)
-	defer t.Stop()
 	configD := map[string]interface{}{}
 	devStats := map[int]interface{}{}
 	allHashrate := 0.00
@@ -109,7 +106,8 @@ func (c *Client) write(data *StatsData) {
 	var dev core.BaseDevice
 	for {
 		select {
-		case <-t.C:
+		default:
+			common.Usleep(5000)
 			allHashrate = 0.00
 			configD["config"] = *data.Cfg
 			needCalcTimes = new(big.Float).SetInt(common.GetNeedHashTimesByTarget(data.Cfg.OptionConfig.Target))

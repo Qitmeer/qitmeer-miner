@@ -132,8 +132,11 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 					}
 				}
 			}()
+			target := pow.CuckooDiffToTarget(pow.GraphWeight(uint32(this.EdgeBits)),this.header.TargetDiff)
+			common.MinerLoger.Debug("=====target:"+target)
+			targetBytes,_ := hex.DecodeString(target)
 			_ = C.cuda_search((C.int)(this.MinerId),(*C.uchar)(unsafe.Pointer(&hData[0])),(*C.uint)(unsafe.Pointer(&resultBytes[0])),(*C.uint)(unsafe.Pointer(&nonceBytes[0])),
-				(*C.uint)(unsafe.Pointer(&cycleNoncesBytes[0])),(*C.double)(unsafe.Pointer(&average[0])),&solverCtx)
+				(*C.uint)(unsafe.Pointer(&cycleNoncesBytes[0])),(*C.double)(unsafe.Pointer(&average[0])),&solverCtx,(*C.uchar)(unsafe.Pointer(&targetBytes[0])))
 			this.AverageHashRate = average[0]
 
 			if closed{
@@ -204,25 +207,5 @@ func (this *CudaCuckaroo) SubmitShare(substr chan string) {
 }
 
 func (this *CudaCuckaroo)Status(wg *sync.WaitGroup)  {
-	defer wg.Done()
-	t := time.NewTicker(time.Second * 10)
-	defer t.Stop()
-	for {
-		select{
-		case <- this.Quit:
-			return
-		case <- t.C:
-			if !this.IsValid{
-				time.Sleep(2*time.Second)
-				continue
-			}
-			//diffOneShareHashesAvg := uint64(0x00000000FFFFFFFF)
-			if this.AverageHashRate <= 0{
-				continue
-			}
-			//recent stats 95% percent
-			unit := " GPS"
-			common.MinerLoger.Info(fmt.Sprintf("# %d [%s] : %s",this.MinerId,this.ClDevice.Name(),common.FormatHashRate(this.AverageHashRate,unit)))
-		}
-	}
+	return
 }

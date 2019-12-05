@@ -168,7 +168,6 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 			this.Work = w.(*QitmeerWork)
 		case <-this.Quit:
 			return
-
 		}
 		if !this.IsValid {
 			continue
@@ -403,6 +402,7 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 				subm += "-" + this.header.JobID + "-" + this.header.Exnonce2
 			}
 			this.SubmitData <- subm
+			break
 		}
 	}
 }

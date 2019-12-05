@@ -213,18 +213,12 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 			}
 			this.Event.Release()
 			noncesBytes := make([]byte,42*4)
-			if common.Timeout(10*time.Second, func() {
-				p := C.malloc(C.size_t(len(this.ResultBytes)))
-				// copy the data into the buffer, by converting it to a Go array
-				cBuf := (*[1 << 30]byte)(p)
-				copy(cBuf[:], this.ResultBytes)
-				C.search_circle((*C.uint)(p),(C.ulong)(C.size_t(len(this.ResultBytes))),(*C.uint)(unsafe.Pointer(&noncesBytes[0])))
-				C.free(p)
-			}){
-				//timeout
-				this.AllDiffOneShares += 1
-				continue
-			}
+			p := C.malloc(C.size_t(len(this.ResultBytes)))
+			// copy the data into the buffer, by converting it to a Go array
+			cBuf := (*[1 << 30]byte)(p)
+			copy(cBuf[:], this.ResultBytes)
+			C.search_circle((*C.uint)(p),(C.ulong)(C.size_t(len(this.ResultBytes))),(*C.uint)(unsafe.Pointer(&noncesBytes[0])))
+			C.free(p)
 			// when GPU find cuckoo cycle one time GPS/s
 			this.AllDiffOneShares += 1
 			this.Nonces = make([]uint32,0)

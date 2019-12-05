@@ -702,7 +702,7 @@ int run_solver(SolverCtx* ctx,
 										 u32 nonce,
 										 u32 range,
 										 SolverSolutions *solutions,
-										 SolverStats *stats,
+									unsigned char* target,
 								unsigned int * Nonce,
 								unsigned int * cycleNonces,
 								double *average
@@ -712,25 +712,12 @@ int run_solver(SolverCtx* ctx,
 	u32 timems;
 	u32 sumnsols = 0;
 	int device_id = DID;
-	if (stats != NULL) {
-	 cudaGetDevice(&device_id);
-	 cudaDeviceProp props;
-	 cudaGetDeviceProperties(&props, stats->device_id);
-	 stats->device_id = device_id;
-	 stats->edge_bits = EDGEBITS;
-	 strncpy(stats->device_name, props.name, MAX_NAME_LEN);
-	}
 
 	if (ctx == NULL || !ctx->trimmer.initsuccess){
 	 print_log("Error initialising trimmer. Aborting.\n");
 	 print_log("Reason: %s\n", LAST_ERROR_REASON);
-	 if (stats != NULL) {
-		 stats->has_errored = true;
-		 strncpy(stats->error_reason, LAST_ERROR_REASON, MAX_NAME_LEN);
-	 }
 	 return 0;
 	}
-
 	for (u32 r = 0; r < range; r++) {
 	if(ctx->trimmer.abort){
 	    break;
@@ -741,6 +728,9 @@ int run_solver(SolverCtx* ctx,
 	 time1 = timestamp();
 	 timems = (time1 - time0) / 1000000;
 	 average[0] = 1000.00/(double)timems;
+	 if( (time1/1000000 /1000) % 5 == 0){ //every 5 second
+	    print_log("\n************** [info] # %d HashRate:%f GPS **************\n",device_id,average[0]);
+	 }
 	 bool isFound = false;
 	 for (unsigned s = 0; s < nsols; s++) {
 		u32* prf = &ctx->sols[s * PROOFSIZE];
@@ -756,20 +746,35 @@ int run_solver(SolverCtx* ctx,
 		}
 		int pow_rc = verify(prf, &ctx->trimmer.sipkeys);
 		if (pow_rc == POW_OK) {
-		Nonce[0] = nonce+r;
-			print_log("\nFound 42-cycles\n");
-			isFound = true;
-			break;
+			Nonce[0] = nonce+r;
+			unsigned char cyclehash[32];
+			unsigned char blockHeader[282]; // 113 + 1 + 168
+			for( int j=0;j<header_length;j++){
+				blockHeader[j] = header[j];
+			}
+			unsigned char edgebits = 29;
+			blockHeader[113] = edgebits;
+			unsigned char * cycleNonce = (unsigned char *)prf;
+			for( int j=0;j<168;j++){
+            	blockHeader[j] = cycleNonce[j];
+            }
+			blake2b((void *)cyclehash, sizeof(cyclehash), (const void *)blockHeader, sizeof(blockHeader), 0, 0);
+			for( int j=0;j<32;j++){
+				if(cyclehash[j]<target[j]){
+					isFound = true;
+					break;
+				} else if(cyclehash[j]>target[j]){
+				    print_log("\n************** [info] # Found 42-cycles ,But difficulty is not match! **************\n");
+					isFound = false;
+					break;
+				}
+			}
+			if(isFound) break;
 		} else {
 			print_log("FAILED due to %s\n", errstr[pow_rc]);
 		}
 	 }
 	 sumnsols += nsols;
-	 if (stats != NULL) {
-		stats->last_start_time = time0;
-		stats->last_end_time = time1;
-		stats->last_solution_time = time1 - time0;
-	 }
 	 if(isFound){
 			break;
 	 }
@@ -819,7 +824,7 @@ void destroy_solver_ctx(SolverCtx* ctx) {
 
 void fill_default_params(SolverParams* params) {
 	trimparams tp;
-	params->device = 0;
+	params->device = DID;
 	params->ntrims = tp.ntrims;
 	params->expand = tp.expand;
 	params->genablocks = min(tp.genA.blocks, NEDGES/tp.genA.tpb);
@@ -842,14 +847,14 @@ extern "C" {
 #ifdef ISWINDOWS
 	 __declspec(dllexport)
 #endif
-	 int cuda_search(u32 device,unsigned char* input,unsigned int *isFind,unsigned int *Nonce,u32 *CycleNonces,double *average,void **ctxInfo){
+	 int cuda_search(u32 device,unsigned char* input,unsigned int *isFind,unsigned int *Nonce,u32 *CycleNonces,double *average,void **ctxInfo,unsigned char* target){
 			trimparams tp;
 			u32 nonce = 0;
 			u32 range = (unsigned int)(1<<32-1);
 			char header[HEADERLEN];
 			memset(header, 0, sizeof(header));
 			memcpy(header,input,HEADERLEN);
-
+            DID = (int)device;
 			// set defaults
 			SolverParams params;
 			fill_default_params(&params);
@@ -861,13 +866,13 @@ extern "C" {
 			u64 dbytes = prop.totalGlobalMem;
 			int dunit;
 			for (dunit=0; dbytes >= 102400; dbytes>>=10,dunit++) ;
-			DID = (int)device;
+
 			SolverCtx* ctx = create_solver_ctx(&params);
             *ctxInfo = ctx;
 			u64 bytes = ctx->trimmer.globalbytes();
 			int unit;
 			for (unit=0; bytes >= 102400; bytes>>=10,unit++) ;
-			isFind[0] = run_solver(ctx, header, sizeof(header), nonce, range, NULL, NULL,Nonce,CycleNonces,average);
+			isFind[0] = run_solver(ctx, header, sizeof(header), nonce, range, NULL,target, Nonce,CycleNonces,average);
 			destroy_solver_ctx(ctx);
 			return 0;
 	 }

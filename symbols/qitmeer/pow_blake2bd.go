@@ -132,12 +132,10 @@ func (this *Blake2bD) Mine(wg *sync.WaitGroup) {
 			this.Work = w.(*QitmeerWork)
 		case <-this.Quit:
 			return
-		default:
 
 		}
 		if !this.IsValid {
-			time.Sleep(2*time.Second)
-			continue
+			return
 		}
 		if !this.HasNewWork || this.Work == nil{
 			continue
@@ -239,6 +237,7 @@ func (this *Blake2bD) Mine(wg *sync.WaitGroup) {
 						//solo wait new task
 						this.ClearNonceData()
 					}
+					break
 				}
 			}
 			this.ClearNonceData()

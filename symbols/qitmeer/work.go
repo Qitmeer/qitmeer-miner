@@ -155,7 +155,7 @@ func (this *QitmeerWork) Submit (subm string) error {
 				break
 			}
 			common.MinerLoger.Error(fmt.Sprintf("[submit error]"+string(body)+err.Error()))
-			time.Sleep(1*time.Second)
+			common.Usleep(1000)
 			continue
 		}
 		break
