@@ -60,6 +60,7 @@ func (this *QitmeerWork) CopyNew() QitmeerWork{
 		newWork.Block.Parents = this.Block.Parents
 		newWork.Block.Transactions = this.Block.Transactions
 		newWork.Block.StateRoot = this.Block.StateRoot
+		newWork.ForceUpdate = this.ForceUpdate
 	}
 
 	return newWork
@@ -70,7 +71,9 @@ func (this *QitmeerWork) Get () bool {
 	this.ForceUpdate = false
 	body := this.Rpc.RpcResult("getBlockTemplate",[]interface{}{[]string{}})
 	if body == nil{
-		common.MinerLoger.Error("network failed")
+		if this.Cfg.OptionConfig.TaskForceStop{
+			this.ForceUpdate = true
+		}
 		return false
 	}
 	var blockTemplate getResponseJson
@@ -78,12 +81,10 @@ func (this *QitmeerWork) Get () bool {
 	if err != nil {
 		var r map[string]interface{}
 		_ = json.Unmarshal(body,&r)
-		if _,ok := r["error"];ok{
-			common.MinerLoger.Debug("[getBlockTemplate error]","error",r["error"])
-			return false
-		}
 		common.MinerLoger.Debug("[getBlockTemplate error]","result",string(body))
-		this.ForceUpdate = true
+		if this.Cfg.OptionConfig.TaskForceStop{
+			this.ForceUpdate = true
+		}
 		return false
 	}
 
