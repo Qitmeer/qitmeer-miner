@@ -41,7 +41,7 @@ var (
 	defaultLocalSize = 4096
 	defaultWorkGroupSize = 256
 	defaultEdgeBits = 24
-	version = "0.3.0"
+	version = "0.3.1"
 )
 
 type CommandConfig struct {
@@ -79,6 +79,7 @@ type OptionalConfig struct {
 	LocalSize       int `long:"local_size" description:"local size" default-mask:"4096"`
 	GroupSize       int `long:"group_size" description:"work group size" default-mask:"256"`
 	Cuda       bool `long:"cuda" description:"is cuda" default-mask:"false"`
+	TaskGap       int `long:"task_gap" description:"get blocktemplate gap" default-mask:"2"`
 }
 
 type PoolConfig struct {
@@ -206,6 +207,7 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 		LocalSize:defaultLocalSize,
 		GroupSize:defaultWorkGroupSize,
 		EdgeBits:defaultEdgeBits,
+		TaskGap:2,
 	}
 
 	// Create the home directory if it doesn't already exist.

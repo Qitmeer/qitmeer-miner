@@ -179,7 +179,7 @@ func (this *QitmeerRobot)ListenWork() {
 					dev.SetForceUpdate()
 				}
 			}
-			common.Usleep(5*1000)
+			common.Usleep(this.Cfg.OptionConfig.TaskGap*1000)
 		}
 	}
 }
