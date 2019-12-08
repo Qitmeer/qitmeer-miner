@@ -80,7 +80,7 @@ type OptionalConfig struct {
 	GroupSize       int `long:"group_size" description:"work group size" default-mask:"256"`
 	Cuda       bool `long:"cuda" description:"is cuda" default-mask:"false"`
 	TaskInterval       int `long:"task_interval" description:"get blocktemplate interval" default-mask:"2"`
-	TaskForceStop       bool `long:"task_force_stop" description:"wether task stop when get blocktemplate error or download" default-mask:"false"`
+	TaskForceStop       bool `long:"task_force_stop" description:"force to stop the current task when miner fail to get blocktemplate from the qitmeer full node." default-mask:"false"`
 }
 
 type PoolConfig struct {
