@@ -192,6 +192,7 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 		for {
 			// if has new work ,current calc stop
 			if this.HasNewWork {
+				common.MinerLoger.Trace("has new work or force stop this task.")
 				break
 			}
 			this.Update()

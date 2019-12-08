@@ -176,6 +176,7 @@ func (this *QitmeerRobot)ListenWork() {
 				}
 			} else if this.Work.ForceUpdate {
 				for _, dev := range this.Devices {
+					common.MinerLoger.Trace(" =======================force stop task =======================")
 					dev.SetForceUpdate()
 				}
 			}

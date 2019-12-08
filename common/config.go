@@ -80,6 +80,7 @@ type OptionalConfig struct {
 	GroupSize       int `long:"group_size" description:"work group size" default-mask:"256"`
 	Cuda       bool `long:"cuda" description:"is cuda" default-mask:"false"`
 	TaskInterval       int `long:"task_interval" description:"get blocktemplate interval" default-mask:"2"`
+	TaskForceStop       bool `long:"task_force_stop" description:"wether task stop when get blocktemplate error or download" default-mask:"false"`
 }
 
 type PoolConfig struct {
@@ -208,6 +209,7 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 		GroupSize:defaultWorkGroupSize,
 		EdgeBits:defaultEdgeBits,
 		TaskInterval:2,
+		TaskForceStop:false,
 	}
 
 	// Create the home directory if it doesn't already exist.

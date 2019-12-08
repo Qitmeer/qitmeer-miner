@@ -95,6 +95,7 @@ func (this *Device)SetNewWork(work BaseWork) {
 
 func (this *Device)SetForceUpdate() {
 	this.HasNewWork = true
+	this.AllDiffOneShares = 0
 }
 
 
