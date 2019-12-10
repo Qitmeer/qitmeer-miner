@@ -189,12 +189,15 @@ func (this *QitmeerRobot)ListenWork() {
 // ListenWork
 func (this *QitmeerRobot)SubmitWork() {
 	common.MinerLoger.Info("listen submit block server")
+	this.Wg.Add(1)
 	go func() {
+		defer this.Wg.Done()
 		str := ""
 		var logContent string
 		var count int
 		var arr []string
 		for{
+			common.MinerLoger.Debug("===============================Listen Submit=====================")
 			select {
 			case <-this.Quit:
 				return
@@ -253,6 +256,7 @@ func (this *QitmeerRobot)Status()  {
 			return
 		default:
 			if this.Work.stra == nil && this.Work.Block == nil{
+				common.Usleep(20*1000)
 				continue
 			}
 			valid = atomic.LoadUint64(&this.ValidShares)
