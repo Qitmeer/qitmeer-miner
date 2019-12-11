@@ -728,9 +728,7 @@ int run_solver(SolverCtx* ctx,
 	 time1 = timestamp();
 	 timems = (time1 - time0) / 1000000;
 	 average[0] = 1000.00/(double)timems;
-	 if( (time1/1000000 /1000) % 5 == 0){ //every 5 second
-	    print_log("\n************** [info] # %d HashRate:%f GPS **************\n",device_id,average[0]);
-	 }
+	 print_log("\n************** [info] # %d HashRate:%f GPS **************\n",device_id,average[0]);
 	 bool isFound = false;
 	 for (unsigned s = 0; s < nsols; s++) {
 		u32* prf = &ctx->sols[s * PROOFSIZE];
