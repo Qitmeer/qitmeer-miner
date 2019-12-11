@@ -187,11 +187,13 @@ func (this *Device)Status(wg *sync.WaitGroup)  {
 			secondsElapsed := time.Now().Unix() - this.Started
 			//diffOneShareHashesAvg := uint64(0x00000000FFFFFFFF)
 			if this.AllDiffOneShares <= 0 || secondsElapsed <= 0{
+				common.Usleep(10*1000)
 				continue
 			}
 			averageHashRate := float64(this.AllDiffOneShares) /
 				float64(secondsElapsed)
 			if averageHashRate <= 0{
+				common.Usleep(10*1000)
 				continue
 			}
 			if this.AverageHashRate <= 0{
@@ -210,6 +212,7 @@ func (this *Device)Status(wg *sync.WaitGroup)  {
 
 func (this *Device) SubmitShare(substr chan string) {
 	for {
+		common.MinerLoger.Debug("===============================Listen Submit")
 		select {
 		case <-this.Quit:
 			return

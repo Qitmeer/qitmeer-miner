@@ -67,7 +67,6 @@ func (this *CudaCuckaroo) Update() {
 func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 	defer this.Release()
 	defer wg.Done()
-
 	for {
 		select {
 		case w := <-this.NewWork:
@@ -120,6 +119,7 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 					}
 				}()
 				for{
+					common.Usleep(this.Cfg.OptionConfig.TaskInterval*1000)
 					select {
 					case <- stop:
 						return
@@ -133,7 +133,6 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 				}
 			}()
 			target := pow.CuckooDiffToTarget(pow.GraphWeight(uint32(this.EdgeBits)),this.header.TargetDiff)
-			common.MinerLoger.Debug("=====target:"+target)
 			targetBytes,_ := hex.DecodeString(target)
 			_ = C.cuda_search((C.int)(this.MinerId),(*C.uchar)(unsafe.Pointer(&hData[0])),(*C.uint)(unsafe.Pointer(&resultBytes[0])),(*C.uint)(unsafe.Pointer(&nonceBytes[0])),
 				(*C.uint)(unsafe.Pointer(&cycleNoncesBytes[0])),(*C.double)(unsafe.Pointer(&average[0])),&solverCtx,(*C.uchar)(unsafe.Pointer(&targetBytes[0])))
