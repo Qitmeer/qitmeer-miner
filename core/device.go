@@ -35,6 +35,7 @@ type BaseDevice interface {
 	Release()
 	GetMinerType() string
 	SubmitShare(substr chan string)
+	StopTask()
 }
 type Device struct{
 	Cfg *common.GlobalConfig  //must init
@@ -67,6 +68,7 @@ type Device struct{
 	Err        error
 	MiningType        string
 	Event *cl.Event
+	StopTaskChan chan bool
 }
 
 func (this *Device)Init(i int,device *cl.Device,pool bool,q chan os.Signal,cfg *common.GlobalConfig)  {
@@ -82,6 +84,7 @@ func (this *Device)Init(i int,device *cl.Device,pool bool,q chan os.Signal,cfg *
 	this.GlobalItemSize= int(math.Exp2(float64(this.Cfg.OptionConfig.Intensity)))
 	this.Quit=q
 	this.AllDiffOneShares = 0
+	this.StopTaskChan = make(chan bool,1)
 }
 
 func (this *Device)GetIsValid() bool {
@@ -91,6 +94,10 @@ func (this *Device)GetIsValid() bool {
 func (this *Device)SetNewWork(work BaseWork) {
 	this.HasNewWork = true
 	this.NewWork <- work
+}
+
+func (this *Device)StopTask() {
+	this.StopTaskChan <- true
 }
 
 func (this *Device)SetForceUpdate() {

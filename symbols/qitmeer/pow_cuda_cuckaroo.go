@@ -41,6 +41,8 @@ type CudaCuckaroo struct {
 	Nedge            int
 	Edgemask            uint64
 	Nonces           []uint32
+	solverCtx           unsafe.Pointer
+	miningStop           bool
 }
 
 func (this *CudaCuckaroo) InitDevice() {
@@ -65,6 +67,7 @@ func (this *CudaCuckaroo) Update() {
 }
 
 func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
+	go this.ListenStopCuda()
 	defer this.Release()
 	defer wg.Done()
 	for {
@@ -76,10 +79,11 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 
 		}
 		if !this.IsValid {
-			continue
+			return
 		}
 
 		if len(this.Work.PoolWork.WorkData) <= 0 && this.Work.Block.Height <= 0 {
+			common.Usleep(2*1000)
 			continue
 		}
 		this.HasNewWork = false
@@ -96,8 +100,10 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 		for {
 			// if has new work ,current calc stop
 			if this.HasNewWork {
+				common.MinerLoger.Debug("========================== new task exit current ===================")
 				break
 			}
+
 			this.Update()
 			this.Nonces = make([]uint32,0)
 			hData := this.header.HeaderBlock.BlockData()[:types.MaxBlockHeaderPayload-pow.PROOF_DATA_CIRCLE_NONCE_END]
@@ -108,45 +114,19 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 			nonceBytes := make([]byte,4)
 			resultBytes := make([]byte,4)
 			average := []float64{this.AverageHashRate}
-			var solverCtx unsafe.Pointer
-			var stop = make(chan int,1)
-			closed := false
-			go func() {
-				defer func() {
-					if err := recover(); err != nil {
-						fmt.Println("recover success.",err)
-						return
-					}
-				}()
-				for{
-					common.Usleep(this.Cfg.OptionConfig.TaskInterval*1000)
-					select {
-					case <- stop:
-						return
-					default:
-						if this.HasNewWork && solverCtx != nil{
-							C.stop_solver(solverCtx)
-							closed = true
-							return
-						}
-					}
-				}
-			}()
 			target := pow.CuckooDiffToTarget(pow.GraphWeight(uint32(this.EdgeBits)),this.header.TargetDiff)
 			targetBytes,_ := hex.DecodeString(target)
+			common.MinerLoger.Debug("========================== card begin work ===================")
+
+			this.miningStop = false
 			_ = C.cuda_search((C.int)(this.MinerId),(*C.uchar)(unsafe.Pointer(&hData[0])),(*C.uint)(unsafe.Pointer(&resultBytes[0])),(*C.uint)(unsafe.Pointer(&nonceBytes[0])),
-				(*C.uint)(unsafe.Pointer(&cycleNoncesBytes[0])),(*C.double)(unsafe.Pointer(&average[0])),&solverCtx,(*C.uchar)(unsafe.Pointer(&targetBytes[0])))
-			this.AverageHashRate = average[0]
-
-			if closed{
-				break
-			}
-			stop <- 1
-
+				(*C.uint)(unsafe.Pointer(&cycleNoncesBytes[0])),(*C.double)(unsafe.Pointer(&average[0])),&this.solverCtx,(*C.uchar)(unsafe.Pointer(&targetBytes[0])))
+			this.solverCtx = nil
+			//this.AverageHashRate = average[0]
 			isFind := binary.LittleEndian.Uint32(resultBytes)
 
 			if isFind != 1 {
-				continue
+				break
 			}
 
 			//nonce
@@ -161,7 +141,7 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 			}
 
 			if isFind != 1{
-				continue
+				break
 			}
 			sort.Slice(this.Nonces, func(i, j int) bool {
 				return this.Nonces[i]<this.Nonces[j]
@@ -173,9 +153,6 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 			copy(subData[:113],hData[:113])
 			h := hash.DoubleHashH(subData)
 			common.MinerLoger.Info(fmt.Sprintf("Calc Hash %s  target diff:%d",h,this.header.TargetDiff.Uint64()))
-			if pow.CalcCuckooDiff(pow.GraphWeight(uint32(this.EdgeBits)),h).Cmp(this.header.TargetDiff) < 0{
-				continue
-			}
 
 			subm := hex.EncodeToString(subData)
 
@@ -201,10 +178,24 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 	}
 }
 
-func (this *CudaCuckaroo) SubmitShare(substr chan string) {
-	this.Device.SubmitShare(substr)
-}
-
 func (this *CudaCuckaroo)Status(wg *sync.WaitGroup)  {
 	return
+}
+
+func (this *CudaCuckaroo)ListenStopCuda()  {
+	defer func() {
+		if err := recover(); err != nil {
+			common.MinerLoger.Error("recover success.","error",err)
+		}
+	}()
+	for{
+		select {
+		case <- this.StopTaskChan:
+			if this.solverCtx != nil && !this.miningStop{
+				common.MinerLoger.Debug("================exit cuda because new task===========","this.solverCtx",this.solverCtx,"this.miningStop",this.miningStop)
+				C.stop_solver(this.solverCtx)
+				this.miningStop = true
+			}
+		}
+	}
 }

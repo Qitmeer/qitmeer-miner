@@ -720,7 +720,8 @@ int run_solver(SolverCtx* ctx,
 	}
 	for (u32 r = 0; r < range; r++) {
 	if(ctx->trimmer.abort){
-	    break;
+	    print_log("\n ***************** stop because new task *******************\n");
+	    return 0;
 	}
 	 time0 = timestamp();
 	 ctx->setheadernonce(header, header_length, nonce + r);
@@ -777,7 +778,7 @@ int run_solver(SolverCtx* ctx,
 			break;
 	 }
 	}
-	return sumnsols > 0;
+	return sumnsols;
 }
 
 SolverCtx* create_solver_ctx(SolverParams* params) {
@@ -870,6 +871,7 @@ extern "C" {
 			u64 bytes = ctx->trimmer.globalbytes();
 			int unit;
 			for (unit=0; bytes >= 102400; bytes>>=10,unit++) ;
+			ctx->trimmer.abort = false;
 			isFind[0] = run_solver(ctx, header, sizeof(header), nonce, range, NULL,target, Nonce,CycleNonces,average);
 			destroy_solver_ctx(ctx);
 			return 0;

@@ -170,7 +170,7 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 			return
 		}
 		if !this.IsValid {
-			continue
+			return
 		}
 
 		if len(this.Work.PoolWork.WorkData) <= 0 && this.Work.Block.Height <= 0 {

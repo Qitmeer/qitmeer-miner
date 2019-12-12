@@ -15,6 +15,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	`time`
 )
 
 const (
@@ -148,12 +149,15 @@ func (this *QitmeerRobot)Run() {
 // ListenWork
 func (this *QitmeerRobot)ListenWork() {
 	common.MinerLoger.Info("listen new work server")
+	t := time.NewTicker(time.Second*time.Duration(this.Cfg.OptionConfig.TaskInterval))
+	isFirst := true
+	defer t.Stop()
 	r := false
 	for {
 		select {
 		case <-this.Quit:
 			return
-		default:
+		case <- t.C:
 			r = false
 			if this.Pool {
 				r = this.Work.PoolGet() // get new work
@@ -169,19 +173,27 @@ func (this *QitmeerRobot)ListenWork() {
 					}
 					validDeviceCount++
 					newWork := this.Work.CopyNew()
+					if !isFirst{
+						dev.StopTask()
+					}
 					dev.SetNewWork(&newWork)
 				}
 				if validDeviceCount <=0{
 					common.MinerLoger.Error("There is no valid device to mining,please check your config!")
 					os.Exit(1)
 				}
+				if isFirst{
+					isFirst = false
+				}
 			} else if this.Work.ForceUpdate {
 				for _, dev := range this.Devices {
 					common.MinerLoger.Debug("task stopped by force")
+					if !isFirst{
+						dev.StopTask()
+					}
 					dev.SetForceUpdate()
 				}
 			}
-			common.Usleep(this.Cfg.OptionConfig.TaskInterval*1000)
 		}
 	}
 }
