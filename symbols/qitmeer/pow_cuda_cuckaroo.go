@@ -42,7 +42,7 @@ type CudaCuckaroo struct {
 	Edgemask            uint64
 	Nonces           []uint32
 	solverCtx           unsafe.Pointer
-	miningStop           bool
+	average [1]float64
 }
 
 func (this *CudaCuckaroo) InitDevice() {
@@ -113,16 +113,15 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 			cycleNoncesBytes := make([]byte,42*4)
 			nonceBytes := make([]byte,4)
 			resultBytes := make([]byte,4)
-			average := []float64{this.AverageHashRate}
+			this.average = [1]float64{0}
 			target := pow.CuckooDiffToTarget(pow.GraphWeight(uint32(this.EdgeBits)),this.header.TargetDiff)
 			targetBytes,_ := hex.DecodeString(target)
 			common.MinerLoger.Debug("========================== card begin work ===================")
 
-			this.miningStop = false
 			_ = C.cuda_search((C.int)(this.MinerId),(*C.uchar)(unsafe.Pointer(&hData[0])),(*C.uint)(unsafe.Pointer(&resultBytes[0])),(*C.uint)(unsafe.Pointer(&nonceBytes[0])),
-				(*C.uint)(unsafe.Pointer(&cycleNoncesBytes[0])),(*C.double)(unsafe.Pointer(&average[0])),&this.solverCtx,(*C.uchar)(unsafe.Pointer(&targetBytes[0])))
+				(*C.uint)(unsafe.Pointer(&cycleNoncesBytes[0])),(*C.double)(unsafe.Pointer(&this.average[0])),&this.solverCtx,(*C.uchar)(unsafe.Pointer(&targetBytes[0])))
 			this.solverCtx = nil
-			//this.AverageHashRate = average[0]
+			//this.AverageHashRate = this.average[0]
 			isFind := binary.LittleEndian.Uint32(resultBytes)
 
 			if isFind != 1 {
@@ -191,10 +190,10 @@ func (this *CudaCuckaroo)ListenStopCuda()  {
 	for{
 		select {
 		case <- this.StopTaskChan:
-			if this.solverCtx != nil && !this.miningStop{
-				common.MinerLoger.Debug("================exit cuda because new task===========","this.solverCtx",this.solverCtx,"this.miningStop",this.miningStop)
+			if this.solverCtx != nil &&this.average[0] > 0{
+				common.MinerLoger.Debug("================exit cuda because new task===========","this.solverCtx",this.solverCtx)
 				C.stop_solver(this.solverCtx)
-				this.miningStop = true
+				this.average[0] = 0
 			}
 		}
 	}
