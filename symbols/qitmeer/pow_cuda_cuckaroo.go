@@ -67,6 +67,11 @@ func (this *CudaCuckaroo) Update() {
 }
 
 func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
+	defer func() {
+		if err := recover(); err != nil {
+			common.MinerLoger.Error("recover success.","error",err)
+		}
+	}()
 	go this.ListenStopCuda()
 	defer this.Release()
 	defer wg.Done()
@@ -99,8 +104,8 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 		this.AllDiffOneShares = 0
 		for {
 			// if has new work ,current calc stop
-			if this.HasNewWork {
-				common.MinerLoger.Debug("========================== new task exit current ===================")
+			if this.Cfg.OptionConfig.MiningSyncMode && this.HasNewWork {
+				common.MinerLoger.Debug(fmt.Sprintf("========================== %d new task exit current ===================",this.MinerId))
 				break
 			}
 
@@ -116,14 +121,12 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 			this.average = [1]float64{0}
 			target := pow.CuckooDiffToTarget(pow.GraphWeight(uint32(this.EdgeBits)),this.header.TargetDiff)
 			targetBytes,_ := hex.DecodeString(target)
-			common.MinerLoger.Debug("========================== card begin work ===================")
-
+			common.MinerLoger.Debug(fmt.Sprintf("========================== # %d card begin work ===================",this.MinerId))
 			_ = C.cuda_search((C.int)(this.MinerId),(*C.uchar)(unsafe.Pointer(&hData[0])),(*C.uint)(unsafe.Pointer(&resultBytes[0])),(*C.uint)(unsafe.Pointer(&nonceBytes[0])),
 				(*C.uint)(unsafe.Pointer(&cycleNoncesBytes[0])),(*C.double)(unsafe.Pointer(&this.average[0])),&this.solverCtx,(*C.uchar)(unsafe.Pointer(&targetBytes[0])))
-			this.solverCtx = nil
-			//this.AverageHashRate = this.average[0]
+			this.AverageHashRate = this.average[0]
 			isFind := binary.LittleEndian.Uint32(resultBytes)
-
+			this.average[0] = 0
 			if isFind != 1 {
 				break
 			}
@@ -151,7 +154,7 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 			subData := BlockDataWithProof(this.header.HeaderBlock)
 			copy(subData[:113],hData[:113])
 			h := hash.DoubleHashH(subData)
-			common.MinerLoger.Info(fmt.Sprintf("Calc Hash %s  target diff:%d",h,this.header.TargetDiff.Uint64()))
+			common.MinerLoger.Debug(fmt.Sprintf("# %d Calc Hash %s  target diff:%d  target:%s",this.MinerId,h,this.header.TargetDiff.Uint64(),target))
 
 			subm := hex.EncodeToString(subData)
 
@@ -179,14 +182,27 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 
 func (this *CudaCuckaroo)Status(wg *sync.WaitGroup)  {
 	return
+	defer wg.Done()
+	t := time.NewTicker(time.Second*15)
+	defer t.Stop()
+	for {
+		select{
+		case <- this.Quit:
+			return
+		case <- t.C:
+
+			if !this.IsValid{
+				return
+			}
+			if this.AverageHashRate > 0 {
+				common.MinerLoger.Info(fmt.Sprintf("# %d [%s] : %f GPS",this.MinerId,this.ClDevice.Name(),this.AverageHashRate))
+			}
+
+		}
+	}
 }
 
 func (this *CudaCuckaroo)ListenStopCuda()  {
-	defer func() {
-		if err := recover(); err != nil {
-			common.MinerLoger.Error("recover success.","error",err)
-		}
-	}()
 	for{
 		select {
 		case <- this.StopTaskChan:

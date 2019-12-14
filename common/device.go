@@ -19,7 +19,6 @@ func GetDevices(t cl.DeviceType,needPlatform string) []*cl.Device {
 	for _, platform := range platforms {
 
 		if needPlatform != "" && !strings.Contains(platform.Name(),needPlatform){
-			MinerLoger.Debug("don't support cuda")
 			continue
 		}
 
