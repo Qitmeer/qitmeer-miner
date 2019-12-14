@@ -92,15 +92,24 @@ func (this *Device)GetIsValid() bool {
 }
 
 func (this *Device)SetNewWork(work BaseWork) {
+	if !this.GetIsValid(){
+		return
+	}
 	this.HasNewWork = true
 	this.NewWork <- work
 }
 
 func (this *Device)StopTask() {
+	if !this.GetIsValid(){
+		return
+	}
 	this.StopTaskChan <- true
 }
 
 func (this *Device)SetForceUpdate() {
+	if !this.GetIsValid(){
+		return
+	}
 	this.HasNewWork = true
 	this.AllDiffOneShares = 0
 }
@@ -218,6 +227,9 @@ func (this *Device)Status(wg *sync.WaitGroup)  {
 }
 
 func (this *Device) SubmitShare(substr chan string) {
+	if !this.GetIsValid(){
+		return
+	}
 	for {
 		common.MinerLoger.Debug("===============================Listen Submit")
 		select {

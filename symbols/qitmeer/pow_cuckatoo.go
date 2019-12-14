@@ -118,7 +118,7 @@ func (this *Cuckatoo) Update() {
 }
 
 func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
-
+	go this.ListenStop()
 	defer this.Release()
 	defer wg.Done()
 	for {
@@ -366,5 +366,15 @@ func (this *Cuckatoo) Enq(num int) {
 		}
 		this.Event.Release()
 		_ = this.CommandQueue.Finish()
+	}
+}
+
+func (this *Cuckatoo)ListenStop()  {
+	common.MinerLoger.Debug("listen stop work")
+	for{
+		select {
+		case <- this.StopTaskChan:
+
+		}
 	}
 }

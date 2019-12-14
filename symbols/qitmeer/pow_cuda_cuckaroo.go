@@ -203,6 +203,7 @@ func (this *CudaCuckaroo)Status(wg *sync.WaitGroup)  {
 }
 
 func (this *CudaCuckaroo)ListenStopCuda()  {
+	common.MinerLoger.Debug("listen stop card")
 	for{
 		select {
 		case <- this.StopTaskChan:
@@ -211,6 +212,7 @@ func (this *CudaCuckaroo)ListenStopCuda()  {
 				C.stop_solver(this.solverCtx)
 				this.average[0] = 0
 			}
+			common.MinerLoger.Debug("nothing stop ")
 		}
 	}
 }

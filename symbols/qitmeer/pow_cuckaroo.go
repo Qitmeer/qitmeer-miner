@@ -158,7 +158,7 @@ func (this *Cuckaroo) Update() {
 }
 
 func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
-
+	go this.ListenStop()
 	defer this.Release()
 	defer wg.Done()
 
@@ -535,3 +535,14 @@ func (this *Cuckaroo) InitKernelAndParam() {
 		return
 	}
 }
+
+func (this *Cuckaroo)ListenStop()  {
+	common.MinerLoger.Debug("listen stop work")
+	for{
+		select {
+		case <- this.StopTaskChan:
+
+		}
+	}
+}
+
