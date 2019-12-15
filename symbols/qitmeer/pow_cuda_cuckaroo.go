@@ -212,7 +212,6 @@ func (this *CudaCuckaroo)ListenStopCuda()  {
 				C.stop_solver(this.solverCtx)
 				this.average[0] = 0
 			}
-			common.MinerLoger.Debug("nothing stop ")
 		}
 	}
 }
