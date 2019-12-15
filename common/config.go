@@ -41,7 +41,7 @@ var (
 	defaultLocalSize = 4096
 	defaultWorkGroupSize = 256
 	defaultEdgeBits = 24
-	version = "0.3.2"
+	version = "0.3.3"
 )
 
 type CommandConfig struct {
@@ -81,6 +81,7 @@ type OptionalConfig struct {
 	Cuda       bool `long:"cuda" description:"is cuda" default-mask:"false"`
 	TaskInterval       int `long:"task_interval" description:"get blocktemplate interval" default-mask:"2"`
 	TaskForceStop       bool `long:"task_force_stop" description:"force stop the current task when miner fail to get blocktemplate from the qitmeer full node." default-mask:"true"`
+	MiningSyncMode     bool   `long:"mining_sync_mode" description:"force stop the current task when new task come." default-mask:"true"`
 }
 
 type PoolConfig struct {
@@ -210,6 +211,7 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 		EdgeBits:defaultEdgeBits,
 		TaskInterval:2,
 		TaskForceStop:true,
+		MiningSyncMode:true,
 	}
 
 	// Create the home directory if it doesn't already exist.
