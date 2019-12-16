@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"qitmeer-miner/common/go-flags"
+	`runtime`
 	"strings"
 )
 
@@ -41,7 +42,7 @@ var (
 	defaultLocalSize = 4096
 	defaultWorkGroupSize = 256
 	defaultEdgeBits = 24
-	version = "0.3.3"
+	version = "0.3.4"
 )
 
 type CommandConfig struct {
@@ -262,7 +263,7 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 	}
 
 	if deviceCfg.Version{
-		fmt.Printf("Qitmeer Miner Version:%s\n",GetVersion())
+		fmt.Printf("Qitmeer Miner Version:%s(Go version %s)\n",GetVersion(),runtime.Version())
 		os.Exit(0)
 	}
 
