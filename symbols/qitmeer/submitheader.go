@@ -54,6 +54,7 @@ func (this *MinerBlockData)PackagePoolHeader(work *QitmeerWork,powType pow.PowTy
 	this.JobID = work.PoolWork.JobID
 	this.HeaderBlock = &types.BlockHeader{}
 	_ = ReadBlockHeader(this.HeaderData,this.HeaderBlock)
+	this.Height = pow.BIG_GRAPH_START_HEIGHT
 }
 //the pool work submit structure
 func (this *MinerBlockData)PackagePoolHeaderByNonce(work *QitmeerWork,nonce uint64)  {
