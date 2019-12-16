@@ -61,6 +61,7 @@ func (this *QitmeerWork) CopyNew() QitmeerWork{
 		newWork.Block.Transactions = this.Block.Transactions
 		newWork.Block.StateRoot = this.Block.StateRoot
 		newWork.ForceUpdate = this.ForceUpdate
+		newWork.Block.Height = this.Block.Height
 	}
 
 	return newWork

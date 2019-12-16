@@ -21,6 +21,7 @@ type MinerBlockData struct {
 	Exnonce2 string
 	JobID string
 	HeaderBlock *types.BlockHeader
+	Height uint64
 }
 // Header structure of assembly pool
 func BlockComputePoolData(b []byte) []byte{
@@ -89,4 +90,5 @@ func (this *MinerBlockData)PackageRpcHeader(work *QitmeerWork,txs []Transactions
 	this.HeaderBlock.Difficulty = uint32(work.Block.Difficulty)
 	this.HeaderBlock.Timestamp = time.Unix(int64(work.Block.Curtime), 0)
 	this.HeaderBlock.Pow = pow.GetInstance(work.Block.Pow.GetPowType(),binary.LittleEndian.Uint32(bitesBy),[]byte{})
+	this.Height = work.Block.Height
 }
