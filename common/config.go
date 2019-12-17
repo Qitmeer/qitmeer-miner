@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"qitmeer-miner/common/go-flags"
+	`runtime`
 	"strings"
 )
 
@@ -41,7 +42,7 @@ var (
 	defaultLocalSize = 4096
 	defaultWorkGroupSize = 256
 	defaultEdgeBits = 24
-	version = "0.3.3"
+	version = "0.3.4"
 )
 
 type CommandConfig struct {
@@ -262,7 +263,7 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 	}
 
 	if deviceCfg.Version{
-		fmt.Printf("Qitmeer Miner Version:%s\n",GetVersion())
+		fmt.Printf("Qitmeer Miner Version:%s(Go version %s)\n",GetVersion(),runtime.Version())
 		os.Exit(0)
 	}
 
@@ -302,6 +303,13 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 	}
 	if poolCfg.Pool == "" && !CheckBase58Addr(soloCfg.MinerAddr,necessaryCfg.NetWork,necessaryCfg.Param){
 		os.Exit(0)
+	}
+	if poolCfg.Pool != "" && !strings.Contains(poolCfg.Pool,"stratum+tcp://"){
+		//solo
+		soloCfg.RPCServer = poolCfg.Pool
+		soloCfg.RPCUser = poolCfg.PoolUser
+		soloCfg.RPCPassword = poolCfg.PoolPassword
+		poolCfg.Pool = ""
 	}
 	// Show the version and exit if the version flag was specified.
 

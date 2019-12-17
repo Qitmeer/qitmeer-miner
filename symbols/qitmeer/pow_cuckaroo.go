@@ -192,6 +192,8 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 		for {
 			// if has new work ,current calc stop
 			if this.HasNewWork {
+				common.MinerLoger.Debug("================exit because new task coming ==============")
+				this.AllDiffOneShares = 0
 				break
 			}
 			this.Update()
@@ -287,6 +289,7 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 				// 2 ^ 24 2 ^ 11 * 2 ^ 8 * 2 * 2 ^ 4 11+8+1+4=24  12 + 8 + 4
 				if this.Event, err = this.CommandQueue.EnqueueNDRangeKernel(this.CreateEdgeKernel, []int{0}, []int{this.LocalSize*this.WorkGroupSize}, []int{this.WorkGroupSize}, nil); err != nil {
 					common.MinerLoger.Error(fmt.Sprintf("CreateEdgeKernel-%d,%v", this.MinerId,err))
+					this.IsValid = false
 					return
 				}
 				this.Event.Release()
@@ -294,6 +297,7 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 				for i:= 0;i<this.Cfg.OptionConfig.TrimmerCount;i++{
 					if this.Event, err = this.CommandQueue.EnqueueNDRangeKernel(this.Trimmer01Kernel, []int{0}, []int{this.LocalSize*this.WorkGroupSize}, []int{this.WorkGroupSize}, nil); err != nil {
 						common.MinerLoger.Error(fmt.Sprintf("Trimmer01Kernel-%d,%v", this.MinerId,err))
+						this.IsValid = false
 						return
 					}
 					this.Event.Release()
@@ -301,6 +305,7 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 				}
 				if this.Event, err = this.CommandQueue.EnqueueNDRangeKernel(this.Trimmer02Kernel, []int{0}, []int{this.LocalSize*this.WorkGroupSize}, []int{this.WorkGroupSize}, nil); err != nil {
 					common.MinerLoger.Error(fmt.Sprintf("Trimmer02Kernel-%d,%v", this.MinerId,err))
+					this.IsValid = false
 					return
 				}
 				this.Event.Release()
@@ -378,7 +383,7 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 			subData := BlockDataWithProof(this.header.HeaderBlock)
 			copy(subData[:113],hData[:113])
 			h := hash.DoubleHashH(subData)
-			if pow.CalcCuckooDiff(pow.GraphWeight(uint32(this.EdgeBits)),h).Cmp(this.header.TargetDiff) < 0{
+			if pow.CalcCuckooDiff(pow.GraphWeight(uint32(this.EdgeBits),int64(this.header.Height),pow.CUCKAROO),h).Cmp(this.header.TargetDiff) < 0{
 				continue
 			}
 			common.MinerLoger.Info(fmt.Sprintf("Found Hash %s",h))
@@ -541,8 +546,8 @@ func (this *Cuckaroo)ListenStop()  {
 	for{
 		select {
 		case <- this.StopTaskChan:
-
 		}
+		common.MinerLoger.Debug("============== stop by forced ==============")
 	}
 }
 
