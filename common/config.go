@@ -304,6 +304,13 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 	if poolCfg.Pool == "" && !CheckBase58Addr(soloCfg.MinerAddr,necessaryCfg.NetWork,necessaryCfg.Param){
 		os.Exit(0)
 	}
+	if poolCfg.Pool != "" && !strings.Contains(poolCfg.Pool,"stratum+tcp://"){
+		//solo
+		soloCfg.RPCServer = poolCfg.Pool
+		soloCfg.RPCUser = poolCfg.PoolUser
+		soloCfg.RPCPassword = poolCfg.PoolPassword
+		poolCfg.Pool = ""
+	}
 	// Show the version and exit if the version flag was specified.
 
 	if optionalCfg.Intensity < minIntensity || optionalCfg.Intensity > maxIntensity{

@@ -4,7 +4,7 @@ go 1.12
 
 require (
 	github.com/Qitmeer/go-opencl v0.0.0-20190704222003-c93200893312
-	github.com/Qitmeer/qitmeer v0.7.8
+	github.com/Qitmeer/qitmeer v0.8.4-dev.0.20191217030749-ccc52cc47b7d
 	github.com/fatih/color v1.7.0 // indirect
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/websocket v1.4.1
