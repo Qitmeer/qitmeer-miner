@@ -196,6 +196,7 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 	necessaryCfg := NecessaryConfig{
 		Pow:defaultPow,
 		Symbol:defaultSymbol,
+		NetWork : "testnet",
 	}
 	optionalCfg := OptionalConfig{
 		Intensity:  defaultIntensity,
