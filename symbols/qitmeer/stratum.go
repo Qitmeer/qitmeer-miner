@@ -251,6 +251,7 @@ func (s *QitmeerStratum) handleNotifyRes(resp interface{}) {
 	stateRoot := make([]byte,32)
 	s.PoolWork.StateRoot = hex.EncodeToString(stateRoot)
 	s.PoolWork.NewWork = true
+	s.PoolWork.Height = nResp.Height
 	parsedNtime, err := strconv.ParseInt(nResp.Ntime, 16, 64)
 	if err != nil {
 		common.MinerLoger.Error(err.Error())
@@ -419,11 +420,26 @@ func (s *QitmeerStratum) Unmarshal(blob []byte) (interface{}, error) {
 			return nil, core.ErrJsonType
 		}
 		nres.Ntime = ntime
-		cleanJobs, ok := resi[10].(bool)
-		if !ok {
-			return nil, core.ErrJsonType
+
+		if len(resi) <= 10{
+			cleanJobs, ok := resi[10].(bool)
+			if !ok {
+				return nil, core.ErrJsonType
+			}
+			nres.CleanJobs = cleanJobs
+		} else{ //add mheight
+			mheight, ok := resi[10].(int)
+			if !ok {
+				return nil, core.ErrJsonType
+			}
+			nres.Height = int64(mheight)
+			cleanJobs, ok := resi[11].(bool)
+			if !ok {
+				return nil, core.ErrJsonType
+			}
+			nres.CleanJobs = cleanJobs
 		}
-		nres.CleanJobs = cleanJobs
+
 
 		return nres, nil
 
