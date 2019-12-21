@@ -119,7 +119,8 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 			nonceBytes := make([]byte,4)
 			resultBytes := make([]byte,4)
 			this.average = [1]float64{0}
-			target := pow.CuckooDiffToTarget(pow.GraphWeight(uint32(this.EdgeBits),int64(this.header.Height),pow.CUCKAROO),this.header.TargetDiff)
+			graphWeight := CuckarooGraphWeight(int64(this.header.Height),int64(this.Cfg.OptionConfig.BigGraphStartHeight),uint(this.EdgeBits))
+			target := pow.CuckooDiffToTarget(graphWeight,this.header.TargetDiff)
 			targetBytes,_ := hex.DecodeString(target)
 			common.MinerLoger.Debug(fmt.Sprintf("========================== # %d card begin work ===================",this.MinerId))
 			_ = C.cuda_search((C.int)(this.MinerId),(*C.uchar)(unsafe.Pointer(&hData[0])),(*C.uint)(unsafe.Pointer(&resultBytes[0])),(*C.uint)(unsafe.Pointer(&nonceBytes[0])),

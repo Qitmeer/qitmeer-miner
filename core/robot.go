@@ -44,7 +44,7 @@ type MinerRobot struct {
 func (this *MinerRobot)InitDevice()  {
 	var typ = common.DevicesTypesForGPUMining
 	if this.Cfg.OptionConfig.CPUMiner{
-		typ = common.DevicesTypesForCPUMining
+		common.MinerLoger.Warn("The parameter CPUMiner is deprecated !")
 	}
 	needPlatform := ""
 	if this.Cfg.OptionConfig.Cuda {
