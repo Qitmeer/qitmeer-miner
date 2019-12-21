@@ -83,6 +83,8 @@ type OptionalConfig struct {
 	TaskInterval       int `long:"task_interval" description:"get blocktemplate interval" default-mask:"2"`
 	TaskForceStop       bool `long:"task_force_stop" description:"force stop the current task when miner fail to get blocktemplate from the qitmeer full node." default-mask:"true"`
 	MiningSyncMode     bool   `long:"mining_sync_mode" description:"force stop the current task when new task come." default-mask:"true"`
+	ForceSolo     bool   `long:"force_solo" description:"force solo mining" default-mask:"false"`
+	BigGraphStartHeight     int   `long:"big_graph_start_height" description:"big graph start main height, how many days later,the r29 will be the main pow" default-mask:"45"`
 }
 
 type PoolConfig struct {
@@ -214,6 +216,8 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 		TaskInterval:2,
 		TaskForceStop:true,
 		MiningSyncMode:true,
+		ForceSolo:false,
+		BigGraphStartHeight:29,
 	}
 
 	// Create the home directory if it doesn't already exist.
@@ -305,6 +309,10 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 	if poolCfg.Pool == "" && !CheckBase58Addr(soloCfg.MinerAddr,necessaryCfg.NetWork,necessaryCfg.Param){
 		os.Exit(0)
 	}
+	if optionalCfg.ForceSolo {
+		//solo
+		poolCfg.Pool = ""
+	}
 	if poolCfg.Pool != "" && !strings.Contains(poolCfg.Pool,"stratum+tcp://"){
 		//solo
 		soloCfg.RPCServer = poolCfg.Pool
@@ -312,6 +320,7 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 		soloCfg.RPCPassword = poolCfg.PoolPassword
 		poolCfg.Pool = ""
 	}
+
 	// Show the version and exit if the version flag was specified.
 
 	if optionalCfg.Intensity < minIntensity || optionalCfg.Intensity > maxIntensity{

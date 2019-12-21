@@ -248,7 +248,8 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 			subData := BlockDataWithProof(this.header.HeaderBlock)
 			copy(subData[:113],hData[:113])
 			h := hash.DoubleHashH(subData)
-			if pow.CalcCuckooDiff(pow.GraphWeight(uint32(edges_bits),int64(this.header.Height),pow.CUCKATOO),h).Cmp(this.header.TargetDiff) < 0 {
+			graphWeight := CuckatooGraphWeight(int64(this.header.Height),int64(this.Cfg.OptionConfig.BigGraphStartHeight),uint(edges_bits))
+			if pow.CalcCuckooDiff(graphWeight,h).Cmp(this.header.TargetDiff) < 0 {
 				continue
 			}
 			common.MinerLoger.Info(fmt.Sprintf("Found Hash %s",h))
