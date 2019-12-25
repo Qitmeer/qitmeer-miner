@@ -896,9 +896,6 @@ extern "C" {
 			ctx->trimmer.abort = false;
 			isFind[0] = run_solver(ctx, (char *)header, HEADERLEN, nonce, range, NULL,target, Nonce,CycleNonces,average);
 			//print_log("\n***********# %d destroy_solver_ctx complete release memory***************\n",device_id);
-#ifdef ISWINDOWS
-			destroy_solver_ctx(ctx);
-#endif
 			cudaDeviceReset();
 			return 0;
 	 }
