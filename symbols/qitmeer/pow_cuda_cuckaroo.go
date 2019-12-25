@@ -1,4 +1,4 @@
-//+build cuda,!opencl
+/**+build cuda,!opencl**/
 
 /**
 Qitmeer
@@ -15,12 +15,13 @@ package qitmeer
 import "C"
 import (
 	`encoding/binary`
-	"encoding/hex"
+	`encoding/hex`
 	"fmt"
 	`github.com/Qitmeer/qitmeer/common/hash`
 	`github.com/Qitmeer/qitmeer/core/types`
 	"github.com/Qitmeer/qitmeer/core/types/pow"
-	"math/big"
+	`math`
+	`math/big`
 	"qitmeer-miner/common"
 	"qitmeer-miner/core"
 	`sort`
@@ -42,12 +43,15 @@ type CudaCuckaroo struct {
 	Edgemask            uint64
 	Nonces           []uint32
 	solverCtx           unsafe.Pointer
-	average [1]float64
+	average [10]float64
+	averageJ int
 }
 
 func (this *CudaCuckaroo) InitDevice() {
 	this.EdgeBits = this.Cfg.OptionConfig.EdgeBits
 	common.MinerLoger.Debug(fmt.Sprintf("==============Mining Cuckaroo with CUDA: deviceID:%d edge bits:%d ============== module=miner",this.MinerId,this.EdgeBits))
+	this.average = [10]float64{0,0,0,0,0,0}
+	this.averageJ = 1
 }
 
 func (this *CudaCuckaroo) Update() {
@@ -67,124 +71,163 @@ func (this *CudaCuckaroo) Update() {
 }
 
 func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
-	defer func() {
-		if err := recover(); err != nil {
-			common.MinerLoger.Error("recover success.","error",err)
-		}
-	}()
-	go this.ListenStopCuda()
+	this.AverageHashRate = 0
 	defer this.Release()
 	defer wg.Done()
+	this.HasNewWork = false
+	this.CurrentWorkID = 0
+	this.header = MinerBlockData{
+		Transactions:[]Transactions{},
+		Parents:[]ParentItems{},
+		HeaderData:make([]byte,0),
+		TargetDiff:&big.Int{},
+		JobID:"",
+	}
+	this.Started = time.Now().Unix()
+	this.AllDiffOneShares = 0
+	wg1 := sync.WaitGroup{}
+	wg1.Add(1)
+	c := make(chan interface{})
+	go func() {
+		defer close(c)
+		wg1.Wait()
+	}()
+
+	go func() {
+		defer wg1.Done()
+		for {
+			// if has new work ,current calc stop
+			if this.Work == nil {
+				common.Usleep(1000)
+				continue
+			}
+			this.Update()
+			this.CardRun()
+			this.IsRunning = false
+		}
+	}()
+
 	for {
 		select {
 		case w := <-this.NewWork:
 			this.Work = w.(*QitmeerWork)
+			fmt.Println(this.MinerId,"==============work.height===============",this.Work.Block.Height)
+			if this.GetIsRunning(){
+				this.StopTaskChan <- true
+			}
 		case <-this.Quit:
 			return
-
+		case <-c:
+			return
 		}
 		if !this.IsValid {
 			return
 		}
+	}
+}
+func (this *CudaCuckaroo)CardRun() bool{
+	this.Nonces = make([]uint32,0)
+	hData := this.header.HeaderBlock.BlockData()[:types.MaxBlockHeaderPayload-pow.PROOF_DATA_CIRCLE_NONCE_END]
+	powStruct := this.header.HeaderBlock.Pow.(*pow.Cuckaroo)
+	cycleNoncesBytes := make([]byte,42*4)
+	nonceBytes := make([]byte,4)
+	resultBytes := make([]byte,4)
+	this.average[0] = 0
+	graphWeight := CuckarooGraphWeight(int64(this.header.Height),int64(this.Cfg.OptionConfig.BigGraphStartHeight),uint(this.EdgeBits))
+	target := pow.CuckooDiffToTarget(graphWeight,this.header.TargetDiff)
+	targetBytes,_ := hex.DecodeString(target)
+	var solverCtx unsafe.Pointer
+	common.MinerLoger.Debug(fmt.Sprintf("========================== # %d card begin work height:%d=%d===================",this.MinerId,this.Work.Block.Height,this.header.Height))
+	var wg= new(sync.WaitGroup)
+	c := make(chan interface{})
+	wg.Add(1)
+	go func() {
+		defer close(c)
+		wg.Wait()
+	}()
+	go func() {
+		defer wg.Done()
+		_ = C.cuda_search((C.int)(this.MinerId),(*C.uchar)(unsafe.Pointer(&hData[0])),(*C.uint)(unsafe.Pointer(&resultBytes[0])),(*C.uint)(unsafe.Pointer(&nonceBytes[0])),
+			(*C.uint)(unsafe.Pointer(&cycleNoncesBytes[0])),(*C.double)(unsafe.Pointer(&this.average[0])),&solverCtx,(*C.uchar)(unsafe.Pointer(&targetBytes[0])))
 
-		if len(this.Work.PoolWork.WorkData) <= 0 && this.Work.Block.Height <= 0 {
-			common.Usleep(2*1000)
-			continue
+		if this.average[0] > 0 {
+			if this.averageJ == 10{
+				this.averageJ = 1
+			}
+			this.average[this.averageJ] = this.average[0]
+			this.averageJ++
 		}
-		this.HasNewWork = false
-		this.CurrentWorkID = 0
-		this.header = MinerBlockData{
-			Transactions:[]Transactions{},
-			Parents:[]ParentItems{},
-			HeaderData:make([]byte,0),
-			TargetDiff:&big.Int{},
-			JobID:"",
+		isFind := binary.LittleEndian.Uint32(resultBytes)
+		this.average[0] = 0
+		if isFind != 1 {
+			c <- "not found"
+			return
 		}
-		this.Started = time.Now().Unix()
-		this.AllDiffOneShares = 0
-		for {
-			// if has new work ,current calc stop
-			if this.Cfg.OptionConfig.MiningSyncMode && this.HasNewWork {
-				common.MinerLoger.Debug(fmt.Sprintf("========================== %d new task exit current ===================",this.MinerId))
-				break
+
+		//nonce
+		copy(hData[108:112],nonceBytes)
+		for jj := 0;jj < len(cycleNoncesBytes);jj+=4{
+			tj := binary.LittleEndian.Uint32(cycleNoncesBytes[jj:jj+4])
+			if tj <=0 {
+				isFind = 0
+				c <- "not found"
+				return
+			}
+			this.Nonces = append(this.Nonces,tj)
+		}
+		sort.Slice(this.Nonces, func(i, j int) bool {
+			return this.Nonces[i]<this.Nonces[j]
+		})
+		powStruct.SetCircleEdges(this.Nonces)
+		powStruct.SetNonce(binary.LittleEndian.Uint32(nonceBytes))
+		powStruct.SetEdgeBits(uint8(this.EdgeBits))
+		subData := BlockDataWithProof(this.header.HeaderBlock)
+		copy(subData[:113],hData[:113])
+		h := hash.DoubleHashH(subData)
+		common.MinerLoger.Debug(fmt.Sprintf("# %d Calc Hash %s  target diff:%d  target:%s",this.MinerId,h,this.header.TargetDiff.Uint64(),target))
+
+		subm := hex.EncodeToString(subData)
+
+		if !this.Pool{
+			subm += common.Int2varinthex(int64(len(this.header.Parents)))
+			for j := 0; j < len(this.header.Parents); j++ {
+				subm += this.header.Parents[j].Data
 			}
 
-			this.Update()
-			this.Nonces = make([]uint32,0)
-			hData := this.header.HeaderBlock.BlockData()[:types.MaxBlockHeaderPayload-pow.PROOF_DATA_CIRCLE_NONCE_END]
+			txCount := len(this.header.Transactions)
+			subm += common.Int2varinthex(int64(txCount))
 
-			powStruct := this.header.HeaderBlock.Pow.(*pow.Cuckaroo)
-
-			cycleNoncesBytes := make([]byte,42*4)
-			nonceBytes := make([]byte,4)
-			resultBytes := make([]byte,4)
-			this.average = [1]float64{0}
-			graphWeight := CuckarooGraphWeight(int64(this.header.Height),int64(this.Cfg.OptionConfig.BigGraphStartHeight),uint(this.EdgeBits))
-			target := pow.CuckooDiffToTarget(graphWeight,this.header.TargetDiff)
-			targetBytes,_ := hex.DecodeString(target)
-			common.MinerLoger.Debug(fmt.Sprintf("========================== # %d card begin work ===================",this.MinerId))
-			_ = C.cuda_search((C.int)(this.MinerId),(*C.uchar)(unsafe.Pointer(&hData[0])),(*C.uint)(unsafe.Pointer(&resultBytes[0])),(*C.uint)(unsafe.Pointer(&nonceBytes[0])),
-				(*C.uint)(unsafe.Pointer(&cycleNoncesBytes[0])),(*C.double)(unsafe.Pointer(&this.average[0])),&this.solverCtx,(*C.uchar)(unsafe.Pointer(&targetBytes[0])))
-			this.AverageHashRate = this.average[0]
-			isFind := binary.LittleEndian.Uint32(resultBytes)
-			this.average[0] = 0
-			if isFind != 1 {
-				break
+			for j := 0; j < txCount; j++ {
+				subm += this.header.Transactions[j].Data
 			}
-
-			//nonce
-			copy(hData[108:112],nonceBytes)
-			for jj := 0;jj < len(cycleNoncesBytes);jj+=4{
-				tj := binary.LittleEndian.Uint32(cycleNoncesBytes[jj:jj+4])
-				if tj <=0 {
-					isFind = 0
-					break
-				}
-				this.Nonces = append(this.Nonces,tj)
+			subm += "-" + fmt.Sprintf("%d",txCount) + "-" + fmt.Sprintf("%d",this.Work.Block.Height)
+		} else {
+			subm += "-" + this.header.JobID + "-" + this.header.Exnonce2
+		}
+		this.SubmitData <- subm
+		c <- nil
+	}()
+	this.IsRunning = true
+	for{
+		select {
+		case err := <-c:
+			if err == nil{
+				fmt.Println("====================Found Candy submit=================")
+				return true
 			}
-
-			if isFind != 1{
-				break
+			return false
+		case <- this.StopTaskChan:
+			if solverCtx != nil{
+				common.MinerLoger.Debug("================exit cuda  because new task===========","minerID",this.MinerId)
+				C.stop_solver(solverCtx)
+				this.average[0] = 0
 			}
-			sort.Slice(this.Nonces, func(i, j int) bool {
-				return this.Nonces[i]<this.Nonces[j]
-			})
-			powStruct.SetCircleEdges(this.Nonces)
-			powStruct.SetNonce(binary.LittleEndian.Uint32(nonceBytes))
-			powStruct.SetEdgeBits(uint8(this.EdgeBits))
-			subData := BlockDataWithProof(this.header.HeaderBlock)
-			copy(subData[:113],hData[:113])
-			h := hash.DoubleHashH(subData)
-			common.MinerLoger.Debug(fmt.Sprintf("# %d Calc Hash %s  target diff:%d  target:%s",this.MinerId,h,this.header.TargetDiff.Uint64(),target))
-
-			subm := hex.EncodeToString(subData)
-
-			if !this.Pool{
-				subm += common.Int2varinthex(int64(len(this.header.Parents)))
-				for j := 0; j < len(this.header.Parents); j++ {
-					subm += this.header.Parents[j].Data
-				}
-
-				txCount := len(this.header.Transactions)
-				subm += common.Int2varinthex(int64(txCount))
-
-				for j := 0; j < txCount; j++ {
-					subm += this.header.Transactions[j].Data
-				}
-				subm += "-" + fmt.Sprintf("%d",txCount) + "-" + fmt.Sprintf("%d",this.Work.Block.Height)
-			} else {
-				subm += "-" + this.header.JobID + "-" + this.header.Exnonce2
-			}
-			this.SubmitData <- subm
-			break
 		}
 	}
 }
-
 func (this *CudaCuckaroo)Status(wg *sync.WaitGroup)  {
-	return
 	defer wg.Done()
-	t := time.NewTicker(time.Second*15)
+	t := time.NewTicker(time.Second*10)
 	defer t.Stop()
 	for {
 		select{
@@ -195,7 +238,32 @@ func (this *CudaCuckaroo)Status(wg *sync.WaitGroup)  {
 			if !this.IsValid{
 				return
 			}
+calcAverageHash:
+			for i := 0;i<10;i++{
+				if this.average[i] <= 0 {
+					continue
+				}
+				count := 0
+				for j :=0;j<10;j++{
+					if i == j || this.average[j] <= 0 {
+						continue
+					}
+					if math.Abs(float64(this.average[i] - this.average[j]))<0.5{
+						count++
+					}
+					if count >= 6{
+						this.AverageHashRate = this.average[i]
+						break calcAverageHash
+					}
+					if j > 6{
+						break
+					}
+				}
+			}
 			if this.AverageHashRate > 0 {
+				if this.AverageHashRate < 1{
+					fmt.Println(this.average)
+				}
 				common.MinerLoger.Info(fmt.Sprintf("# %d [%s] : %f GPS",this.MinerId,this.ClDevice.Name(),this.AverageHashRate))
 			}
 
@@ -203,16 +271,16 @@ func (this *CudaCuckaroo)Status(wg *sync.WaitGroup)  {
 	}
 }
 
-func (this *CudaCuckaroo)ListenStopCuda()  {
-	common.MinerLoger.Debug("listen stop card")
-	for{
+func (this *CudaCuckaroo) SubmitShare(substr chan string) {
+	if !this.GetIsValid(){
+		return
+	}
+	for {
 		select {
-		case <- this.StopTaskChan:
-			if this.solverCtx != nil &&this.average[0] > 0{
-				common.MinerLoger.Debug("================exit cuda because new task===========","this.solverCtx",this.solverCtx)
-				C.stop_solver(this.solverCtx)
-				this.average[0] = 0
-			}
+		case <-this.Quit:
+			return
+		case str := <-this.SubmitData:
+			substr <- str
 		}
 	}
 }

@@ -94,6 +94,10 @@ func (this *QitmeerWork) Get () bool {
 		//not has new work
 		return false
 	}
+	if this.Block != nil{
+		fmt.Println(this.Block.Height , blockTemplate.Result.Height,"=======")
+	}
+
 	target := ""
 	n := new(big.Int)
 	switch this.Cfg.NecessaryConfig.Pow {

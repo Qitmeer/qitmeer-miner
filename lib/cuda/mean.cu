@@ -393,7 +393,12 @@ struct edgetrimmer {
 	bool initsuccess = false;
 
 	edgetrimmer(const trimparams _tp) : tp(_tp) {
-	 if checkCudaErrors_V(cudaMalloc((void**)&dt, sizeof(edgetrimmer))) return;
+	 if checkCudaErrors_V(cudaMalloc((void**)&dt, sizeof(edgetrimmer))){
+		print_log("=============edgetrimmer stop because memcpy out of memory==============");
+		cudaFree(dt);
+		abort = true;
+		return;
+	 }
 	 if checkCudaErrors_V(cudaMalloc((void**)&uvnodes, PROOFSIZE * 2 * sizeof(u32))) return;
 	 if checkCudaErrors_V(cudaMalloc((void**)&dipkeys, sizeof(siphash_keys))) return;
 	 for (int i = 0; i < 1+NB; i++) {
@@ -711,16 +716,17 @@ int run_solver(SolverCtx* ctx,
 	u64 time0, time1;
 	u32 timems;
 	u32 sumnsols = 0;
-	int device_id = DID;
 
 	if (ctx == NULL || !ctx->trimmer.initsuccess){
 	 print_log("Error initialising trimmer. Aborting.\n");
 	 print_log("Reason: %s\n", LAST_ERROR_REASON);
+	 cudaDeviceReset();
 	 return 0;
 	}
 	for (u32 r = 0; r < range; r++) {
 	if(ctx->trimmer.abort){
 	    //print_log("\n ***************** stop because new task *******************\n");
+	    cudaDeviceReset();
 	    return 0;
 	}
 	 time0 = timestamp();
@@ -728,11 +734,13 @@ int run_solver(SolverCtx* ctx,
 	 u32 nsols = ctx->solve();
 	 time1 = timestamp();
 	 timems = (time1 - time0) / 1000000;
-	 average[0] = 1000.00/(double)timems;
-
-	 if( (time1/1000000 /1000) % 15 == 0){
-	    print_log("\n************** [info] # Device %d HashRate:%f GPS **************\n",device_id,average[0]);
+	 if (r < 10) {
+	    average[r] = 1000.00/(double)timems;
 	 }
+
+	// if( (time1/1000000 /1000) % 15 == 0){
+	//    print_log("\n************** [info] # Device %d HashRate:%f GPS **************\n",DID,average[0]);
+	// }
 
 	 bool isFound = false;
 	 for (unsigned s = 0; s < nsols; s++) {
@@ -897,6 +905,7 @@ extern "C" {
 			ctx->trimmer.abort = false;
 			isFind[0] = run_solver(ctx, header, sizeof(header), nonce, range, NULL,target, Nonce,CycleNonces,average);
 			destroy_solver_ctx(ctx);
+			print_log("\n***********destroy_solver_ctx complete release memory***************\n");
 			return 0;
 	 }
 }
