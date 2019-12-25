@@ -25,7 +25,6 @@ typedef u64 nonce_t;
 #define NNODES ((node_t)1 << NODEBITS)
 #define NODEMASK (NNODES - 1)
 
-static int DID = 0;
 const u32 NX			= 1 << XBITS;
 const u32 NX2		 = NX * NX;
 const u32 XMASK		= NX - 1;
@@ -309,10 +308,8 @@ __global__ void Tail(const uint2 *source, uint2 *destination, const u32 *srcIdx,
 #define checkCudaErrors(ans) (gpuAssert((ans), __FILE__, __LINE__) != cudaSuccess)
 
 inline int gpuAssert(cudaError_t code, const char *file, int line, bool abort=true) {
-	int device_id = DID;
-	cudaGetDevice(&device_id);
 	if (code != cudaSuccess) {
-	 snprintf(LAST_ERROR_REASON, MAX_NAME_LEN, "Device %d GPUassert: %s %s %d", device_id, cudaGetErrorString(code), file, line);
+	 snprintf(LAST_ERROR_REASON, MAX_NAME_LEN, "Device GPUassert: %s %s %d", cudaGetErrorString(code), file, line);
 	 cudaDeviceReset();
 	 if (abort) return code;
 	}
@@ -851,9 +848,9 @@ void destroy_solver_ctx(SolverCtx* ctx) {
 	delete ctx;
 }
 
-void fill_default_params(SolverParams* params) {
+void fill_default_params(SolverParams* params,int device_id) {
 	trimparams tp;
-	params->device = DID;
+	params->device = device_id;
 	params->ntrims = tp.ntrims;
 	params->expand = tp.expand;
 	params->genablocks = min(tp.genA.blocks, NEDGES/tp.genA.tpb);
@@ -876,19 +873,18 @@ extern "C" {
 #ifdef ISWINDOWS
 	 __declspec(dllexport)
 #endif
-	 int cuda_search(u32 device,unsigned char* header,unsigned int *isFind,unsigned int *Nonce,u32 *CycleNonces,double *average,void **ctxInfo,unsigned char* target){
+	 int cuda_search(int device_id,unsigned char* header,unsigned int *isFind,unsigned int *Nonce,u32 *CycleNonces,double *average,void **ctxInfo,unsigned char* target){
 			trimparams tp;
 			u32 nonce = 0;
 			u32 range = (unsigned int)(1<<32-1);
-            DID = (int)device;
 			// set defaults
 			SolverParams params;
-			fill_default_params(&params);
+			fill_default_params(&params,device_id);
 			int nDevices;
 			if checkCudaErrors(cudaGetDeviceCount(&nDevices)) return 36;
-			assert(device < nDevices);
+			assert(device_id < nDevices);
 			cudaDeviceProp prop;
-			if checkCudaErrors(cudaGetDeviceProperties(&prop, device)) return 36;
+			if checkCudaErrors(cudaGetDeviceProperties(&prop, device_id)) return 36;
 			u64 dbytes = prop.totalGlobalMem;
 			int dunit;
 			for (dunit=0; dbytes >= 102400; dbytes>>=10,dunit++) ;
@@ -899,8 +895,8 @@ extern "C" {
 			for (unit=0; bytes >= 102400; bytes>>=10,unit++) ;
 			ctx->trimmer.abort = false;
 			isFind[0] = run_solver(ctx, (char *)header, HEADERLEN, nonce, range, NULL,target, Nonce,CycleNonces,average);
-			print_log("\n***********# %d destroy_solver_ctx complete release memory***************\n",DID);
-			destroy_solver_ctx(ctx);
+			//print_log("\n***********# %d destroy_solver_ctx complete release memory***************\n",device_id);
+			//destroy_solver_ctx(ctx);
 			cudaDeviceReset();
 			return 0;
 	 }

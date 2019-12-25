@@ -66,7 +66,9 @@ func (this *CudaCuckaroo) Update() {
 		randStr := fmt.Sprintf("%s%d%d",this.Cfg.SoloConfig.RandStr,this.MinerId,this.CurrentWorkID)
 		txHash ,txs:= this.Work.Block.CalcCoinBase(this.Cfg,randStr, this.CurrentWorkID, this.Cfg.SoloConfig.MinerAddr)
 		this.header.PackageRpcHeader(this.Work,txs)
+		fmt.Println(this.MinerId,"txs:",txs)
 		this.header.HeaderBlock.TxRoot = *txHash
+		fmt.Println(this.MinerId,"txHash:",*txHash)
 	}
 }
 
@@ -92,28 +94,29 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 		defer close(c)
 		wg1.Wait()
 	}()
+	work := make(chan core.BaseWork,1)
 
 	go func() {
 		defer wg1.Done()
 		for {
 			// if has new work ,current calc stop
-			if this.Work == nil {
-				common.Usleep(1000)
-				continue
+			select {
+			case w := <- work:
+				this.Work = w.(*QitmeerWork)
+				this.Update()
+				this.CardRun()
+				this.IsRunning = false
 			}
-			this.Update()
-			this.CardRun()
-			this.IsRunning = false
 		}
 	}()
 
 	for {
 		select {
 		case w := <-this.NewWork:
-			this.Work = w.(*QitmeerWork)
 			if this.GetIsRunning(){
 				this.StopTaskChan <- true
 			}
+			work <- w
 		case <-this.Quit:
 			return
 		case <-c:
@@ -191,14 +194,14 @@ func (this *CudaCuckaroo)CardRun() bool{
 			for j := 0; j < len(this.header.Parents); j++ {
 				subm += this.header.Parents[j].Data
 			}
-
+			fmt.Println(this.MinerId,"submit txs:",this.header.Transactions)
 			txCount := len(this.header.Transactions)
 			subm += common.Int2varinthex(int64(txCount))
 
 			for j := 0; j < txCount; j++ {
 				subm += this.header.Transactions[j].Data
 			}
-			subm += "-" + fmt.Sprintf("%d",txCount) + "-" + fmt.Sprintf("%d",this.Work.Block.Height)
+			subm += "-" + fmt.Sprintf("%d",txCount) + "-" + fmt.Sprintf("%d",this.header.Height)
 		} else {
 			subm += "-" + this.header.JobID + "-" + this.header.Exnonce2
 		}
