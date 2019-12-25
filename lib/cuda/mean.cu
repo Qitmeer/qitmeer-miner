@@ -395,7 +395,7 @@ struct edgetrimmer {
 	edgetrimmer(const trimparams _tp) : tp(_tp) {
 	 if checkCudaErrors_V(cudaMalloc((void**)&dt, sizeof(edgetrimmer))){
 		print_log("=============edgetrimmer stop because memcpy out of memory==============");
-		cudaFree(dt);
+		cudaDeviceReset();
 		abort = true;
 		return;
 	 }
@@ -877,40 +877,35 @@ extern "C" {
 	 __declspec(dllexport)
 #endif
 	 int cuda_search(u32 device,unsigned char* input,unsigned int *isFind,unsigned int *Nonce,u32 *CycleNonces,double *average,void **ctxInfo,unsigned char* target){
-            SolverCtx* ctx;
-            u32 nonce = 0;
-            char header[HEADERLEN];
-            u32 range = (unsigned int)(1<<32-1);
-            if(*ctxInfo == NULL){
-            trimparams tp;
-            			memset(header, 0, sizeof(header));
-            			memcpy(header,input,HEADERLEN);
-                        DID = (int)device;
-            			// set defaults
-            			SolverParams params;
-            			fill_default_params(&params);
-            			int nDevices;
-            			if checkCudaErrors(cudaGetDeviceCount(&nDevices)) return 36;
-            			assert(device < nDevices);
-            			cudaDeviceProp prop;
-            			if checkCudaErrors(cudaGetDeviceProperties(&prop, device)) return 36;
-            			u64 dbytes = prop.totalGlobalMem;
-            			int dunit;
-            			for (dunit=0; dbytes >= 102400; dbytes>>=10,dunit++) ;
-                ctx = create_solver_ctx(&params);
-                *ctxInfo = ctx;
+			trimparams tp;
 
+			u32 nonce = 0;
+			u32 range = (unsigned int)(1<<32-1);
+			char header[HEADERLEN];
+			memset(header, 0, sizeof(header));
+			memcpy(header,input,HEADERLEN);
+            DID = (int)device;
+			// set defaults
+			SolverParams params;
+			fill_default_params(&params);
+			int nDevices;
+			if checkCudaErrors(cudaGetDeviceCount(&nDevices)) return 36;
+			assert(device < nDevices);
+			cudaDeviceProp prop;
+			if checkCudaErrors(cudaGetDeviceProperties(&prop, device)) return 36;
+			u64 dbytes = prop.totalGlobalMem;
+			int dunit;
+			for (dunit=0; dbytes >= 102400; dbytes>>=10,dunit++) ;
+
+			SolverCtx* ctx = create_solver_ctx(&params);
+            *ctxInfo = ctx;
 			u64 bytes = ctx->trimmer.globalbytes();
 			int unit;
 			for (unit=0; bytes >= 102400; bytes>>=10,unit++) ;
-
-            } else{
-               ctx = (SolverCtx *)ctxInfo;
-            }
-
 			ctx->trimmer.abort = false;
 			isFind[0] = run_solver(ctx, header, sizeof(header), nonce, range, NULL,target, Nonce,CycleNonces,average);
-			print_log("\n***********destroy_solver_ctx complete release memory***************\n");
+			print_log("\n*********** destroy_solver_ctx complete release memory***************\n");
+			cudaDeviceReset();
 			return 0;
 	 }
 }

@@ -111,7 +111,6 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 		select {
 		case w := <-this.NewWork:
 			this.Work = w.(*QitmeerWork)
-			fmt.Println(this.MinerId,"==============work.height===============",this.Work.Block.Height)
 			if this.GetIsRunning(){
 				this.StopTaskChan <- true
 			}
@@ -136,7 +135,7 @@ func (this *CudaCuckaroo)CardRun() bool{
 	graphWeight := CuckarooGraphWeight(int64(this.header.Height),int64(this.Cfg.OptionConfig.BigGraphStartHeight),uint(this.EdgeBits))
 	target := pow.CuckooDiffToTarget(graphWeight,this.header.TargetDiff)
 	targetBytes,_ := hex.DecodeString(target)
-	common.MinerLoger.Debug(fmt.Sprintf("========================== # %d card begin work height:%d=%d===================",this.MinerId,this.Work.Block.Height,this.header.Height))
+	common.MinerLoger.Debug(fmt.Sprintf("========================== # %d card begin work height:%d===================",this.MinerId,this.header.Height))
 	var wg= new(sync.WaitGroup)
 	c := make(chan interface{})
 	wg.Add(1)
@@ -211,7 +210,6 @@ func (this *CudaCuckaroo)CardRun() bool{
 		select {
 		case err := <-c:
 			if err == nil{
-				fmt.Println("====================Found Candy submit=================")
 				return true
 			}
 			return false
