@@ -23,6 +23,8 @@ const (
 	defaultConfigFilename = "qitmeer.conf"
 )
 
+var CurrentHeight = uint64(0)
+
 var (
 	minerHomeDir          = GetCurrentDir()
 	defaultConfigFile     = filepath.Join(minerHomeDir, defaultConfigFilename)

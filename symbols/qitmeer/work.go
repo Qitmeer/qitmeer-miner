@@ -130,6 +130,7 @@ func (this *QitmeerWork) Get () bool {
 	this.Block = &blockTemplate.Result
 	this.Started = uint32(time.Now().Unix())
 	this.GetWorkTime = time.Now().Unix()
+	common.CurrentHeight = this.Block.Height
 	this.Cfg.OptionConfig.Target = this.Block.Target
 	common.MinerLoger.Info(fmt.Sprintf("getBlockTemplate height:%d , target :%s",this.Block.Height,target))
 	return true
@@ -188,6 +189,7 @@ func (this *QitmeerWork) PoolGet () bool {
 	if (this.stra.PoolWork.JobID != "" && this.stra.PoolWork.Clean) || this.PoolWork.JobID != this.stra.PoolWork.JobID{
 		this.Cfg.OptionConfig.Target = fmt.Sprintf("%064x",common.BlockBitsToTarget(this.stra.PoolWork.Nbits,2))
 		this.PoolWork = this.stra.PoolWork
+		common.CurrentHeight = uint64(this.stra.PoolWork.Height)
 		return true
 	}
 

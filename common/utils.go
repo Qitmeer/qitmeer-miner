@@ -339,6 +339,30 @@ func Timeout(timeout time.Duration, runFunc func()) bool {
 		return true
 	}
 }
+
+func TimeoutRun(timeout time.Duration, runFunc ,afterFun func()) bool {
+	var wg= new(sync.WaitGroup)
+	c := make(chan interface{})
+	wg.Add(1)
+	go func() {
+		defer close(c)
+		wg.Wait()
+	}()
+	go func() {
+		runFunc()
+		c <- nil
+		wg.Done()
+	}()
+	select {
+	case <-c:
+		return false
+	case <-time.After(timeout):
+		Timeout(1, func() {
+			afterFun()
+		})
+		return true
+	}
+}
 func GetNeedHashTimesByTarget( target string ) *big.Int {
 	times := big.NewInt(1)
 	for i:=0;i<len(target)-1 ;i++  {
