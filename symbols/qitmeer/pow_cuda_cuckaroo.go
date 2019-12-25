@@ -84,7 +84,6 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 		JobID:"",
 	}
 	this.Started = time.Now().Unix()
-	this.AllDiffOneShares = 0
 	wg1 := sync.WaitGroup{}
 	wg1.Add(1)
 	c := make(chan interface{})
@@ -93,7 +92,7 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 		wg1.Wait()
 	}()
 	work := make(chan core.BaseWork,1)
-
+	isFirst := true
 	go func() {
 		defer wg1.Done()
 		for {
@@ -111,10 +110,15 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 	for {
 		select {
 		case w := <-this.NewWork:
+			if isFirst{
+				work <- w
+				isFirst = false
+			}
 			if this.GetIsRunning(){
 				this.StopTaskChan <- true
+				work <- w
 			}
-			work <- w
+
 		case <-this.Quit:
 			return
 		case <-c:
@@ -148,7 +152,6 @@ func (this *CudaCuckaroo)CardRun() bool{
 		defer wg.Done()
 		_ = C.cuda_search((C.int)(this.MinerId),(*C.uchar)(unsafe.Pointer(&hData[0])),(*C.uint)(unsafe.Pointer(&resultBytes[0])),(*C.uint)(unsafe.Pointer(&nonceBytes[0])),
 			(*C.uint)(unsafe.Pointer(&cycleNoncesBytes[0])),(*C.double)(unsafe.Pointer(&this.average[0])),&this.solverCtx,(*C.uchar)(unsafe.Pointer(&targetBytes[0])))
-		C.free(this.solverCtx)
 		isFind := binary.LittleEndian.Uint32(resultBytes)
 		this.average[0] = 0
 		if isFind != 1 {

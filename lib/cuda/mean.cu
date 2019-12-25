@@ -416,7 +416,18 @@ struct edgetrimmer {
 	u64 globalbytes() const {
 	 return (sizeA+sizeB/NB) + (1+NB) * indexesSize + sizeof(siphash_keys) + PROOFSIZE * 2 * sizeof(u32) + sizeof(edgetrimmer);
 	}
+	/**
 	~edgetrimmer() {
+	 if checkCudaErrors_V(cudaFree(bufferA)) return;
+	 for (int i = 0; i < 1+NB; i++) {
+		if checkCudaErrors_V(cudaFree(indexesE[i])) return;
+	 }
+	 if checkCudaErrors_V(cudaFree(dipkeys)) return;
+	 if checkCudaErrors_V(cudaFree(uvnodes)) return;
+	 if checkCudaErrors_V(cudaFree(dt)) return;
+	 cudaDeviceReset();
+	} **/
+	void release() {
 	 if checkCudaErrors_V(cudaFree(bufferA)) return;
 	 for (int i = 0; i < 1+NB; i++) {
 		if checkCudaErrors_V(cudaFree(indexesE[i])) return;
@@ -429,10 +440,12 @@ struct edgetrimmer {
 	u32 trim() {
 	 cudaEvent_t start, stop;
 	 if checkCudaErrors(cudaEventCreate(&start)) return false;
-	 if checkCudaErrors(cudaEventCreate(&stop)) return false;
+	 if checkCudaErrors(cudaEventCreate(&stop)) {
+	    abort = true;
+	    return false;
+	 }
 
 	 cudaMemcpy(dipkeys, &sipkeys, sizeof(sipkeys), cudaMemcpyHostToDevice);
-
 	 cudaDeviceSynchronize();
 	 float durationA, durationB;
 	 cudaEventRecord(start, NULL);
@@ -723,17 +736,15 @@ int run_solver(SolverCtx* ctx,
 	for (u32 r = 0; r < range; r++) {
 	if(ctx->trimmer.abort){
 	    //print_log("\n ***************** stop because new task *******************\n");
-	    cudaDeviceReset();
 	    return 0;
 	}
+
 	 time0 = timestamp();
 	 ctx->setheadernonce(header, header_length, nonce + r);
 	 u32 nsols = ctx->solve();
 	 time1 = timestamp();
 	 timems = (time1 - time0) / 1000000;
-	 if (r < 10) {
-	    average[r] = 1000.00/(double)timems;
-	 }
+	 average[r%10] = 1000.00/(double)timems;
 
 	// if( (time1/1000000 /1000) % 15 == 0){
 	//    print_log("\n************** [info] # Device %d HashRate:%f GPS **************\n",DID,average[0]);
@@ -896,7 +907,8 @@ extern "C" {
 			ctx->trimmer.abort = false;
 			isFind[0] = run_solver(ctx, (char *)header, HEADERLEN, nonce, range, NULL,target, Nonce,CycleNonces,average);
 			//print_log("\n***********# %d destroy_solver_ctx complete release memory***************\n",device_id);
-			cudaDeviceReset();
+			ctx->trimmer.release();
+	        destroy_solver_ctx(ctx);
 			return 0;
 	 }
 }
