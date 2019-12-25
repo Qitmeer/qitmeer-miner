@@ -173,7 +173,6 @@ func (this *QitmeerRobot)ListenWork() {
 					}
 					validDeviceCount++
 					newWork := this.Work.CopyNew()
-					fmt.Println(dev.GetMinerId(),"=================stop task with new height:",newWork.Block.Height)
 					dev.SetNewWork(&newWork)
 				}
 				if validDeviceCount <=0{

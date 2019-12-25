@@ -66,9 +66,7 @@ func (this *CudaCuckaroo) Update() {
 		randStr := fmt.Sprintf("%s%d%d",this.Cfg.SoloConfig.RandStr,this.MinerId,this.CurrentWorkID)
 		txHash ,txs:= this.Work.Block.CalcCoinBase(this.Cfg,randStr, this.CurrentWorkID, this.Cfg.SoloConfig.MinerAddr)
 		this.header.PackageRpcHeader(this.Work,txs)
-		fmt.Println(this.MinerId,"txs:",txs)
 		this.header.HeaderBlock.TxRoot = *txHash
-		fmt.Println(this.MinerId,"txHash:",*txHash)
 	}
 }
 
@@ -150,14 +148,7 @@ func (this *CudaCuckaroo)CardRun() bool{
 		defer wg.Done()
 		_ = C.cuda_search((C.int)(this.MinerId),(*C.uchar)(unsafe.Pointer(&hData[0])),(*C.uint)(unsafe.Pointer(&resultBytes[0])),(*C.uint)(unsafe.Pointer(&nonceBytes[0])),
 			(*C.uint)(unsafe.Pointer(&cycleNoncesBytes[0])),(*C.double)(unsafe.Pointer(&this.average[0])),&this.solverCtx,(*C.uchar)(unsafe.Pointer(&targetBytes[0])))
-
-		if this.average[0] > 0 {
-			if this.averageJ == 10{
-				this.averageJ = 1
-			}
-			this.average[this.averageJ] = this.average[0]
-			this.averageJ++
-		}
+		
 		isFind := binary.LittleEndian.Uint32(resultBytes)
 		this.average[0] = 0
 		if isFind != 1 {
@@ -194,7 +185,6 @@ func (this *CudaCuckaroo)CardRun() bool{
 			for j := 0; j < len(this.header.Parents); j++ {
 				subm += this.header.Parents[j].Data
 			}
-			fmt.Println(this.MinerId,"submit txs:",this.header.Transactions)
 			txCount := len(this.header.Transactions)
 			subm += common.Int2varinthex(int64(txCount))
 
@@ -218,7 +208,6 @@ func (this *CudaCuckaroo)CardRun() bool{
 			return false
 		case <- this.StopTaskChan:
 			if this.solverCtx != nil{
-				common.MinerLoger.Debug("================exit cuda  because new task===========","minerID",this.MinerId)
 				C.stop_solver(this.solverCtx)
 				this.average[0] = 0
 			}
