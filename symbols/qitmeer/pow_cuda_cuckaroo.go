@@ -148,7 +148,7 @@ func (this *CudaCuckaroo)CardRun() bool{
 		defer wg.Done()
 		_ = C.cuda_search((C.int)(this.MinerId),(*C.uchar)(unsafe.Pointer(&hData[0])),(*C.uint)(unsafe.Pointer(&resultBytes[0])),(*C.uint)(unsafe.Pointer(&nonceBytes[0])),
 			(*C.uint)(unsafe.Pointer(&cycleNoncesBytes[0])),(*C.double)(unsafe.Pointer(&this.average[0])),&this.solverCtx,(*C.uchar)(unsafe.Pointer(&targetBytes[0])))
-		
+
 		isFind := binary.LittleEndian.Uint32(resultBytes)
 		this.average[0] = 0
 		if isFind != 1 {
