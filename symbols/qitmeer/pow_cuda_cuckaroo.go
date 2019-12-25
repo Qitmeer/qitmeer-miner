@@ -136,7 +136,6 @@ func (this *CudaCuckaroo)CardRun() bool{
 	graphWeight := CuckarooGraphWeight(int64(this.header.Height),int64(this.Cfg.OptionConfig.BigGraphStartHeight),uint(this.EdgeBits))
 	target := pow.CuckooDiffToTarget(graphWeight,this.header.TargetDiff)
 	targetBytes,_ := hex.DecodeString(target)
-	var solverCtx unsafe.Pointer
 	common.MinerLoger.Debug(fmt.Sprintf("========================== # %d card begin work height:%d=%d===================",this.MinerId,this.Work.Block.Height,this.header.Height))
 	var wg= new(sync.WaitGroup)
 	c := make(chan interface{})
@@ -148,7 +147,7 @@ func (this *CudaCuckaroo)CardRun() bool{
 	go func() {
 		defer wg.Done()
 		_ = C.cuda_search((C.int)(this.MinerId),(*C.uchar)(unsafe.Pointer(&hData[0])),(*C.uint)(unsafe.Pointer(&resultBytes[0])),(*C.uint)(unsafe.Pointer(&nonceBytes[0])),
-			(*C.uint)(unsafe.Pointer(&cycleNoncesBytes[0])),(*C.double)(unsafe.Pointer(&this.average[0])),&solverCtx,(*C.uchar)(unsafe.Pointer(&targetBytes[0])))
+			(*C.uint)(unsafe.Pointer(&cycleNoncesBytes[0])),(*C.double)(unsafe.Pointer(&this.average[0])),&this.solverCtx,(*C.uchar)(unsafe.Pointer(&targetBytes[0])))
 
 		if this.average[0] > 0 {
 			if this.averageJ == 10{
@@ -217,9 +216,9 @@ func (this *CudaCuckaroo)CardRun() bool{
 			}
 			return false
 		case <- this.StopTaskChan:
-			if solverCtx != nil{
+			if this.solverCtx != nil{
 				common.MinerLoger.Debug("================exit cuda  because new task===========","minerID",this.MinerId)
-				C.stop_solver(solverCtx)
+				C.stop_solver(this.solverCtx)
 				this.average[0] = 0
 			}
 		}
