@@ -428,7 +428,7 @@ func (s *QitmeerStratum) Unmarshal(blob []byte) (interface{}, error) {
 			}
 			nres.CleanJobs = cleanJobs
 		} else{ //add mheight
-			mheight, ok := resi[10].(int)
+			mheight, ok := resi[10].(float64)
 			if !ok {
 				return nil, core.ErrJsonType
 			}
