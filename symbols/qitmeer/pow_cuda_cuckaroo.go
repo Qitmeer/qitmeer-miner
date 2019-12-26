@@ -1,4 +1,4 @@
-/**+build cuda,!opencl**/
+//+build cuda,!opencl
 
 /**
 Qitmeer
@@ -8,6 +8,7 @@ package qitmeer
 /*
 #cgo LDFLAGS: -L../../lib/cuda
 #cgo LDFLAGS: -lcudacuckoo
+#cgo CFLAGS: -g -O3 -fno-stack-protector
 #include "../../lib/cuckoo.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -113,19 +114,19 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 			if isFirst{
 				work <- w
 				isFirst = false
-			}
-			cwork := w.(*QitmeerWork)
-			if cwork.Block.Height != common.CurrentHeight && uint64(cwork.stra.PoolWork.Height) != common.CurrentHeight{
 				continue
 			}
-			common.TimeoutRun(10*time.Microsecond, func() {
-				work <- w
-			}, func() {
-				if this.GetIsRunning(){
-					this.StopTaskChan <- true
-				}
-				work <- w
-			})
+			cwork := w.(*QitmeerWork)
+			if this.Pool && uint64(cwork.stra.PoolWork.Height) != common.CurrentHeight{
+				continue
+			}
+			if !this.Pool && cwork.Block.Height != common.CurrentHeight {
+				continue
+			}
+			if this.GetIsRunning(){
+				this.StopTaskChan <- true
+			}
+			work <- w
 		case <-this.Quit:
 			return
 		case <-c:
