@@ -36,6 +36,7 @@ type BaseDevice interface {
 	GetMinerType() string
 	SubmitShare(substr chan string)
 	StopTask()
+	GetIsRunning() bool
 }
 type Device struct{
 	Cfg *common.GlobalConfig  //must init
@@ -69,6 +70,7 @@ type Device struct{
 	MiningType        string
 	Event *cl.Event
 	StopTaskChan chan bool
+	IsRunning bool
 }
 
 func (this *Device)Init(i int,device *cl.Device,pool bool,q chan os.Signal,cfg *common.GlobalConfig)  {
@@ -89,6 +91,10 @@ func (this *Device)Init(i int,device *cl.Device,pool bool,q chan os.Signal,cfg *
 
 func (this *Device)GetIsValid() bool {
 	return this.IsValid
+}
+
+func (this *Device)GetIsRunning() bool {
+	return this.IsRunning
 }
 
 func (this *Device)SetNewWork(work BaseWork) {
@@ -230,7 +236,6 @@ func (this *Device) SubmitShare(substr chan string) {
 		return
 	}
 	for {
-		common.MinerLoger.Debug("===============================Listen Submit")
 		select {
 		case <-this.Quit:
 			return

@@ -25,7 +25,6 @@ typedef u64 nonce_t;
 #define NNODES ((node_t)1 << NODEBITS)
 #define NODEMASK (NNODES - 1)
 
-static int DID = 0;
 const u32 NX			= 1 << XBITS;
 const u32 NX2		 = NX * NX;
 const u32 XMASK		= NX - 1;
@@ -309,10 +308,8 @@ __global__ void Tail(const uint2 *source, uint2 *destination, const u32 *srcIdx,
 #define checkCudaErrors(ans) (gpuAssert((ans), __FILE__, __LINE__) != cudaSuccess)
 
 inline int gpuAssert(cudaError_t code, const char *file, int line, bool abort=true) {
-	int device_id = DID;
-	cudaGetDevice(&device_id);
 	if (code != cudaSuccess) {
-	 snprintf(LAST_ERROR_REASON, MAX_NAME_LEN, "Device %d GPUassert: %s %s %d", device_id, cudaGetErrorString(code), file, line);
+	 snprintf(LAST_ERROR_REASON, MAX_NAME_LEN, "Device GPUassert: %s %s %d", cudaGetErrorString(code), file, line);
 	 cudaDeviceReset();
 	 if (abort) return code;
 	}
@@ -393,7 +390,12 @@ struct edgetrimmer {
 	bool initsuccess = false;
 
 	edgetrimmer(const trimparams _tp) : tp(_tp) {
-	 if checkCudaErrors_V(cudaMalloc((void**)&dt, sizeof(edgetrimmer))) return;
+	 if checkCudaErrors_V(cudaMalloc((void**)&dt, sizeof(edgetrimmer))){
+		print_log("=============edgetrimmer stop because memcpy out of memory==============");
+		cudaDeviceReset();
+		abort = true;
+		return;
+	 }
 	 if checkCudaErrors_V(cudaMalloc((void**)&uvnodes, PROOFSIZE * 2 * sizeof(u32))) return;
 	 if checkCudaErrors_V(cudaMalloc((void**)&dipkeys, sizeof(siphash_keys))) return;
 	 for (int i = 0; i < 1+NB; i++) {
@@ -414,7 +416,18 @@ struct edgetrimmer {
 	u64 globalbytes() const {
 	 return (sizeA+sizeB/NB) + (1+NB) * indexesSize + sizeof(siphash_keys) + PROOFSIZE * 2 * sizeof(u32) + sizeof(edgetrimmer);
 	}
+	/**
 	~edgetrimmer() {
+	 if checkCudaErrors_V(cudaFree(bufferA)) return;
+	 for (int i = 0; i < 1+NB; i++) {
+		if checkCudaErrors_V(cudaFree(indexesE[i])) return;
+	 }
+	 if checkCudaErrors_V(cudaFree(dipkeys)) return;
+	 if checkCudaErrors_V(cudaFree(uvnodes)) return;
+	 if checkCudaErrors_V(cudaFree(dt)) return;
+	 cudaDeviceReset();
+	} **/
+	void release() {
 	 if checkCudaErrors_V(cudaFree(bufferA)) return;
 	 for (int i = 0; i < 1+NB; i++) {
 		if checkCudaErrors_V(cudaFree(indexesE[i])) return;
@@ -427,10 +440,12 @@ struct edgetrimmer {
 	u32 trim() {
 	 cudaEvent_t start, stop;
 	 if checkCudaErrors(cudaEventCreate(&start)) return false;
-	 if checkCudaErrors(cudaEventCreate(&stop)) return false;
+	 if checkCudaErrors(cudaEventCreate(&stop)) {
+	    abort = true;
+	    return false;
+	 }
 
 	 cudaMemcpy(dipkeys, &sipkeys, sizeof(sipkeys), cudaMemcpyHostToDevice);
-
 	 cudaDeviceSynchronize();
 	 float durationA, durationB;
 	 cudaEventRecord(start, NULL);
@@ -711,11 +726,11 @@ int run_solver(SolverCtx* ctx,
 	u64 time0, time1;
 	u32 timems;
 	u32 sumnsols = 0;
-	int device_id = DID;
 
 	if (ctx == NULL || !ctx->trimmer.initsuccess){
 	 print_log("Error initialising trimmer. Aborting.\n");
 	 print_log("Reason: %s\n", LAST_ERROR_REASON);
+	 cudaDeviceReset();
 	 return 0;
 	}
 	for (u32 r = 0; r < range; r++) {
@@ -723,16 +738,17 @@ int run_solver(SolverCtx* ctx,
 	    //print_log("\n ***************** stop because new task *******************\n");
 	    return 0;
 	}
+
 	 time0 = timestamp();
 	 ctx->setheadernonce(header, header_length, nonce + r);
 	 u32 nsols = ctx->solve();
 	 time1 = timestamp();
 	 timems = (time1 - time0) / 1000000;
-	 average[0] = 1000.00/(double)timems;
+	 average[r%10] = 1000.00/(double)timems;
 
-	 if( (time1/1000000 /1000) % 15 == 0){
-	    print_log("\n************** [info] # Device %d HashRate:%f GPS **************\n",device_id,average[0]);
-	 }
+	// if( (time1/1000000 /1000) % 15 == 0){
+	//    print_log("\n************** [info] # Device %d HashRate:%f GPS **************\n",DID,average[0]);
+	// }
 
 	 bool isFound = false;
 	 for (unsigned s = 0; s < nsols; s++) {
@@ -843,9 +859,9 @@ void destroy_solver_ctx(SolverCtx* ctx) {
 	delete ctx;
 }
 
-void fill_default_params(SolverParams* params) {
+void fill_default_params(SolverParams* params,int device_id) {
 	trimparams tp;
-	params->device = DID;
+	params->device = device_id;
 	params->ntrims = tp.ntrims;
 	params->expand = tp.expand;
 	params->genablocks = min(tp.genA.blocks, NEDGES/tp.genA.tpb);
@@ -868,35 +884,37 @@ extern "C" {
 #ifdef ISWINDOWS
 	 __declspec(dllexport)
 #endif
-	 int cuda_search(u32 device,unsigned char* input,unsigned int *isFind,unsigned int *Nonce,u32 *CycleNonces,double *average,void **ctxInfo,unsigned char* target){
-			trimparams tp;
-
-			u32 nonce = 0;
-			u32 range = (unsigned int)(1<<32-1);
-			char header[HEADERLEN];
-			memset(header, 0, sizeof(header));
-			memcpy(header,input,HEADERLEN);
-            DID = (int)device;
-			// set defaults
-			SolverParams params;
-			fill_default_params(&params);
-			int nDevices;
-			if checkCudaErrors(cudaGetDeviceCount(&nDevices)) return 36;
-			assert(device < nDevices);
-			cudaDeviceProp prop;
-			if checkCudaErrors(cudaGetDeviceProperties(&prop, device)) return 36;
-			u64 dbytes = prop.totalGlobalMem;
-			int dunit;
-			for (dunit=0; dbytes >= 102400; dbytes>>=10,dunit++) ;
-
-			SolverCtx* ctx = create_solver_ctx(&params);
-            *ctxInfo = ctx;
-			u64 bytes = ctx->trimmer.globalbytes();
-			int unit;
-			for (unit=0; bytes >= 102400; bytes>>=10,unit++) ;
-			ctx->trimmer.abort = false;
-			isFind[0] = run_solver(ctx, header, sizeof(header), nonce, range, NULL,target, Nonce,CycleNonces,average);
-			destroy_solver_ctx(ctx);
-			return 0;
+	 int cuda_search(int device_id,unsigned char* header,unsigned int *isFind,unsigned int *Nonce,u32 *CycleNonces,double *average,void **ctxInfo,unsigned char* target){
+			try{
+			    trimparams tp;
+                			u32 nonce = 0;
+                			u32 range = (unsigned int)(1<<32-1);
+                			// set defaults
+                			SolverParams params;
+                			fill_default_params(&params,device_id);
+                			int nDevices;
+                			if checkCudaErrors(cudaGetDeviceCount(&nDevices)) return 36;
+                			assert(device_id < nDevices);
+                			cudaDeviceProp prop;
+                			if checkCudaErrors(cudaGetDeviceProperties(&prop, device_id)) return 36;
+                			u64 dbytes = prop.totalGlobalMem;
+                			int dunit;
+                			for (dunit=0; dbytes >= 102400; dbytes>>=10,dunit++) ;
+                			SolverCtx* ctx = create_solver_ctx(&params);
+                            *ctxInfo = ctx;
+                			u64 bytes = ctx->trimmer.globalbytes();
+                			int unit;
+                			for (unit=0; bytes >= 102400; bytes>>=10,unit++) ;
+                			ctx->trimmer.abort = false;
+                			isFind[0] = run_solver(ctx, (char *)header, HEADERLEN, nonce, range, NULL,target, Nonce,CycleNonces,average);
+                			//print_log("\n***********# %d destroy_solver_ctx complete release memory***************\n",device_id);
+                			ctx->trimmer.release();
+                	        destroy_solver_ctx(ctx);
+                			return 0;
+			}
+			catch(const std::exception &e){
+			    print_log("\n exit exception !\n");
+			    return 0;
+			}
 	 }
 }

@@ -421,7 +421,7 @@ func (s *QitmeerStratum) Unmarshal(blob []byte) (interface{}, error) {
 		}
 		nres.Ntime = ntime
 
-		if len(resi) <= 10{
+		if len(resi) <= 11{
 			cleanJobs, ok := resi[10].(bool)
 			if !ok {
 				return nil, core.ErrJsonType

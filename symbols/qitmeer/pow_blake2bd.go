@@ -117,7 +117,6 @@ func (this *Blake2bD) Update() {
 }
 
 func (this *Blake2bD) Mine(wg *sync.WaitGroup) {
-	go this.ListenStop()
 	defer wg.Done()
 	defer this.Release()
 	var randNonceBase  uint64
@@ -256,14 +255,3 @@ func (this* Blake2bD) ClearNonceData()  {
 	}
 	this.Event.Release()
 }
-
-func (this *Blake2bD)ListenStop()  {
-	common.MinerLoger.Debug("listen stop work")
-	for{
-		select {
-		case <- this.StopTaskChan:
-
-		}
-	}
-}
-
