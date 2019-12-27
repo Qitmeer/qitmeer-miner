@@ -772,7 +772,7 @@ int run_solver(SolverCtx* ctx,
 			for( int j=0;j<header_length;j++){
 				blockHeader[j] = header[j];
 			}
-			unsigned char edgebits = 29;
+			unsigned char edgebits = EDGEBITS;
 			blockHeader[113] = edgebits;
 			unsigned char * cycleNonce = (unsigned char *)prf;
 			for( int j=0;j<168;j++){
