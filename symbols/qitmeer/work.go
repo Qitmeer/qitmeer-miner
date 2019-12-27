@@ -190,6 +190,7 @@ func (this *QitmeerWork) PoolGet () bool {
 		this.Cfg.OptionConfig.Target = fmt.Sprintf("%064x",common.BlockBitsToTarget(this.stra.PoolWork.Nbits,2))
 		this.PoolWork = this.stra.PoolWork
 		common.CurrentHeight = uint64(this.stra.PoolWork.Height)
+		common.JobID = this.stra.PoolWork.JobID
 		return true
 	}
 
