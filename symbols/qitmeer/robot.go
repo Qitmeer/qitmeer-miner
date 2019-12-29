@@ -81,15 +81,6 @@ func (this *QitmeerRobot)InitDevice()  {
 
 // runing
 func (this *QitmeerRobot)Run() {
-	defer func() {
-		err := recover()
-		switch err.(type) {
-		case runtime.Error: // 运行时错误
-			fmt.Println("runtime error:", err)
-		default: // 非运行时错误
-			fmt.Println("error:", err)
-		}
-	}()
 	this.Wg = &sync.WaitGroup{}
 	this.InitDevice()
 	//mining service
