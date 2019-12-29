@@ -8,7 +8,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
-	"qitmeer-miner/common/socks"
+	"github.com/Qitmeer/qitmeer-miner/common/socks"
 	"strings"
 	"time"
 )

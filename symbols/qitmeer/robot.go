@@ -8,10 +8,9 @@ import (
 	"github.com/Qitmeer/go-opencl/cl"
 	"log"
 	`os`
-	"qitmeer-miner/common"
-	"qitmeer-miner/core"
-	"qitmeer-miner/stats_server"
-	`runtime`
+	"github.com/Qitmeer/qitmeer-miner/common"
+	"github.com/Qitmeer/qitmeer-miner/core"
+	"github.com/Qitmeer/qitmeer-miner/stats_server"
 	"strconv"
 	"strings"
 	"sync"
@@ -81,15 +80,6 @@ func (this *QitmeerRobot)InitDevice()  {
 
 // runing
 func (this *QitmeerRobot)Run() {
-	defer func() {
-		err := recover()
-		switch err.(type) {
-		case runtime.Error: // 运行时错误
-			fmt.Println("runtime error:", err)
-		default: // 非运行时错误
-			fmt.Println("error:", err)
-		}
-	}()
 	this.Wg = &sync.WaitGroup{}
 	this.InitDevice()
 	//mining service

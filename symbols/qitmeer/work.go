@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"github.com/Qitmeer/qitmeer/core/types/pow"
 	`math/big`
-	"qitmeer-miner/common"
-	"qitmeer-miner/core"
+	"github.com/Qitmeer/qitmeer-miner/common"
+	"github.com/Qitmeer/qitmeer-miner/core"
 	"strings"
 	"time"
 )

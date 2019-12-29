@@ -13,8 +13,8 @@ import (
 	`github.com/Qitmeer/qitmeer/core/types/pow`
 	`github.com/Qitmeer/qitmeer/params`
 	"math/big"
-	"qitmeer-miner/common"
-	"qitmeer-miner/core"
+	"github.com/Qitmeer/qitmeer-miner/common"
+	"github.com/Qitmeer/qitmeer-miner/core"
 	"strconv"
 	`strings`
 	"sync/atomic"
@@ -213,7 +213,7 @@ func (s *QitmeerStratum) handleStratumMsg(resp interface{}) {
 		msg := StratumMsg{
 			Method: nResp.Method,
 			ID:     nResp.ID,
-			Params: []string{"qitmeer-miner/v0.0.1" },
+			Params: []string{"github.com/Qitmeer/qitmeer-miner/v0.0.1" },
 		}
 		m, err := json.Marshal(msg)
 		if err != nil {

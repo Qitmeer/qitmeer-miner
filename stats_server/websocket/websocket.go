@@ -6,8 +6,8 @@ import (
 	"github.com/twinj/uuid"
 	"math/big"
 	"net/http"
-	"qitmeer-miner/common"
-	"qitmeer-miner/core"
+	"github.com/Qitmeer/qitmeer-miner/common"
+	"github.com/Qitmeer/qitmeer-miner/core"
 )
 
 type StatsData struct {

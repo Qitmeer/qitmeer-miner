@@ -1,4 +1,4 @@
-module qitmeer-miner
+module github.com/Qitmeer/qitmeer-miner
 
 go 1.12
 

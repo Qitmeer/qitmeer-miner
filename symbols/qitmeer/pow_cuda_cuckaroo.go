@@ -23,8 +23,8 @@ import (
 	"github.com/Qitmeer/qitmeer/core/types/pow"
 	`math`
 	`math/big`
-	"qitmeer-miner/common"
-	"qitmeer-miner/core"
+	"github.com/Qitmeer/qitmeer-miner/common"
+	"github.com/Qitmeer/qitmeer-miner/core"
 	`sort`
 	"sync"
 	"time"
@@ -164,11 +164,6 @@ func (this *CudaCuckaroo)CardRun() bool{
 	}()
 	go func() {
 		defer wg.Done()
-		defer func() {
-			if v := recover();v!=nil {
-				fmt.Printf("v: %#v\n",v)
-			}
-		}()
 		_ = C.cuda_search((C.int)(this.MinerId),(*C.uchar)(unsafe.Pointer(&hData[0])),(*C.uint)(unsafe.Pointer(&resultBytes[0])),(*C.uint)(unsafe.Pointer(&nonceBytes[0])),
 			(*C.uint)(unsafe.Pointer(&cycleNoncesBytes[0])),(*C.double)(unsafe.Pointer(&this.average[0])),&this.solverCtx,(*C.uchar)(unsafe.Pointer(&targetBytes[0])))
 		isFind := binary.LittleEndian.Uint32(resultBytes)

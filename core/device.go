@@ -9,7 +9,7 @@ import (
 	"github.com/Qitmeer/go-opencl/cl"
 	"math"
 	"os"
-	"qitmeer-miner/common"
+	"github.com/Qitmeer/qitmeer-miner/common"
 	"sync"
 	"time"
 )
