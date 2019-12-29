@@ -45,10 +45,10 @@ build/release/%: OS=$(word 3,$(subst /, ,$(@)))
 build/release/%: ARCH=$(word 4,$(subst /, ,$(@)))
 build/release/%/$(EXECUTABLE):
 	@echo Build $(@)
-	@GOOS=$(OS) GOARCH=$(ARCH) go build $(GOFLAGS_RELEASE) -o $(@) "github.com/Qitmeer/qitmeer-miner"
+	go build $(GOFLAGS_RELEASE) -o $(@) -tags $(TAGS) "github.com/Qitmeer/qitmeer-miner"
 build/release/%/$(EXECUTABLE).exe:
 	@echo Build $(@)
-	@GOOS=$(OS) GOARCH=$(ARCH) go build $(GOFLAGS_RELEASE) -o $(@) "github.com/Qitmeer/qitmeer-miner"
+	go build $(GOFLAGS_RELEASE) -o $(@) -tags $(TAGS) "github.com/Qitmeer/qitmeer-miner"
 
 %.zip: %.exe
 	@echo zip $(EXECUTABLE)-$(VERSION)-$(OS)-$(ARCH)
