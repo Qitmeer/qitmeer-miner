@@ -261,10 +261,10 @@ calcAverageHash:
 					if i == j || this.average[j] <= 0 {
 						continue
 					}
-					if math.Abs(float64(this.average[i] - this.average[j]))<0.5{
+					if math.Abs(float64(this.average[i] - this.average[j]))<2{
 						count++
 					}
-					if count >= 6{
+					if count >= 4{
 						this.AverageHashRate = this.average[i]
 						break calcAverageHash
 					}
