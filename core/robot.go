@@ -6,7 +6,7 @@ package core
 import (
 	"github.com/Qitmeer/go-opencl/cl"
 	"os"
-	"qitmeer-miner/common"
+	"github.com/Qitmeer/qitmeer-miner/common"
 	"strings"
 	"sync"
 )

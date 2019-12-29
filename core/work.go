@@ -4,7 +4,7 @@
 package core
 
 import (
-	"qitmeer-miner/common"
+	"github.com/Qitmeer/qitmeer-miner/common"
 	"sync"
 	"os"
 )

@@ -14,7 +14,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"qitmeer-miner/common/go-flags"
+	"github.com/Qitmeer/qitmeer-miner/common/go-flags"
 	`runtime`
 	"strings"
 )
@@ -271,7 +271,7 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 	}
 
 	if deviceCfg.Version{
-		fmt.Printf("Qitmeer Miner Version:%s(Go version %s)\n",GetVersion(),runtime.Version())
+		fmt.Printf(GetVersion())
 		os.Exit(0)
 	}
 
@@ -379,7 +379,9 @@ func InitNet(network string,p *params.Params) *params.Params {
 }
 
 func GetVersion() string {
-	return version
+	appName := filepath.Base(os.Args[0])
+	appName = strings.TrimSuffix(appName, filepath.Ext(appName))
+	return fmt.Sprintf("%s version %s (Go version %s)\n", appName, String(), runtime.Version())
 }
 
 

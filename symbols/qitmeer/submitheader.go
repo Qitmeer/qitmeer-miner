@@ -8,7 +8,7 @@ import (
 	"github.com/Qitmeer/qitmeer/core/types"
 	"github.com/Qitmeer/qitmeer/core/types/pow"
 	"math/big"
-	"qitmeer-miner/common"
+	"github.com/Qitmeer/qitmeer-miner/common"
 	"time"
 )
 

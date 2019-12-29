@@ -6,8 +6,8 @@ import (
 	"errors"
 	`github.com/Qitmeer/qitmeer/core/types/pow`
 	"net"
-	"qitmeer-miner/common"
-	"qitmeer-miner/common/socks"
+	"github.com/Qitmeer/qitmeer-miner/common"
+	"github.com/Qitmeer/qitmeer-miner/common/socks"
 	"strings"
 	"sync"
 	"time"
@@ -178,7 +178,7 @@ func (s *Stratum) Subscribe() error {
 	msg := StratumMsg{
 		Method: "mining.subscribe",
 		ID:     s.ID,
-		Params: []string{"qitmeer-miner/v0.0.1"},
+		Params: []string{"github.com/Qitmeer/qitmeer-miner/v0.0.1"},
 	}
 	s.SubID = msg.ID.(uint64)
 	s.ID++

@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"qitmeer-miner/common"
-	"qitmeer-miner/core"
-	"qitmeer-miner/stats_server/websocket"
+	"github.com/Qitmeer/qitmeer-miner/common"
+	"github.com/Qitmeer/qitmeer-miner/core"
+	"github.com/Qitmeer/qitmeer-miner/stats_server/websocket"
 	"strconv"
 	"strings"
 )

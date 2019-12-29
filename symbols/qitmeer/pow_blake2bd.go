@@ -14,9 +14,9 @@ import (
 	`github.com/Qitmeer/qitmeer/core/types`
 	"github.com/Qitmeer/qitmeer/core/types/pow"
 	"math/big"
-	"qitmeer-miner/common"
-	"qitmeer-miner/core"
-	"qitmeer-miner/kernel"
+	"github.com/Qitmeer/qitmeer-miner/common"
+	"github.com/Qitmeer/qitmeer-miner/core"
+	"github.com/Qitmeer/qitmeer-miner/kernel"
 	"sync"
 	`sync/atomic`
 	"time"

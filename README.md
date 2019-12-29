@@ -20,7 +20,7 @@ Currently it support 3 Qitmeer POW algorithms including Cuckaroo, Cuckatoo and B
 
 ## Install
 
-[![Releases](https://img.shields.io/github/downloads/Qitmeer/qitmeer-miner/total.svg)][Releases]
+[![Releases](https://img.shields.io/github/downloads/Qitmeer/github.com/Qitmeer/qitmeer-miner/total.svg)][Releases]
 
 Standalone installation archive for *Linux*, *macOS* and *Windows* are provided in
 the [Releases] section. 
@@ -29,7 +29,7 @@ accessible from command line.
 
 | Builds | Release | Date |
 | ------ | ------- | ---- |
-| Last   | [![GitHub release](https://img.shields.io/github/release/Qitmeer/qitmeer-miner/all.svg)][Releases] | [![GitHub Release Date](https://img.shields.io/github/release-date-pre/Qitmeer/qitmeer-miner.svg)][Releases] |
+| Last   | [![GitHub release](https://img.shields.io/github/release/Qitmeer/github.com/Qitmeer/qitmeer-miner/all.svg)][Releases] | [![GitHub Release Date](https://img.shields.io/github/release-date-pre/Qitmeer/qitmeer-miner.svg)][Releases] |
 | Stable | [![GitHub release](https://img.shields.io/github/release/Qitmeer/qitmeer-miner.svg)][latest] | [![GitHub Release Date](https://img.shields.io/github/release-date/Qitmeer/qitmeer-miner.svg)][latest] |
 
 ## Usage
@@ -102,7 +102,7 @@ Help Options:
   -h, --help           Show this help message
  
 ```
-Please see [Qitmeer-Miner User References](https://qitmeer.github.io/docs/en/reference/qitmeer-miner/) for more details
+Please see [Qitmeer-Miner User References](https://qitmeer.github.io/docs/en/reference/github.com/Qitmeer/qitmeer-miner/) for more details
 
 ## Build
 ### Building from source
@@ -112,7 +112,7 @@ See [BUILD.md](BUILD.md) for build/compilation details.
 
 ### Community Tutorials
 
-* Chinese [中文教程：windows系统qitmeer-miner编译及环境准备指导](https://github.com/Qitmeer/qitmeer-miner/issues/88)
+* Chinese [中文教程：windows系统qitmeer-miner编译及环境准备指导](https://github.com/Qitmeer/github.com/Qitmeer/qitmeer-miner/issues/88)
 * Chinese [Qitmeer挖矿终极指南 https://www.qitmeertalk.org/t/qitmeer-2019-11-02/906](https://www.qitmeertalk.org/t/qitmeer-2019-11-02/906)
 
 ## FAQ
@@ -126,10 +126,10 @@ Qitmeer test network support mixing minning, which means your can choice from `C
 But the start difficulty targets are quite different. For the most case you might use `Cuckaroo` as a safe choice at the beginning. 
 
 ### Where I can find more documentation ? 
-Please find more documentation from the [Qitmeer doc site at https://qitmeer.github.io](https://qitmeer.github.io/docs/en/reference/qitmeer-miner/)
+Please find more documentation from the [Qitmeer doc site at https://qitmeer.github.io](https://qitmeer.github.io/docs/en/reference/github.com/Qitmeer/qitmeer-miner/)
 
-[Releases]: https://github.com/Qitmeer/qitmeer-miner/releases
-[Latest]: https://github.com/Qitmeer/qitmeer-miner/releases/latest
+[Releases]: https://github.com/Qitmeer/github.com/Qitmeer/qitmeer-miner/releases
+[Latest]: https://github.com/Qitmeer/github.com/Qitmeer/qitmeer-miner/releases/latest
 [Qx]: https://qitmeer.github.io/docs/en/reference/qxtools/
 [Qitmeer-wallet]: https://github.com/Qitmeer/qitmeer-wallet
 [Kafh.io]:https://www.kahf.io/

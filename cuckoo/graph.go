@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	cuckaroo "github.com/Qitmeer/qitmeer/crypto/cuckoo"
-	"qitmeer-miner/common"
+	"github.com/Qitmeer/qitmeer-miner/common"
 )
 
 type paths struct {

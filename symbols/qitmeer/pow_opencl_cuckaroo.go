@@ -7,8 +7,8 @@ james
 package qitmeer
 import (
 	`os`
-	"qitmeer-miner/common"
-	"qitmeer-miner/core"
+	"github.com/Qitmeer/qitmeer-miner/common"
+	"github.com/Qitmeer/qitmeer-miner/core"
 	"sync"
 )
 

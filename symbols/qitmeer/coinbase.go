@@ -11,7 +11,7 @@ import (
 	"github.com/Qitmeer/qitmeer/engine/txscript"
 	"github.com/Qitmeer/qitmeer/params"
 	"github.com/google/uuid"
-	"qitmeer-miner/common"
+	"github.com/Qitmeer/qitmeer-miner/common"
 	"sort"
 )
 

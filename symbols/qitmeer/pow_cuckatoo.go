@@ -25,9 +25,9 @@ import (
 	"github.com/Qitmeer/qitmeer/crypto/cuckoo"
 	"github.com/Qitmeer/qitmeer/crypto/cuckoo/siphash"
 	"math/big"
-	"qitmeer-miner/common"
-	"qitmeer-miner/core"
-	"qitmeer-miner/kernel"
+	"github.com/Qitmeer/qitmeer-miner/common"
+	"github.com/Qitmeer/qitmeer-miner/core"
+	"github.com/Qitmeer/qitmeer-miner/kernel"
 	"sort"
 	`strings`
 	"sync"
