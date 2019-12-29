@@ -772,7 +772,7 @@ int run_solver(SolverCtx* ctx,
 			for( int j=0;j<header_length;j++){
 				blockHeader[j] = header[j];
 			}
-			unsigned char edgebits = 29;
+			unsigned char edgebits = EDGEBITS;
 			blockHeader[113] = edgebits;
 			unsigned char * cycleNonce = (unsigned char *)prf;
 			for( int j=0;j<168;j++){
@@ -886,7 +886,6 @@ extern "C" {
 #endif
 	 int cuda_search(int device_id,unsigned char* header,unsigned int *isFind,unsigned int *Nonce,u32 *CycleNonces,double *average,void **ctxInfo,unsigned char* target){
 			try{
-			    trimparams tp;
                 			u32 nonce = 0;
                 			u32 range = (unsigned int)(1<<32-1);
                 			// set defaults
@@ -897,22 +896,25 @@ extern "C" {
                 			assert(device_id < nDevices);
                 			cudaDeviceProp prop;
                 			if checkCudaErrors(cudaGetDeviceProperties(&prop, device_id)) return 36;
-                			u64 dbytes = prop.totalGlobalMem;
-                			int dunit;
-                			for (dunit=0; dbytes >= 102400; dbytes>>=10,dunit++) ;
+                			//u64 dbytes = prop.totalGlobalMem;
+                			//int dunit;
+                			//for (dunit=0; dbytes >= 102400; dbytes>>=10,dunit++) ;
                 			SolverCtx* ctx = create_solver_ctx(&params);
                             *ctxInfo = ctx;
-                			u64 bytes = ctx->trimmer.globalbytes();
-                			int unit;
-                			for (unit=0; bytes >= 102400; bytes>>=10,unit++) ;
+                			//u64 bytes = ctx->trimmer.globalbytes();
+                			//int unit;
+                			//for (unit=0; bytes >= 102400; bytes>>=10,unit++) ;
                 			ctx->trimmer.abort = false;
                 			isFind[0] = run_solver(ctx, (char *)header, HEADERLEN, nonce, range, NULL,target, Nonce,CycleNonces,average);
                 			//print_log("\n***********# %d destroy_solver_ctx complete release memory***************\n",device_id);
+                			if(ctx->trimmer.dt != NULL){
                 			ctx->trimmer.release();
+                			}
+
                 	        destroy_solver_ctx(ctx);
                 			return 0;
 			}
-			catch(const std::exception &e){
+			catch(...){
 			    print_log("\n exit exception !\n");
 			    return 0;
 			}

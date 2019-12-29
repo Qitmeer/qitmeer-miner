@@ -151,6 +151,9 @@ func (this *CudaCuckaroo)CardRun() bool{
 	if this.header.Height != common.CurrentHeight{
 		return false
 	}
+	if this.Pool {
+		common.MinerLoger.Debug(fmt.Sprintf("===============#%d:%s:%s:%s",this.MinerId,this.Work.stra.PoolWork.JobID,this.header.JobID,common.JobID))
+	}
 	common.MinerLoger.Debug(fmt.Sprintf("========================== # %d card begin work height:%d of %d===================",this.MinerId,this.header.Height,common.CurrentHeight))
 	var wg= new(sync.WaitGroup)
 	c := make(chan interface{})
@@ -161,6 +164,11 @@ func (this *CudaCuckaroo)CardRun() bool{
 	}()
 	go func() {
 		defer wg.Done()
+		defer func() {
+			if v := recover();v!=nil {
+				fmt.Printf("v: %#v\n",v)
+			}
+		}()
 		_ = C.cuda_search((C.int)(this.MinerId),(*C.uchar)(unsafe.Pointer(&hData[0])),(*C.uint)(unsafe.Pointer(&resultBytes[0])),(*C.uint)(unsafe.Pointer(&nonceBytes[0])),
 			(*C.uint)(unsafe.Pointer(&cycleNoncesBytes[0])),(*C.double)(unsafe.Pointer(&this.average[0])),&this.solverCtx,(*C.uchar)(unsafe.Pointer(&targetBytes[0])))
 		isFind := binary.LittleEndian.Uint32(resultBytes)
@@ -253,10 +261,10 @@ calcAverageHash:
 					if i == j || this.average[j] <= 0 {
 						continue
 					}
-					if math.Abs(float64(this.average[i] - this.average[j]))<0.5{
+					if math.Abs(float64(this.average[i] - this.average[j]))<2{
 						count++
 					}
-					if count >= 6{
+					if count >= 4{
 						this.AverageHashRate = this.average[i]
 						break calcAverageHash
 					}

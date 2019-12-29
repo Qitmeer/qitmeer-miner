@@ -24,6 +24,7 @@ const (
 )
 
 var CurrentHeight = uint64(0)
+var JobID = ""
 
 var (
 	minerHomeDir          = GetCurrentDir()
