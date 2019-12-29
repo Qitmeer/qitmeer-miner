@@ -72,6 +72,5 @@ checksum: checkversion
 clean:
 	@rm -f *.zip
 	@rm -f *.tar.gz
-	@rm -f ./build/bin/qx
-	@rm -f ./build/bin/qitmeer
+	@rm -f ./build/bin/qitmeer-miner
 	@rm -rf ./build/release

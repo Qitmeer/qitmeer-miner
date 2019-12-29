@@ -11,7 +11,6 @@ import (
 	"github.com/Qitmeer/qitmeer-miner/common"
 	"github.com/Qitmeer/qitmeer-miner/core"
 	"github.com/Qitmeer/qitmeer-miner/stats_server"
-	`runtime`
 	"strconv"
 	"strings"
 	"sync"
