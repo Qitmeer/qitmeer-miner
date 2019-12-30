@@ -49,10 +49,12 @@ build/release/%/$(EXECUTABLE):
 build/release/%/$(EXECUTABLE).exe:
 	@echo Build $(@)
 	go build $(GOFLAGS_RELEASE) -o $(@) -tags $(TAGS) "github.com/Qitmeer/qitmeer-miner"
-
 %.zip: %.exe
 	@echo zip $(EXECUTABLE)-$(VERSION)-$(OS)-$(ARCH)
-	@zip -j $(EXECUTABLE)-$(VERSION)-$(OS)-$(ARCH).zip "$<" mining.bat example.solo.conf example.pool.conf
+	@cp example.solo.conf solo.conf
+	@cp example.pool.conf pool.conf
+	@sh installLibrary.sh
+	@zip -j $(EXECUTABLE)-$(VERSION)-$(OS)-$(ARCH).zip "$<" libcudacuckoo.so libcuckoo.so cuckoo.dll cudacuckoo.dll libcuckoo.dylib mining.bat solo.conf pool.conf
 
 %.tar.gz : %
 	@echo tar $(EXECUTABLE)-$(VERSION)-$(OS)-$(ARCH)

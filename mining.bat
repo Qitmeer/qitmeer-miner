@@ -45,7 +45,7 @@ rem 定义循环体
 
    rem 用ping命令来实现延时运行
 
-   for /l %%i in (1,1,10) do %CMDPATH%\ping -n 1 -w 1000 168.20.0.1>nul
+   for /l %%i in (1,1,10) do %CMDPATH%\ping.exe -n 1 -w 1000 168.20.0.1>nul
 
    goto startjc
 

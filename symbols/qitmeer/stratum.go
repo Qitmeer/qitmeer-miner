@@ -257,7 +257,7 @@ func (s *QitmeerStratum) handleNotifyRes(resp interface{}) {
 		common.MinerLoger.Error(err.Error())
 	}
 	//sync the pool base difficulty
-	s.Target, _ = common.DiffToTarget(s.Diff, s.CalcBasePowLimit())
+	s.Target, _ = common.DiffToTarget(s.Diff, s.CalcBasePowLimit(),s.PowType)
 	s.PoolWork.Ntime = nResp.Ntime
 	s.PoolWork.NtimeDelta = parsedNtime - time.Now().Unix()
 	s.PoolWork.Clean = nResp.CleanJobs
@@ -455,7 +455,7 @@ func (s *QitmeerStratum) Unmarshal(blob []byte) (interface{}, error) {
 			return nil, core.ErrJsonType
 		}
 		powLimit := s.CalcBasePowLimit()
-		s.Target, err = common.DiffToTarget(difficulty, powLimit)
+		s.Target, err = common.DiffToTarget(difficulty, powLimit,s.PowType)
 		if err != nil {
 			return nil, err
 		}

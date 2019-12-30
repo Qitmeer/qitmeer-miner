@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	qitmeer "github.com/Qitmeer/qitmeer/common/hash"
+	`github.com/Qitmeer/qitmeer/core/types/pow`
 	"log"
 	"math"
 	"math/big"
@@ -126,7 +127,7 @@ func ReverseByWidth(s []byte,width int ) []byte {
 	return newS
 }
 
-func DiffToTarget(diff float64, powLimit *big.Int) (*big.Int, error) {
+func DiffToTarget(diff float64, powLimit *big.Int,powType pow.PowType) (*big.Int, error) {
 	if diff <= 0 {
 		return nil, fmt.Errorf("invalid pool difficulty %v (0 or less than "+
 			"zero passed)", diff)
@@ -142,7 +143,11 @@ func DiffToTarget(diff float64, powLimit *big.Int) (*big.Int, error) {
 	divisor := new(big.Int).SetInt64(int64(diff))
 	max := powLimit
 	target := new(big.Int)
-	target.Div(max, divisor)
+	if powType == pow.BLAKE2BD{
+		target.Div(max, divisor)
+	} else{
+		target.Div(divisor,max )
+	}
 
 	return target, nil
 }
