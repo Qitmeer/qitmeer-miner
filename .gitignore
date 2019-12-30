@@ -30,3 +30,7 @@ linux-miner.zip
 mac-miner.zip
 win-miner.zip
 libcuckoo.zip
+.DS_Store
+*.zip
+*.tar.gz
+*_checksum.txt
