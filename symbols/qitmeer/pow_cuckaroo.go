@@ -383,6 +383,7 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 			copy(subData[:113],hData[:113])
 			h := hash.DoubleHashH(subData)
 			graphWeight := CuckarooGraphWeight(int64(this.header.Height),int64(this.Cfg.OptionConfig.BigGraphStartHeight),uint(this.EdgeBits))
+			fmt.Println("target:",this.header.TargetDiff,"pow.CalcCuckooDiff(graphWeight,h)",pow.CalcCuckooDiff(graphWeight,h))
 			if pow.CalcCuckooDiff(graphWeight,h).Cmp(this.header.TargetDiff) < 0{
 				continue
 			}
