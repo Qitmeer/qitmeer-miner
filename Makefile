@@ -22,7 +22,7 @@ WIN_EXECUTABLES := \
 
 EXECUTABLES=$(UNIX_EXECUTABLES) $(WIN_EXECUTABLES)
 	
-COMPRESSED_EXECUTABLES=$(UNIX_EXECUTABLES:%=%.tar.gz) $(WIN_EXECUTABLES:%.exe=%.zip) $(WIN_EXECUTABLES:%.exe=%.cn.zip)
+COMPRESSED_EXECUTABLES=$(UNIX_EXECUTABLES:%=%.tar.gz) $(WIN_EXECUTABLES:%.exe=%.zip)
 
 RELEASE_TARGETS=$(EXECUTABLES) $(COMPRESSED_EXECUTABLES)
 
@@ -52,12 +52,7 @@ build/release/%/$(EXECUTABLE).exe:
 
 %.zip: %.exe
 	@echo zip $(EXECUTABLE)-$(VERSION)-$(OS)-$(ARCH)
-	@zip $(EXECUTABLE)-$(VERSION)-$(OS)-$(ARCH).zip "$<"
-
-%.cn.zip: %.exe
-	@echo Build $(@).cn.zip
-	@echo zip $(EXECUTABLE)-$(VERSION)-$(OS)-$(ARCH)
-	@zip -j $(EXECUTABLE)-$(VERSION)-$(OS)-$(ARCH).cn.zip "$<" script/win/start.bat
+	@zip -j $(EXECUTABLE)-$(VERSION)-$(OS)-$(ARCH).zip "$<" mining.bat example.solo.conf example.pool.conf
 
 %.tar.gz : %
 	@echo tar $(EXECUTABLE)-$(VERSION)-$(OS)-$(ARCH)
