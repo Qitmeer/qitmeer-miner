@@ -416,7 +416,7 @@ struct edgetrimmer {
 	u64 globalbytes() const {
 	 return (sizeA+sizeB/NB) + (1+NB) * indexesSize + sizeof(siphash_keys) + PROOFSIZE * 2 * sizeof(u32) + sizeof(edgetrimmer);
 	}
-	/**
+
 	~edgetrimmer() {
 	 if checkCudaErrors_V(cudaFree(bufferA)) return;
 	 for (int i = 0; i < 1+NB; i++) {
@@ -426,7 +426,8 @@ struct edgetrimmer {
 	 if checkCudaErrors_V(cudaFree(uvnodes)) return;
 	 if checkCudaErrors_V(cudaFree(dt)) return;
 	 cudaDeviceReset();
-	} **/
+	}
+	/**
 	void release() {
 	 if checkCudaErrors_V(cudaFree(bufferA)) return;
 	 for (int i = 0; i < 1+NB; i++) {
@@ -436,7 +437,7 @@ struct edgetrimmer {
 	 if checkCudaErrors_V(cudaFree(uvnodes)) return;
 	 if checkCudaErrors_V(cudaFree(dt)) return;
 	 cudaDeviceReset();
-	}
+	} **/
 	u32 trim() {
 	 cudaEvent_t start, stop;
 	 if checkCudaErrors(cudaEventCreate(&start)) return false;
@@ -711,113 +712,7 @@ struct solver_ctx {
 
 typedef solver_ctx SolverCtx;
 
-int run_solver(SolverCtx* ctx,
-										 char* header,
-										 int header_length,
-										 u32 nonce,
-										 u32 range,
-										 SolverSolutions *solutions,
-									unsigned char* target,
-								unsigned int * Nonce,
-								unsigned int * cycleNonces,
-								double *average
-										 )
-{
-	u64 time0, time1;
-	u32 timems;
-	u32 sumnsols = 0;
 
-	if (ctx == NULL || !ctx->trimmer.initsuccess){
-	 print_log("Error initialising trimmer. Aborting.\n");
-	 print_log("Reason: %s\n", LAST_ERROR_REASON);
-	 cudaDeviceReset();
-	 return 0;
-	}
-	for (u32 r = 0; r < range; r++) {
-	if(ctx->trimmer.abort){
-	    //print_log("\n ***************** stop because new task *******************\n");
-	    return 0;
-	}
-
-	 time0 = timestamp();
-	 ctx->setheadernonce(header, header_length, nonce + r);
-	 u32 nsols = ctx->solve();
-	 time1 = timestamp();
-	 timems = (time1 - time0) / 1000000;
-	 average[r%10] = 1000.00/(double)timems;
-
-	// if( (time1/1000000 /1000) % 15 == 0){
-	//    print_log("\n************** [info] # Device %d HashRate:%f GPS **************\n",DID,average[0]);
-	// }
-
-	 bool isFound = false;
-	 for (unsigned s = 0; s < nsols; s++) {
-		u32* prf = &ctx->sols[s * PROOFSIZE];
-		for (u32 i = 0; i < PROOFSIZE; i++){
-		    cycleNonces[i] = (unsigned int)prf[i];
-		}
-		if (solutions != NULL){
-			solutions->edge_bits = EDGEBITS;
-			solutions->num_sols++;
-			solutions->sols[sumnsols+s].nonce = nonce + r;
-			for (u32 i = 0; i < PROOFSIZE; i++)
-			 solutions->sols[sumnsols+s].proof[i] = (u64) prf[i];
-		}
-		int pow_rc = verify(prf, &ctx->trimmer.sipkeys);
-		if (pow_rc == POW_OK) {
-			Nonce[0] = nonce+r;
-			unsigned char cyclehash[32];
-			unsigned char cyclehashd[32];
-			unsigned char blockHeader[282]; // 113 + 1 + 168
-			for( int j=0;j<header_length;j++){
-				blockHeader[j] = header[j];
-			}
-			unsigned char edgebits = EDGEBITS;
-			blockHeader[113] = edgebits;
-			unsigned char * cycleNonce = (unsigned char *)prf;
-			for( int j=0;j<168;j++){
-            	blockHeader[j+114] = cycleNonce[j];
-            }
-            /**
-            print_log("\n cuda block header: # %d",DID);
-                        				for( int j=0;j<282;j++){
-                                    				print_log("%02x",(unsigned)(unsigned char)blockHeader[j] & 0xffU);
-                                    			}
-                                    			print_log("\n");
-            **/
-			blake2b((void *)cyclehash, sizeof(cyclehash), (const void *)blockHeader, sizeof(blockHeader), 0, 0);
-			blake2b((void *)cyclehashd, sizeof(cyclehashd), (const void *)cyclehash, sizeof(cyclehash), 0, 0);
-        /**
-				print_log("\n # %d block hash:",DID);
-            				for( int j=0;j<32;j++){
-                        				print_log("%02x", (unsigned)(unsigned char)cyclehashd[31-j] & 0xffU);
-                        			}
-                        			print_log("\n");
-            **/
-
-			for( int j=0;j<32;j++){
-				if(cyclehashd[31-j]<target[j]){
-					isFound = true;
-					break;
-				} else if(cyclehashd[31-j]>target[j]){
-				    //print_log("\n************** [info] # Found 42-cycles ,But difficulty is not match! **************\n");
-					isFound = false;
-					nsols--;
-					break;
-				}
-			}
-			if(isFound) break;
-		} else {
-			print_log("FAILED due to %s\n", errstr[pow_rc]);
-		}
-	 }
-	 sumnsols += nsols;
-	 if(isFound){
-			break;
-	 }
-	}
-	return sumnsols;
-}
 
 SolverCtx* create_solver_ctx(SolverParams* params) {
 	trimparams tp;
@@ -874,45 +769,141 @@ void fill_default_params(SolverParams* params,int device_id) {
 	params->cpuload = false;
 }
 extern "C" {
+
+#ifdef ISWINDOWS
+	 __declspec(dllexport)
+#endif
+int run_solver(void* ctxInfo,
+				char* header,
+				int header_length,
+				u32 nonce,
+				u32 range,
+				unsigned char* target,
+				unsigned int * Nonce,
+				unsigned int * cycleNonces,
+				double *average
+	)
+{
+	u64 time0, time1;
+	u32 timems;
+	u32 sumnsols = 0;
+	SolverCtx * ctx = (SolverCtx *)ctxInfo;
+	ctx->trimmer.abort = true;
+	if (ctx == NULL || !ctx->trimmer.initsuccess){
+	 print_log("Error initialising trimmer. Aborting.\n");
+	 print_log("Reason: %s\n", LAST_ERROR_REASON);
+	 cudaDeviceReset();
+	 return 0;
+	}
+	for (u32 r = 0; r < range; r++) {
+	if(ctx->trimmer.abort){
+	    //print_log("\n ***************** stop because new task *******************\n");
+	    return 0;
+	}
+
+	 time0 = timestamp();
+	 ctx->setheadernonce(header, header_length, nonce + r);
+	 u32 nsols = ctx->solve();
+	 time1 = timestamp();
+	 timems = (time1 - time0) / 1000000;
+	 average[r%10] = 1000.00/(double)timems;
+
+	// if( (time1/1000000 /1000) % 15 == 0){
+	//    print_log("\n************** [info] # Device %d HashRate:%f GPS **************\n",DID,average[0]);
+	// }
+
+	 bool isFound = false;
+	 for (unsigned s = 0; s < nsols; s++) {
+		u32* prf = &ctx->sols[s * PROOFSIZE];
+		for (u32 i = 0; i < PROOFSIZE; i++){
+		    cycleNonces[i] = (unsigned int)prf[i];
+		}
+		int pow_rc = verify(prf, &ctx->trimmer.sipkeys);
+		if (pow_rc == POW_OK) {
+			Nonce[0] = nonce+r;
+			unsigned char cyclehash[32];
+			unsigned char cyclehashd[32];
+			unsigned char blockHeader[282]; // 113 + 1 + 168
+			for( int j=0;j<header_length;j++){
+				blockHeader[j] = header[j];
+			}
+			unsigned char edgebits = EDGEBITS;
+			blockHeader[113] = edgebits;
+			unsigned char * cycleNonce = (unsigned char *)prf;
+			for( int j=0;j<168;j++){
+  	blockHeader[j+114] = cycleNonce[j];
+  }
+  /**
+  print_log("\n cuda block header: # %d",DID);
+    				for( int j=0;j<282;j++){
+ 				print_log("%02x",(unsigned)(unsigned char)blockHeader[j] & 0xffU);
+ 			}
+ 			print_log("\n");
+  **/
+			blake2b((void *)cyclehash, sizeof(cyclehash), (const void *)blockHeader, sizeof(blockHeader), 0, 0);
+			blake2b((void *)cyclehashd, sizeof(cyclehashd), (const void *)cyclehash, sizeof(cyclehash), 0, 0);
+   /**
+				print_log("\n # %d block hash:",DID);
+  				for( int j=0;j<32;j++){
+    				print_log("%02x", (unsigned)(unsigned char)cyclehashd[31-j] & 0xffU);
+    			}
+    			print_log("\n");
+  **/
+
+			for( int j=0;j<32;j++){
+				if(cyclehashd[31-j]<target[j]){
+					isFound = true;
+					break;
+				} else if(cyclehashd[31-j]>target[j]){
+				    //print_log("\n************** [info] # Found 42-cycles ,But difficulty is not match! **************\n");
+					isFound = false;
+					nsols--;
+					break;
+				}
+			}
+			if(isFound) break;
+		} else {
+			print_log("FAILED due to %s\n", errstr[pow_rc]);
+		}
+	 }
+	 sumnsols += nsols;
+	 if(isFound){
+			break;
+	 }
+	}
+	return sumnsols;
+}
 #ifdef ISWINDOWS
 	 __declspec(dllexport)
 #endif
     void stop_solver(void* ctxInfo) {
-        SolverCtx * ctx = (SolverCtx *)ctxInfo;
-        ctx->abort();
+   SolverCtx * ctx = (SolverCtx *)ctxInfo;
+   ctx->abort();
     }
+
 #ifdef ISWINDOWS
 	 __declspec(dllexport)
 #endif
-	 int cuda_search(int device_id,unsigned char* header,unsigned int *isFind,unsigned int *Nonce,u32 *CycleNonces,double *average,void **ctxInfo,unsigned char* target){
+	 int init_solver(int device_id,void **ctxInfo){
 			try{
-                			u32 nonce = 0;
-                			u32 range = (unsigned int)(1<<32-1);
-                			// set defaults
-                			SolverParams params;
-                			fill_default_params(&params,device_id);
-                			int nDevices;
-                			if checkCudaErrors(cudaGetDeviceCount(&nDevices)) return 36;
-                			assert(device_id < nDevices);
-                			cudaDeviceProp prop;
-                			if checkCudaErrors(cudaGetDeviceProperties(&prop, device_id)) return 36;
-                			//u64 dbytes = prop.totalGlobalMem;
-                			//int dunit;
-                			//for (dunit=0; dbytes >= 102400; dbytes>>=10,dunit++) ;
-                			SolverCtx* ctx = create_solver_ctx(&params);
-                            *ctxInfo = ctx;
-                			//u64 bytes = ctx->trimmer.globalbytes();
-                			//int unit;
-                			//for (unit=0; bytes >= 102400; bytes>>=10,unit++) ;
-                			ctx->trimmer.abort = false;
-                			isFind[0] = run_solver(ctx, (char *)header, HEADERLEN, nonce, range, NULL,target, Nonce,CycleNonces,average);
-                			//print_log("\n***********# %d destroy_solver_ctx complete release memory***************\n",device_id);
-                			if(ctx->trimmer.dt != NULL){
-                			ctx->trimmer.release();
-                			}
-
-                	        destroy_solver_ctx(ctx);
-                			return 0;
+ 			// set defaults
+ 			SolverParams params;
+ 			fill_default_params(&params,device_id);
+ 			int nDevices;
+ 			if checkCudaErrors(cudaGetDeviceCount(&nDevices)) return 36;
+ 			assert(device_id < nDevices);
+ 			cudaDeviceProp prop;
+ 			if checkCudaErrors(cudaGetDeviceProperties(&prop, device_id)) return 36;
+ 			//u64 dbytes = prop.totalGlobalMem;
+ 			//int dunit;
+ 			//for (dunit=0; dbytes >= 102400; dbytes>>=10,dunit++) ;
+ 			SolverCtx* ctx = create_solver_ctx(&params);
+ 	 	 	*ctxInfo = ctx;
+ 			//u64 bytes = ctx->trimmer.globalbytes();
+ 			//int unit;
+ 			//for (unit=0; bytes >= 102400; bytes>>=10,unit++) ;
+ 			print_log("\n************init solver success!*************\n");
+ 			return 0;
 			}
 			catch(...){
 			    print_log("\n exit exception !\n");

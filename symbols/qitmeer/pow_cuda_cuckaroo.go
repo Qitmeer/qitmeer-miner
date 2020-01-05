@@ -1,4 +1,4 @@
-//+build cuda,!opencl
+///+build cuda,!opencl
 
 /**
 Qitmeer
@@ -53,6 +53,7 @@ func (this *CudaCuckaroo) InitDevice() {
 	common.MinerLoger.Debug(fmt.Sprintf("==============Mining Cuckaroo with CUDA: deviceID:%d edge bits:%d ============== module=miner",this.MinerId,this.EdgeBits))
 	this.average = [10]float64{0,0,0,0,0,0}
 	this.averageJ = 1
+	C.init_solver(this.MinerId,&this.solverCtx)
 }
 
 func (this *CudaCuckaroo) Update() {
@@ -143,7 +144,6 @@ func (this *CudaCuckaroo)CardRun() bool{
 	powStruct := this.header.HeaderBlock.Pow.(*pow.Cuckaroo)
 	cycleNoncesBytes := make([]byte,42*4)
 	nonceBytes := make([]byte,4)
-	resultBytes := make([]byte,4)
 	this.average[0] = 0
 	graphWeight := CuckarooGraphWeight(int64(this.header.Height),int64(this.Cfg.OptionConfig.BigGraphStartHeight),uint(this.EdgeBits))
 	target := pow.CuckooDiffToTarget(graphWeight,this.header.TargetDiff)
@@ -164,10 +164,9 @@ func (this *CudaCuckaroo)CardRun() bool{
 	}()
 	go func() {
 		defer wg.Done()
-		_ = C.cuda_search((C.int)(this.MinerId),(*C.uchar)(unsafe.Pointer(&hData[0])),(*C.uint)(unsafe.Pointer(&resultBytes[0])),(*C.uint)(unsafe.Pointer(&nonceBytes[0])),
-			(*C.uint)(unsafe.Pointer(&cycleNoncesBytes[0])),(*C.double)(unsafe.Pointer(&this.average[0])),&this.solverCtx,(*C.uchar)(unsafe.Pointer(&targetBytes[0])))
-		isFind := binary.LittleEndian.Uint32(resultBytes)
-		this.average[0] = 0
+		isFind := C.run_solver(this.solverCtx,(*C.char)(unsafe.Pointer(&hData[0])),(C.int)(len(hData)),0,math.MaxUint32,(*C.uchar)(unsafe.Pointer(&targetBytes[0])),
+			(*C.uint)(unsafe.Pointer(&nonceBytes[0])),
+			(*C.uint)(unsafe.Pointer(&cycleNoncesBytes[0])),(*C.double)(unsafe.Pointer(&this.average[0])))
 		if isFind != 1 {
 			c <- "not found"
 			return
