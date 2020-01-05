@@ -1,4 +1,4 @@
-///+build cuda,!opencl
+//+build cuda,!opencl
 
 /**
 Qitmeer
@@ -53,7 +53,7 @@ func (this *CudaCuckaroo) InitDevice() {
 	common.MinerLoger.Debug(fmt.Sprintf("==============Mining Cuckaroo with CUDA: deviceID:%d edge bits:%d ============== module=miner",this.MinerId,this.EdgeBits))
 	this.average = [10]float64{0,0,0,0,0,0}
 	this.averageJ = 1
-	C.init_solver(this.MinerId,&this.solverCtx)
+	C.init_solver((C.int)(this.MinerId),&this.solverCtx)
 }
 
 func (this *CudaCuckaroo) Update() {
@@ -118,14 +118,14 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 				continue
 			}
 			cwork := w.(*QitmeerWork)
-			if this.Pool && uint64(cwork.stra.PoolWork.Height) != common.CurrentHeight{
+			if this.Pool && this.header.JobID != common.JobID{
 				continue
 			}
 			if !this.Pool && cwork.Block.Height != common.CurrentHeight {
 				continue
 			}
-			if this.GetIsRunning(){
-				this.StopTaskChan <- true
+			if this.solverCtx != nil{
+				C.stop_solver(this.solverCtx)
 			}
 			work <- w
 		case <-this.Quit:
@@ -164,7 +164,7 @@ func (this *CudaCuckaroo)CardRun() bool{
 	}()
 	go func() {
 		defer wg.Done()
-		isFind := C.run_solver(this.solverCtx,(*C.char)(unsafe.Pointer(&hData[0])),(C.int)(len(hData)),0,math.MaxUint32,(*C.uchar)(unsafe.Pointer(&targetBytes[0])),
+		isFind := C.run_solver((C.int)(this.MinerId),this.solverCtx,(*C.char)(unsafe.Pointer(&hData[0])),(C.int)(len(hData)),0,math.MaxUint32,(*C.uchar)(unsafe.Pointer(&targetBytes[0])),
 			(*C.uint)(unsafe.Pointer(&nonceBytes[0])),
 			(*C.uint)(unsafe.Pointer(&cycleNoncesBytes[0])),(*C.double)(unsafe.Pointer(&this.average[0])))
 		if isFind != 1 {
@@ -214,21 +214,14 @@ func (this *CudaCuckaroo)CardRun() bool{
 		this.SubmitData <- subm
 		c <- nil
 	}()
-	time.AfterFunc(10*time.Microsecond, func() {
-		this.IsRunning = true
-	})
+	this.IsRunning = true
 	for{
 		select {
 		case err := <-c:
-			if err == nil{
+			if err == nil {
 				return true
 			}
 			return false
-		case <- this.StopTaskChan:
-			if this.solverCtx != nil{
-				C.stop_solver(this.solverCtx)
-				this.average[0] = 0
-			}
 		}
 	}
 }

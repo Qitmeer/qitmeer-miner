@@ -416,7 +416,7 @@ struct edgetrimmer {
 	u64 globalbytes() const {
 	 return (sizeA+sizeB/NB) + (1+NB) * indexesSize + sizeof(siphash_keys) + PROOFSIZE * 2 * sizeof(u32) + sizeof(edgetrimmer);
 	}
-
+	/**
 	~edgetrimmer() {
 	 if checkCudaErrors_V(cudaFree(bufferA)) return;
 	 for (int i = 0; i < 1+NB; i++) {
@@ -426,7 +426,7 @@ struct edgetrimmer {
 	 if checkCudaErrors_V(cudaFree(uvnodes)) return;
 	 if checkCudaErrors_V(cudaFree(dt)) return;
 	 cudaDeviceReset();
-	}
+	} **/
 	/**
 	void release() {
 	 if checkCudaErrors_V(cudaFree(bufferA)) return;
@@ -442,8 +442,9 @@ struct edgetrimmer {
 	 cudaEvent_t start, stop;
 	 if checkCudaErrors(cudaEventCreate(&start)) return false;
 	 if checkCudaErrors(cudaEventCreate(&stop)) {
-	    abort = true;
-	    return false;
+		print_log("=========cudaEventCreate stop error============");
+		abort = true;
+		return false;
 	 }
 
 	 cudaMemcpy(dipkeys, &sipkeys, sizeof(sipkeys), cudaMemcpyHostToDevice);
@@ -703,6 +704,10 @@ struct solver_ctx {
 	void abort() {
 	 trimmer.abort = true;
 	}
+
+	void start() {
+	 trimmer.abort = false;
+	}
 };
 
 #include <sys/unistd.h>
@@ -757,6 +762,7 @@ void destroy_solver_ctx(SolverCtx* ctx) {
 void fill_default_params(SolverParams* params,int device_id) {
 	trimparams tp;
 	params->device = device_id;
+	//print_log("\n device id %d start \n",device_id);
 	params->ntrims = tp.ntrims;
 	params->expand = tp.expand;
 	params->genablocks = min(tp.genA.blocks, NEDGES/tp.genA.tpb);
@@ -773,7 +779,8 @@ extern "C" {
 #ifdef ISWINDOWS
 	 __declspec(dllexport)
 #endif
-int run_solver(void* ctxInfo,
+int run_solver(int device_id,
+				void* ctxInfo,
 				char* header,
 				int header_length,
 				u32 nonce,
@@ -787,14 +794,17 @@ int run_solver(void* ctxInfo,
 	u64 time0, time1;
 	u32 timems;
 	u32 sumnsols = 0;
+	//print_log("\n cudaSetDevice device id %d start \n",device_id);
+	cudaSetDevice(device_id);
 	SolverCtx * ctx = (SolverCtx *)ctxInfo;
-	ctx->trimmer.abort = true;
+	ctx->start();
 	if (ctx == NULL || !ctx->trimmer.initsuccess){
 	 print_log("Error initialising trimmer. Aborting.\n");
 	 print_log("Reason: %s\n", LAST_ERROR_REASON);
 	 cudaDeviceReset();
 	 return 0;
 	}
+	//print_log("\n************begin work! range %lu*************\n",range);
 	for (u32 r = 0; r < range; r++) {
 	if(ctx->trimmer.abort){
 	    //print_log("\n ***************** stop because new task *******************\n");
@@ -806,10 +816,13 @@ int run_solver(void* ctxInfo,
 	 u32 nsols = ctx->solve();
 	 time1 = timestamp();
 	 timems = (time1 - time0) / 1000000;
+	 if (timems<=2){
+	    continue;
+	 }
 	 average[r%10] = 1000.00/(double)timems;
 
 	// if( (time1/1000000 /1000) % 15 == 0){
-	//    print_log("\n************** [info] # Device %d HashRate:%f GPS **************\n",DID,average[0]);
+	//    print_log("\n************** [info] # Device HashRate:%f GPS **************\n",1000.00/(double)timems);
 	// }
 
 	 bool isFound = false;
@@ -876,10 +889,11 @@ int run_solver(void* ctxInfo,
 #ifdef ISWINDOWS
 	 __declspec(dllexport)
 #endif
-    void stop_solver(void* ctxInfo) {
-   SolverCtx * ctx = (SolverCtx *)ctxInfo;
-   ctx->abort();
-    }
+	void stop_solver(void* ctxInfo) {
+		SolverCtx * ctx = (SolverCtx *)ctxInfo;
+		ctx->abort();
+		//print_log("\n************stop solver success!*************\n");
+	}
 
 #ifdef ISWINDOWS
 	 __declspec(dllexport)
@@ -902,7 +916,7 @@ int run_solver(void* ctxInfo,
  			//u64 bytes = ctx->trimmer.globalbytes();
  			//int unit;
  			//for (unit=0; bytes >= 102400; bytes>>=10,unit++) ;
- 			print_log("\n************init solver success!*************\n");
+ 			//print_log("\n************init solver success!*************\n");
  			return 0;
 			}
 			catch(...){
