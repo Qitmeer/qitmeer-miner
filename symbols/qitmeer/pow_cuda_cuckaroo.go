@@ -158,9 +158,6 @@ func (this *CudaCuckaroo)CardRun() bool{
 	if this.header.Height != common.CurrentHeight{
 		return false
 	}
-	if this.Pool {
-		common.MinerLoger.Debug(fmt.Sprintf("===============#%d:%s:%s:%s",this.MinerId,this.Work.stra.PoolWork.JobID,this.header.JobID,common.JobID))
-	}
 	common.MinerLoger.Debug(fmt.Sprintf("========================== # %d card begin work height:%d of %d===================",this.MinerId,this.header.Height,common.CurrentHeight))
 	var wg= new(sync.WaitGroup)
 	c := make(chan interface{})
