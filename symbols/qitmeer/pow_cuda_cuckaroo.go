@@ -103,6 +103,7 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 			// if has new work ,current calc stop
 			select {
 			case w := <- work:
+				this.HasNewWork = false
 				for{
 					this.Work = w.(*QitmeerWork)
 					this.Update()
