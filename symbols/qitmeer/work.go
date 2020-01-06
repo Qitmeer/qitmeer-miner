@@ -43,10 +43,11 @@ func (this *QitmeerWork) CopyNew() QitmeerWork{
 	if this.Cfg.PoolConfig.Pool != ""{
 		//pool work
 		newWork.stra = this.stra
-		b,_ := json.Marshal(this.PoolWork)
+		b,_ := json.Marshal(this.stra.PoolWork)
 		var pw NotifyWork
 		_ = json.Unmarshal(b,&pw)
 		newWork.PoolWork = pw
+		
 	} else{
 		newWork.Rpc = this.Rpc
 		newWork.StartWork = this.StartWork
