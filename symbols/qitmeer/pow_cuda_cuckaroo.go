@@ -46,6 +46,7 @@ type CudaCuckaroo struct {
 	solverCtx           unsafe.Pointer
 	average [10]float64
 	averageJ int
+	lock sync.Mutex
 }
 
 func (this *CudaCuckaroo) InitDevice() {
@@ -62,7 +63,7 @@ func (this *CudaCuckaroo) Update() {
 	if this.Pool {
 		this.Work.PoolWork.ExtraNonce2 = fmt.Sprintf("%08x", this.CurrentWorkID<<this.MinerId)[:8]
 		this.header.Exnonce2 = this.Work.PoolWork.ExtraNonce2
-		this.Work.PoolWork.WorkData = this.Work.stra.PoolWork.PrepQitmeerWork()
+		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepQitmeerWork()
 		this.Work.PoolWork.JobID = this.Work.stra.PoolWork.JobID
 		this.header.PackagePoolHeader(this.Work,pow.CUCKAROO)
 	} else {
@@ -102,9 +103,15 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 			// if has new work ,current calc stop
 			select {
 			case w := <- work:
-				this.Work = w.(*QitmeerWork)
-				this.CardRun()
-				this.IsRunning = false
+				for{
+					this.Work = w.(*QitmeerWork)
+					this.Update()
+					this.CardRun()
+					this.IsRunning = false
+					if !this.Pool{
+						break
+					}
+				}
 			}
 		}
 	}()
@@ -118,26 +125,16 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 				continue
 			}
 			cwork := w.(*QitmeerWork)
-			this.Update()
-			if this.Pool && this.header.JobID != common.JobID{
-				fmt.Println("this.header.JobID != common.JobID",this.header.JobID , common.JobID)
+			if this.Pool && cwork.PoolWork.JobID != common.JobID{
 				continue
 			}
 			if !this.Pool && cwork.Block.Height != common.CurrentHeight {
 				continue
 			}
-		
-			common.TimeoutRun(10*time.Microsecond, func() {
-				if this.solverCtx != nil{
-					C.stop_solver(this.solverCtx)
-				}
-				work <- w
-			}, func() {
-				if this.solverCtx != nil{
-					C.stop_solver(this.solverCtx)
-				}
-				work <- w
-			})
+			if this.IsRunning && this.solverCtx != nil{
+				C.stop_solver(this.solverCtx)
+			}
+			work <- w
 		case <-this.Quit:
 			return
 		case <-c:
