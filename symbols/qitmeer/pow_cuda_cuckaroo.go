@@ -112,6 +112,9 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 					if !this.Pool{
 						break
 					}
+					if this.Pool && this.Work.PoolWork.JobID != common.JobID{
+						break
+					}
 				}
 			}
 		}
