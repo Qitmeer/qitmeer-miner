@@ -46,6 +46,7 @@ type CudaCuckaroo struct {
 	solverCtx           unsafe.Pointer
 	average [10]float64
 	averageJ int
+	lock sync.Mutex
 }
 
 func (this *CudaCuckaroo) InitDevice() {
@@ -53,6 +54,7 @@ func (this *CudaCuckaroo) InitDevice() {
 	common.MinerLoger.Debug(fmt.Sprintf("==============Mining Cuckaroo with CUDA: deviceID:%d edge bits:%d ============== module=miner",this.MinerId,this.EdgeBits))
 	this.average = [10]float64{0,0,0,0,0,0}
 	this.averageJ = 1
+	C.init_solver((C.int)(this.MinerId),&this.solverCtx)
 }
 
 func (this *CudaCuckaroo) Update() {
@@ -62,6 +64,7 @@ func (this *CudaCuckaroo) Update() {
 		this.Work.PoolWork.ExtraNonce2 = fmt.Sprintf("%08x", this.CurrentWorkID<<this.MinerId)[:8]
 		this.header.Exnonce2 = this.Work.PoolWork.ExtraNonce2
 		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepQitmeerWork()
+		this.Work.PoolWork.JobID = this.Work.stra.PoolWork.JobID
 		this.header.PackagePoolHeader(this.Work,pow.CUCKAROO)
 	} else {
 		randStr := fmt.Sprintf("%s%d%d",this.Cfg.SoloConfig.RandStr,this.MinerId,this.CurrentWorkID)
@@ -100,10 +103,19 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 			// if has new work ,current calc stop
 			select {
 			case w := <- work:
-				this.Work = w.(*QitmeerWork)
-				this.Update()
-				this.CardRun()
-				this.IsRunning = false
+				this.HasNewWork = false
+				for{
+					if this.HasNewWork{
+						break
+					}
+					this.Work = w.(*QitmeerWork)
+					this.Update()
+					this.CardRun()
+					this.IsRunning = false
+					if !this.Pool{
+						break
+					}
+				}
 			}
 		}
 	}()
@@ -117,14 +129,14 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 				continue
 			}
 			cwork := w.(*QitmeerWork)
-			if this.Pool && uint64(cwork.stra.PoolWork.Height) != common.CurrentHeight{
+			if this.Pool && cwork.PoolWork.JobID != common.JobID{
 				continue
 			}
 			if !this.Pool && cwork.Block.Height != common.CurrentHeight {
 				continue
 			}
-			if this.GetIsRunning(){
-				this.StopTaskChan <- true
+			if this.IsRunning && this.solverCtx != nil{
+				C.stop_solver(this.solverCtx)
 			}
 			work <- w
 		case <-this.Quit:
@@ -143,16 +155,12 @@ func (this *CudaCuckaroo)CardRun() bool{
 	powStruct := this.header.HeaderBlock.Pow.(*pow.Cuckaroo)
 	cycleNoncesBytes := make([]byte,42*4)
 	nonceBytes := make([]byte,4)
-	resultBytes := make([]byte,4)
 	this.average[0] = 0
 	graphWeight := CuckarooGraphWeight(int64(this.header.Height),int64(this.Cfg.OptionConfig.BigGraphStartHeight),uint(this.EdgeBits))
 	target := pow.CuckooDiffToTarget(graphWeight,this.header.TargetDiff)
 	targetBytes,_ := hex.DecodeString(target)
 	if this.header.Height != common.CurrentHeight{
 		return false
-	}
-	if this.Pool {
-		common.MinerLoger.Debug(fmt.Sprintf("===============#%d:%s:%s:%s",this.MinerId,this.Work.stra.PoolWork.JobID,this.header.JobID,common.JobID))
 	}
 	common.MinerLoger.Debug(fmt.Sprintf("========================== # %d card begin work height:%d of %d===================",this.MinerId,this.header.Height,common.CurrentHeight))
 	var wg= new(sync.WaitGroup)
@@ -164,10 +172,9 @@ func (this *CudaCuckaroo)CardRun() bool{
 	}()
 	go func() {
 		defer wg.Done()
-		_ = C.cuda_search((C.int)(this.MinerId),(*C.uchar)(unsafe.Pointer(&hData[0])),(*C.uint)(unsafe.Pointer(&resultBytes[0])),(*C.uint)(unsafe.Pointer(&nonceBytes[0])),
-			(*C.uint)(unsafe.Pointer(&cycleNoncesBytes[0])),(*C.double)(unsafe.Pointer(&this.average[0])),&this.solverCtx,(*C.uchar)(unsafe.Pointer(&targetBytes[0])))
-		isFind := binary.LittleEndian.Uint32(resultBytes)
-		this.average[0] = 0
+		isFind := C.run_solver((C.int)(this.MinerId),this.solverCtx,(*C.char)(unsafe.Pointer(&hData[0])),(C.int)(len(hData)),0,math.MaxUint32,(*C.uchar)(unsafe.Pointer(&targetBytes[0])),
+			(*C.uint)(unsafe.Pointer(&nonceBytes[0])),
+			(*C.uint)(unsafe.Pointer(&cycleNoncesBytes[0])),(*C.double)(unsafe.Pointer(&this.average[0])))
 		if isFind != 1 {
 			c <- "not found"
 			return
@@ -215,21 +222,14 @@ func (this *CudaCuckaroo)CardRun() bool{
 		this.SubmitData <- subm
 		c <- nil
 	}()
-	time.AfterFunc(10*time.Microsecond, func() {
-		this.IsRunning = true
-	})
+	this.IsRunning = true
 	for{
 		select {
 		case err := <-c:
-			if err == nil{
+			if err == nil {
 				return true
 			}
 			return false
-		case <- this.StopTaskChan:
-			if this.solverCtx != nil{
-				C.stop_solver(this.solverCtx)
-				this.average[0] = 0
-			}
 		}
 	}
 }
