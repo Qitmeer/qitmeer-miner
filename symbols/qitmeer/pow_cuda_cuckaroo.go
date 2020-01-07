@@ -105,14 +105,14 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 			case w := <- work:
 				this.HasNewWork = false
 				for{
+					if this.HasNewWork{
+						break
+					}
 					this.Work = w.(*QitmeerWork)
 					this.Update()
 					this.CardRun()
 					this.IsRunning = false
 					if !this.Pool{
-						break
-					}
-					if this.Pool && this.Work.PoolWork.JobID != common.JobID{
 						break
 					}
 				}
