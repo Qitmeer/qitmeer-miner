@@ -1,4 +1,4 @@
-//+build cuda,!opencl
+///+build cuda,!opencl
 
 /**
 Qitmeer
@@ -61,10 +61,9 @@ func (this *CudaCuckaroo) Update() {
 	//update coinbase tx hash
 	this.Device.Update()
 	if this.Pool {
-		this.Work.PoolWork.ExtraNonce2 = fmt.Sprintf("%08x", this.CurrentWorkID<<this.MinerId)[:8]
+		this.Work.PoolWork.ExtraNonce2 = "00000000"
 		this.header.Exnonce2 = this.Work.PoolWork.ExtraNonce2
 		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepQitmeerWork()
-		this.Work.PoolWork.JobID = this.Work.stra.PoolWork.JobID
 		this.header.PackagePoolHeader(this.Work,pow.CUCKAROO)
 	} else {
 		randStr := fmt.Sprintf("%s%d%d",this.Cfg.SoloConfig.RandStr,this.MinerId,this.CurrentWorkID)
@@ -179,7 +178,7 @@ func (this *CudaCuckaroo)CardRun() bool{
 			c <- "not found"
 			return
 		}
-
+		fmt.Println(this.header.JobID + "-" + this.header.Exnonce2)
 		//nonce
 		copy(hData[108:112],nonceBytes)
 		for jj := 0;jj < len(cycleNoncesBytes);jj+=4{
@@ -219,6 +218,7 @@ func (this *CudaCuckaroo)CardRun() bool{
 		} else {
 			subm += "-" + this.header.JobID + "-" + this.header.Exnonce2
 		}
+		fmt.Println(this.header.JobID + "-" + this.header.Exnonce2)
 		this.SubmitData <- subm
 		c <- nil
 	}()
