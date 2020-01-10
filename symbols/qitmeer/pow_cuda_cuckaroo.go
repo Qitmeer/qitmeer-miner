@@ -18,15 +18,14 @@ import (
 	`crypto/md5`
 	`encoding/binary`
 	`encoding/hex`
-	`encoding/json`
 	"fmt"
+	"github.com/Qitmeer/qitmeer-miner/common"
+	"github.com/Qitmeer/qitmeer-miner/core"
 	`github.com/Qitmeer/qitmeer/common/hash`
 	`github.com/Qitmeer/qitmeer/core/types`
 	"github.com/Qitmeer/qitmeer/core/types/pow"
 	`math`
 	`math/big`
-	"github.com/Qitmeer/qitmeer-miner/common"
-	"github.com/Qitmeer/qitmeer-miner/core"
 	`sort`
 	"sync"
 	"time"
@@ -69,7 +68,7 @@ func (this *CudaCuckaroo) Update() {
 		this.header.Exnonce2 = this.Work.PoolWork.ExtraNonce2
 		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepQitmeerWork()
 		this.header.PackagePoolHeader(this.Work,pow.CUCKAROO)
-		fmt.Println(this.header.Exnonce2,this.MinerId,"tx root:",this.header.HeaderBlock.TxRoot)
+		common.MinerLoger.Debug(fmt.Sprintf(" # %d",this.MinerId)+"ex2:" + this.header.Exnonce2+" tx root:"+this.header.HeaderBlock.TxRoot.String())
 	} else {
 		txHash ,txs:= this.Work.Block.CalcCoinBase(this.Cfg,randStr, this.CurrentWorkID, this.Cfg.SoloConfig.MinerAddr)
 		this.header.PackageRpcHeader(this.Work,txs)
@@ -185,9 +184,9 @@ func (this *CudaCuckaroo)CardRun() bool{
 			c <- "not found"
 			return
 		}
-		b,_ := json.Marshal(this.Work.PoolWork)
-		fmt.Println("this.Work.PoolWork:",string(b))
-		fmt.Println(this.header.JobID + "-" + this.header.Exnonce2+"-",this.Work.PoolWork)
+		common.MinerLoger.Debug(fmt.Sprintf("# %d",this.MinerId) + "==================== Current PoolWork:================= current jobID"+this.Work.PoolWork.JobID+" CB1:"+
+			this.Work.PoolWork.CB1+" CB2:"+this.Work.PoolWork.CB2+ "CB3:" + this.Work.PoolWork.CB3+"CB4:" + this.Work.PoolWork.CB4 + " ntime :" + this.Work.PoolWork.Ntime)
+		common.MinerLoger.Debug(fmt.Sprintf("# %d",this.MinerId) + "will submit header info :"+this.header.JobID + "-" + this.header.Exnonce2+"-"+this.Work.PoolWork.ExtraNonce1)
 		//nonce
 		copy(hData[108:112],nonceBytes)
 		for jj := 0;jj < len(cycleNoncesBytes);jj+=4{
@@ -227,8 +226,8 @@ func (this *CudaCuckaroo)CardRun() bool{
 		} else {
 			subm += "-" + this.header.JobID + "-" + this.header.Exnonce2
 		}
-		fmt.Println("subm:",subm)
-		fmt.Println(this.header.JobID + "-" + this.header.Exnonce2)
+		common.MinerLoger.Debug(fmt.Sprintf("# %d",this.MinerId) + "subm:",subm)
+		common.MinerLoger.Debug(fmt.Sprintf("# %d submit header job info :",this.MinerId) + this.header.JobID + "-" + this.header.Exnonce2)
 		this.SubmitData <- subm
 		c <- nil
 	}()
@@ -279,9 +278,6 @@ calcAverageHash:
 				}
 			}
 			if this.AverageHashRate > 0 {
-				if this.AverageHashRate < 1{
-					fmt.Println(this.average)
-				}
 				common.MinerLoger.Info(fmt.Sprintf("# %d [%s] : %f GPS",this.MinerId,this.ClDevice.Name(),this.AverageHashRate))
 			}
 
