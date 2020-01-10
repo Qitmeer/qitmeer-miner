@@ -68,7 +68,7 @@ func (this *CudaCuckaroo) Update() {
 		this.header.Exnonce2 = this.Work.PoolWork.ExtraNonce2
 		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepQitmeerWork()
 		this.header.PackagePoolHeader(this.Work,pow.CUCKAROO)
-		common.MinerLoger.Debug(fmt.Sprintf(" # %d",this.MinerId)+"ex2:" + this.header.Exnonce2+" tx root:"+this.header.HeaderBlock.TxRoot.String())
+		// common.MinerLoger.Debug(fmt.Sprintf(" # %d",this.MinerId)+"ex2:" + this.header.Exnonce2+" tx root:"+this.header.HeaderBlock.TxRoot.String())
 	} else {
 		txHash ,txs:= this.Work.Block.CalcCoinBase(this.Cfg,randStr, this.CurrentWorkID, this.Cfg.SoloConfig.MinerAddr)
 		this.header.PackageRpcHeader(this.Work,txs)
@@ -184,8 +184,8 @@ func (this *CudaCuckaroo)CardRun() bool{
 			c <- "not found"
 			return
 		}
-		common.MinerLoger.Debug(fmt.Sprintf("# %d",this.MinerId) + "==================== Current PoolWork:================= current jobID"+this.Work.PoolWork.JobID+" CB1:"+
-			this.Work.PoolWork.CB1+" CB2:"+this.Work.PoolWork.CB2+ "CB3:" + this.Work.PoolWork.CB3+"CB4:" + this.Work.PoolWork.CB4 + " ntime :" + this.Work.PoolWork.Ntime)
+		// common.MinerLoger.Debug(fmt.Sprintf("# %d",this.MinerId) + "==================== Current PoolWork:================= current jobID"+this.Work.PoolWork.JobID+" CB1:"+
+		// 	this.Work.PoolWork.CB1+" CB2:"+this.Work.PoolWork.CB2+ "CB3:" + this.Work.PoolWork.CB3+"CB4:" + this.Work.PoolWork.CB4 + " ntime :" + this.Work.PoolWork.Ntime)
 		common.MinerLoger.Debug(fmt.Sprintf("# %d",this.MinerId) + "will submit header info :"+this.header.JobID + "-" + this.header.Exnonce2+"-"+this.Work.PoolWork.ExtraNonce1)
 		//nonce
 		copy(hData[108:112],nonceBytes)
