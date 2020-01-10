@@ -18,6 +18,7 @@ import (
 	`crypto/md5`
 	`encoding/binary`
 	`encoding/hex`
+	`encoding/json`
 	"fmt"
 	`github.com/Qitmeer/qitmeer/common/hash`
 	`github.com/Qitmeer/qitmeer/core/types`
@@ -183,7 +184,8 @@ func (this *CudaCuckaroo)CardRun() bool{
 			c <- "not found"
 			return
 		}
-		fmt.Println("this.Work.PoolWork:",this.Work.PoolWork)
+		b,_ := json.Marshal(this.Work.PoolWork)
+		fmt.Println("this.Work.PoolWork:",string(b))
 		fmt.Println(this.header.JobID + "-" + this.header.Exnonce2+"-",this.Work.PoolWork)
 		//nonce
 		copy(hData[108:112],nonceBytes)
