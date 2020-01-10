@@ -21,6 +21,7 @@ import (
 	`github.com/Qitmeer/qitmeer/common/hash`
 	`github.com/Qitmeer/qitmeer/core/types`
 	"github.com/Qitmeer/qitmeer/core/types/pow"
+	`github.com/cloudflare/cfssl/scan/crypto/md5`
 	`math`
 	`math/big`
 	"github.com/Qitmeer/qitmeer-miner/common"
@@ -58,15 +59,16 @@ func (this *CudaCuckaroo) InitDevice() {
 }
 
 func (this *CudaCuckaroo) Update() {
+	randStr := fmt.Sprintf("%s%d%d",this.Cfg.SoloConfig.RandStr,this.MinerId,this.CurrentWorkID)
 	//update coinbase tx hash
 	this.Device.Update()
 	if this.Pool {
-		this.Work.PoolWork.ExtraNonce2 = "00000000"
+		h := md5.Sum([]byte(randStr))
+		this.Work.PoolWork.ExtraNonce2 = hex.EncodeToString(h[:])[:8]
 		this.header.Exnonce2 = this.Work.PoolWork.ExtraNonce2
 		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepQitmeerWork()
 		this.header.PackagePoolHeader(this.Work,pow.CUCKAROO)
 	} else {
-		randStr := fmt.Sprintf("%s%d%d",this.Cfg.SoloConfig.RandStr,this.MinerId,this.CurrentWorkID)
 		txHash ,txs:= this.Work.Block.CalcCoinBase(this.Cfg,randStr, this.CurrentWorkID, this.Cfg.SoloConfig.MinerAddr)
 		this.header.PackageRpcHeader(this.Work,txs)
 		this.header.HeaderBlock.TxRoot = *txHash
