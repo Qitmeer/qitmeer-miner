@@ -69,6 +69,7 @@ func (this *CudaCuckaroo) Update() {
 		this.header.Exnonce2 = this.Work.PoolWork.ExtraNonce2
 		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepQitmeerWork()
 		this.header.PackagePoolHeader(this.Work,pow.CUCKAROO)
+		fmt.Println(this.MinerId,"tx root:",this.header.HeaderBlock.TxRoot)
 	} else {
 		txHash ,txs:= this.Work.Block.CalcCoinBase(this.Cfg,randStr, this.CurrentWorkID, this.Cfg.SoloConfig.MinerAddr)
 		this.header.PackageRpcHeader(this.Work,txs)
