@@ -15,13 +15,13 @@ package qitmeer
 */
 import "C"
 import (
+	`crypto/md5`
 	`encoding/binary`
 	`encoding/hex`
 	"fmt"
 	`github.com/Qitmeer/qitmeer/common/hash`
 	`github.com/Qitmeer/qitmeer/core/types`
 	"github.com/Qitmeer/qitmeer/core/types/pow"
-	`github.com/cloudflare/cfssl/scan/crypto/md5`
 	`math`
 	`math/big`
 	"github.com/Qitmeer/qitmeer-miner/common"
