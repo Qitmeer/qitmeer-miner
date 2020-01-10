@@ -88,7 +88,7 @@ func (this *Stratum)Listen(handle func(data string))  {
 	common.MinerLoger.Debug("Starting Stratum Listener")
 	var data string
 	var err error
-	start := time.Now().Unix()
+	// start := time.Now().Unix()
 	for {
 		if this.Reader != nil{
 			data, err = this.Reader.ReadString('\n')
@@ -100,9 +100,9 @@ func (this *Stratum)Listen(handle func(data string))  {
 		}
 		handle(data)
 		this.Timeout = uint32(time.Now().Unix())
-		if time.Now().Unix() - start > 10{
-			_ = this.Conn.Close()
-		}
+		// if time.Now().Unix() - start > 10{
+		// 	_ = this.Conn.Close()
+		// }
 	}
 }
 
