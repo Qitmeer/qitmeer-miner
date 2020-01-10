@@ -15,6 +15,7 @@ import (
 	"math/big"
 	"github.com/Qitmeer/qitmeer-miner/common"
 	"github.com/Qitmeer/qitmeer-miner/core"
+	`os`
 	"strconv"
 	`strings`
 	"sync/atomic"
@@ -177,7 +178,8 @@ func (s *QitmeerStratum) HandleSubmitReply(resp interface{}) {
 			common.MinerLoger.Info("[pool reply]Share accepted")
 		} else {
 			atomic.AddUint64(&s.InvalidShares, 1)
-			common.MinerLoger.Error("[pool reply]Share rejected:%v ", "reason",aResp.Error)
+			common.MinerLoger.Error("[pool reply]Share rejected:", "reason",aResp.Error)
+			os.Exit(1)
 		}
 	}
 }

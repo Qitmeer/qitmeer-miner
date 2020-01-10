@@ -163,6 +163,9 @@ func (this *CudaCuckaroo)CardRun() bool{
 	if this.header.Height != common.CurrentHeight{
 		return false
 	}
+	if this.Pool && this.Work.PoolWork.JobID != common.JobID{
+		return false
+	}
 	common.MinerLoger.Debug(fmt.Sprintf("========================== # %d card begin work height:%d of %d===================",this.MinerId,this.header.Height,common.CurrentHeight))
 	var wg= new(sync.WaitGroup)
 	c := make(chan interface{})
@@ -180,7 +183,8 @@ func (this *CudaCuckaroo)CardRun() bool{
 			c <- "not found"
 			return
 		}
-		fmt.Println(this.header.JobID + "-" + this.header.Exnonce2)
+		fmt.Println("this.Work.PoolWork:",this.Work.PoolWork)
+		fmt.Println(this.header.JobID + "-" + this.header.Exnonce2+"-",this.Work.PoolWork)
 		//nonce
 		copy(hData[108:112],nonceBytes)
 		for jj := 0;jj < len(cycleNoncesBytes);jj+=4{
@@ -220,6 +224,7 @@ func (this *CudaCuckaroo)CardRun() bool{
 		} else {
 			subm += "-" + this.header.JobID + "-" + this.header.Exnonce2
 		}
+		fmt.Println("subm:",subm)
 		fmt.Println(this.header.JobID + "-" + this.header.Exnonce2)
 		this.SubmitData <- subm
 		c <- nil
