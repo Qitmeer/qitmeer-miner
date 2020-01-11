@@ -112,6 +112,14 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 					}
 					this.Work = w.(*QitmeerWork)
 					this.Update()
+					if this.header.Height != common.CurrentHeight{
+						common.MinerLoger.Debug("job expired!","cheight",this.header.Height,"newheoght",common.CurrentHeight)
+						break
+					}
+					if this.Pool && this.Work.PoolWork.JobID != common.JobID{
+						common.MinerLoger.Debug("job expired!","jobID",this.Work.PoolWork.JobID,"newJob",common.JobID)
+						break
+					}
 					this.CardRun()
 					this.IsRunning = false
 					if !this.Pool{
@@ -161,12 +169,7 @@ func (this *CudaCuckaroo)CardRun() bool{
 	graphWeight := CuckarooGraphWeight(int64(this.header.Height),int64(this.Cfg.OptionConfig.BigGraphStartHeight),uint(this.EdgeBits))
 	target := pow.CuckooDiffToTarget(graphWeight,this.header.TargetDiff)
 	targetBytes,_ := hex.DecodeString(target)
-	if this.header.Height != common.CurrentHeight{
-		return false
-	}
-	if this.Pool && this.Work.PoolWork.JobID != common.JobID{
-		return false
-	}
+	
 	common.MinerLoger.Debug(fmt.Sprintf("========================== # %d card begin work height:%d of %d===================",this.MinerId,this.header.Height,common.CurrentHeight))
 	var wg= new(sync.WaitGroup)
 	c := make(chan interface{})
