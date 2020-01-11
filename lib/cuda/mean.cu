@@ -796,7 +796,7 @@ int run_solver(int device_id,
 	u32 sumnsols = 0;
 	//print_log("\n cudaSetDevice device id %d start \n",device_id);
 	cudaSetDevice(device_id);
-	cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync);
+	//cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync);
 	SolverCtx * ctx = (SolverCtx *)ctxInfo;
 	ctx->start();
 	if (ctx == NULL || !ctx->trimmer.initsuccess){
