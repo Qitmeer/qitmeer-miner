@@ -93,7 +93,7 @@ func (this *Stratum)Listen(handle func(data string))  {
 		if this.Reader != nil{
 			data, err = this.Reader.ReadString('\n')
 			if err != nil{
-				common.MinerLoger.Error("TCP Read Error:",err.Error())
+				common.MinerLoger.Error("TCP Read Error:","detail",err.Error())
 			}
 		} else{
 			err = errors.New("network wrong!")
