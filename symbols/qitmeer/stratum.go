@@ -9,12 +9,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Qitmeer/qitmeer-miner/common"
+	"github.com/Qitmeer/qitmeer-miner/core"
 	qitmeer "github.com/Qitmeer/qitmeer/common/hash"
 	`github.com/Qitmeer/qitmeer/core/types/pow`
 	`github.com/Qitmeer/qitmeer/params`
 	"math/big"
-	"github.com/Qitmeer/qitmeer-miner/common"
-	"github.com/Qitmeer/qitmeer-miner/core"
 	"strconv"
 	`strings`
 	"sync/atomic"
@@ -177,7 +177,7 @@ func (s *QitmeerStratum) HandleSubmitReply(resp interface{}) {
 			common.MinerLoger.Info("[pool reply]Share accepted")
 		} else {
 			atomic.AddUint64(&s.InvalidShares, 1)
-			common.MinerLoger.Error("[pool reply]Share rejected:%v ", "reason",aResp.Error)
+			common.MinerLoger.Error("[pool reply]Share rejected:", "reason",aResp.Error)
 		}
 	}
 }

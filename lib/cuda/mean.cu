@@ -796,12 +796,12 @@ int run_solver(int device_id,
 	u32 sumnsols = 0;
 	//print_log("\n cudaSetDevice device id %d start \n",device_id);
 	cudaSetDevice(device_id);
+	//cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync);
 	SolverCtx * ctx = (SolverCtx *)ctxInfo;
 	ctx->start();
 	if (ctx == NULL || !ctx->trimmer.initsuccess){
 	 print_log("Error initialising trimmer. Aborting.\n");
 	 print_log("Reason: %s\n", LAST_ERROR_REASON);
-	 cudaDeviceReset();
 	 return 0;
 	}
 	//print_log("\n************begin work! range %lu*************\n",range);
@@ -822,7 +822,7 @@ int run_solver(int device_id,
 	 average[r%10] = 1000.00/(double)timems;
 
 	// if( (time1/1000000 /1000) % 15 == 0){
-	//    print_log("\n************** [info] # Device HashRate:%f GPS **************\n",1000.00/(double)timems);
+	//		print_log("\n************** [info] # Device HashRate:%f GPS **************\n",1000.00/(double)timems);
 	// }
 
 	 bool isFound = false;
@@ -844,24 +844,24 @@ int run_solver(int device_id,
 			blockHeader[113] = edgebits;
 			unsigned char * cycleNonce = (unsigned char *)prf;
 			for( int j=0;j<168;j++){
-  	blockHeader[j+114] = cycleNonce[j];
-  }
-  /**
-  print_log("\n cuda block header: # %d",DID);
+				blockHeader[j+114] = cycleNonce[j];
+			}
+				/**
+				print_log("\n cuda block header: # %d",device_id);
     				for( int j=0;j<282;j++){
- 				print_log("%02x",(unsigned)(unsigned char)blockHeader[j] & 0xffU);
- 			}
- 			print_log("\n");
-  **/
+ 						print_log("%02x",(unsigned)(unsigned char)blockHeader[j] & 0xffU);
+ 					}
+				print_log("\n");
+				**/
 			blake2b((void *)cyclehash, sizeof(cyclehash), (const void *)blockHeader, sizeof(blockHeader), 0, 0);
 			blake2b((void *)cyclehashd, sizeof(cyclehashd), (const void *)cyclehash, sizeof(cyclehash), 0, 0);
-   /**
-				print_log("\n # %d block hash:",DID);
-  				for( int j=0;j<32;j++){
-    				print_log("%02x", (unsigned)(unsigned char)cyclehashd[31-j] & 0xffU);
-    			}
-    			print_log("\n");
-  **/
+				/**
+				print_log("\n # %d block hash:",device_id);
+					for( int j=0;j<32;j++){
+							print_log("%02x", (unsigned)(unsigned char)cyclehashd[31-j] & 0xffU);
+					}
+					print_log("\n");
+				**/
 
 			for( int j=0;j<32;j++){
 				if(cyclehashd[31-j]<target[j]){
