@@ -5,22 +5,21 @@ package qitmeer
 
 import (
 	"fmt"
+	"github.com/Qitmeer/qitmeer-miner/common"
 	"github.com/Qitmeer/qitmeer/common/hash"
 	"github.com/Qitmeer/qitmeer/core/address"
 	"github.com/Qitmeer/qitmeer/core/types"
 	"github.com/Qitmeer/qitmeer/engine/txscript"
 	"github.com/Qitmeer/qitmeer/params"
 	"github.com/google/uuid"
-	"github.com/Qitmeer/qitmeer-miner/common"
 	"sort"
 )
-
 
 // standardCoinbaseOpReturn creates a standard OP_RETURN output to insert into
 // coinbase to use as extranonces. The OP_RETURN pushes 32 bytes.
 func standardCoinbaseOpReturn(enData []byte) ([]byte, error) {
 	if len(enData) == 0 {
-		return nil,nil
+		return nil, nil
 	}
 	extraNonceScript, err := txscript.GenerateProvablyPruneableOut(enData)
 	if err != nil {
@@ -29,7 +28,7 @@ func standardCoinbaseOpReturn(enData []byte) ([]byte, error) {
 	return extraNonceScript, nil
 }
 
-func standardCoinbaseScript(randStr string,nextBlockHeight uint64, extraNonce uint64) ([]byte, error) {
+func standardCoinbaseScript(randStr string, nextBlockHeight uint64, extraNonce uint64) ([]byte, error) {
 	uniqueStr := uuid.New()
 	return txscript.NewScriptBuilder().AddInt64(int64(nextBlockHeight)).
 		AddInt64(int64(extraNonce)).AddData([]byte(randStr)).AddData([]byte(uniqueStr.String())).
@@ -39,26 +38,26 @@ func standardCoinbaseScript(randStr string,nextBlockHeight uint64, extraNonce ui
 // CalcBlockTaxSubsidy calculates the subsidy for the organization address in the
 // coinbase.
 func CalcBlockTaxSubsidy(coinbaseVal uint64, params *params.Params) uint64 {
-	_,_,tax:=calcBlockProportion(coinbaseVal,params)
+	_, _, tax := calcBlockProportion(coinbaseVal, params)
 	return tax
 }
 
-func calcSubsidyByCoinBase(coinbaseVal uint64, params *params.Params) uint64{
+func calcSubsidyByCoinBase(coinbaseVal uint64, params *params.Params) uint64 {
 	workPro := float64(params.WorkRewardProportion)
 	proportions := float64(params.TotalSubsidyProportions())
 	subsidy := float64(coinbaseVal) * proportions / workPro
 	return uint64(subsidy)
 }
 
-func calcBlockProportion(coinbaseVal uint64, params *params.Params) (uint64,uint64,uint64) {
-	subsidy := calcSubsidyByCoinBase(coinbaseVal,params)
+func calcBlockProportion(coinbaseVal uint64, params *params.Params) (uint64, uint64, uint64) {
+	subsidy := calcSubsidyByCoinBase(coinbaseVal, params)
 	workPro := float64(params.WorkRewardProportion)
-	stakePro:= float64(params.StakeRewardProportion)
+	stakePro := float64(params.StakeRewardProportion)
 	proportions := float64(params.TotalSubsidyProportions())
-	work:=uint64(workPro/proportions*float64(subsidy))
-	stake:=uint64(stakePro/proportions*float64(subsidy))
-	tax:=subsidy-work-stake
-	return work,stake,tax
+	work := uint64(workPro / proportions * float64(subsidy))
+	stake := uint64(stakePro / proportions * float64(subsidy))
+	tax := subsidy - work - stake
+	return work, stake, tax
 }
 
 // createCoinbaseTx returns a coinbase transaction paying an appropriate subsidy
@@ -67,21 +66,21 @@ func calcBlockProportion(coinbaseVal uint64, params *params.Params) (uint64,uint
 //
 // See the comment for NewBlockTemplate for more information about why the nil
 // address handling is useful.
-func createCoinbaseTx(coinBaseVal uint64,coinbaseScript []byte, opReturnPkScript []byte, addr types.Address, params *params.Params) (*types.Tx, error) {
+func createCoinbaseTx(coinBaseVal uint64, coinbaseScript []byte, opReturnPkScript []byte, addr types.Address, params *params.Params) (*types.Tx, error) {
 	tx := types.NewTransaction()
 	tx.AddTxIn(&types.TxInput{
 		// Coinbase transactions have no inputs, so previous outpoint is
 		// zero hash and max index.
 		PreviousOut: *types.NewOutPoint(&hash.Hash{},
-			types.MaxPrevOutIndex ),
-		Sequence:        types.MaxTxInSequenceNum,
-		SignScript:      coinbaseScript,
+			types.MaxPrevOutIndex),
+		Sequence:   types.MaxTxInSequenceNum,
+		SignScript: coinbaseScript,
 	})
 
-	hasTax:=false
+	hasTax := false
 	if params.BlockTaxProportion > 0 &&
-		len(params.OrganizationPkScript) > 0{
-		hasTax=true
+		len(params.OrganizationPkScript) > 0 {
+		hasTax = true
 	}
 	// Create a coinbase with correct block subsidy and extranonce.
 	subsidy := coinBaseVal
@@ -105,8 +104,8 @@ func createCoinbaseTx(coinBaseVal uint64,coinbaseScript []byte, opReturnPkScript
 		}
 	}
 	if !hasTax {
-		subsidy+=uint64(tax)
-		tax=0
+		subsidy += uint64(tax)
+		tax = 0
 	}
 	// Subsidy paid to miner.
 	tx.AddTxOut(&types.TxOutput{
@@ -117,14 +116,14 @@ func createCoinbaseTx(coinBaseVal uint64,coinbaseScript []byte, opReturnPkScript
 	// Tax output.
 	if hasTax {
 		tx.AddTxOut(&types.TxOutput{
-			Amount:    uint64(tax),
+			Amount:   uint64(tax),
 			PkScript: params.OrganizationPkScript,
 		})
 	}
 	// nulldata.
 	if opReturnPkScript != nil {
 		tx.AddTxOut(&types.TxOutput{
-			Amount:    0,
+			Amount:   0,
 			PkScript: opReturnPkScript,
 		})
 	}
@@ -134,72 +133,72 @@ func createCoinbaseTx(coinBaseVal uint64,coinbaseScript []byte, opReturnPkScript
 }
 
 //calc coinbase
-func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, extraNonce uint64,payAddressS string) (*hash.Hash,[]Transactions){
-	transactions := make(Transactionses,0)
+func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig, coinbaseStr string, extraNonce uint64, payAddressS string) (*hash.Hash, []Transactions) {
+	transactions := make(Transactionses, 0)
 	if !h.HasCoinbasePack {
 		h.TotalFee = 0
-		for i:=0;i<len(h.Transactions);i++{
-			transactions = append(transactions,h.Transactions[i])
+		for i := 0; i < len(h.Transactions); i++ {
+			transactions = append(transactions, h.Transactions[i])
 		}
 		sort.Sort(transactions)
-		for i:=0;i<len(transactions);i++{
+		for i := 0; i < len(transactions); i++ {
 			h.TotalFee += transactions[i].Fee
 		}
 	}
-	payToAddress,err := address.DecodeAddress(payAddressS)
+	payToAddress, err := address.DecodeAddress(payAddressS)
 	if err != nil {
-		common.MinerLoger.Error("DecodeAddress","error",err)
-		return nil,[]Transactions{}
+		common.MinerLoger.Error("DecodeAddress", "error", err)
+		return nil, []Transactions{}
 	}
-	coinbaseScript, err := standardCoinbaseScript(coinbaseStr,h.Height, extraNonce)
+	coinbaseScript, err := standardCoinbaseScript(coinbaseStr, h.Height, extraNonce)
 	if err != nil {
-		common.MinerLoger.Error("standardCoinbaseScript","error",err)
-		return nil,[]Transactions{}
+		common.MinerLoger.Error("standardCoinbaseScript", "error", err)
+		return nil, []Transactions{}
 	}
 	opReturnPkScript, err := standardCoinbaseOpReturn([]byte{})
 	if err != nil {
-		common.MinerLoger.Error("standardCoinbaseOpReturn","error",err)
-		return nil,[]Transactions{}
+		common.MinerLoger.Error("standardCoinbaseOpReturn", "error", err)
+		return nil, []Transactions{}
 	}
 	//uit := 100000000
-	coinbaseTx, err := createCoinbaseTx(uint64(h.Coinbasevalue)-h.TotalFee,
+	coinbaseTx, err := createCoinbaseTx(uint64(h.Coinbasevalue),
 		coinbaseScript,
 		opReturnPkScript,
 		payToAddress,
 		cfg.NecessaryConfig.Param)
-	if err != nil{
-		common.MinerLoger.Error("createCoinbaseTx","error",err)
-		return nil,[]Transactions{}
+	if err != nil {
+		common.MinerLoger.Error("createCoinbaseTx", "error", err)
+		return nil, []Transactions{}
 	}
 
-	transactions = make(Transactionses,0)
+	transactions = make(Transactionses, 0)
 	totalTxFee := uint64(0)
 	if !h.HasCoinbasePack {
-		h.transactions = make([]*types.Tx,0)
-		tmpTrx := make(Transactionses,0)
-		for i:=0;i<len(h.Transactions);i++{
-			tmpTrx = append(tmpTrx,h.Transactions[i])
+		h.transactions = make([]*types.Tx, 0)
+		tmpTrx := make(Transactionses, 0)
+		for i := 0; i < len(h.Transactions); i++ {
+			tmpTrx = append(tmpTrx, h.Transactions[i])
 		}
 		sort.Sort(tmpTrx)
 		allSigCount := 0
 		//every time pack max 1000 transactions and max 5000 sign scripts
 		txCount := len(tmpTrx)
-		if txCount>(cfg.OptionConfig.MaxTxCount - 1){
+		if txCount > (cfg.OptionConfig.MaxTxCount - 1) {
 			txCount = cfg.OptionConfig.MaxTxCount - 1
 		}
-		for i:=0;i<txCount;i++{
-			if allSigCount > (cfg.OptionConfig.MaxSigCount - 1){
+		for i := 0; i < txCount; i++ {
+			if allSigCount > (cfg.OptionConfig.MaxSigCount - 1) {
 				break
 			}
-			transactions = append(transactions,tmpTrx[i])
+			transactions = append(transactions, tmpTrx[i])
 			allSigCount += tmpTrx[i].GetSigCount()
-			h.transactions = append(h.transactions,tmpTrx[i].EncodeTx())
+			h.transactions = append(h.transactions, tmpTrx[i].EncodeTx())
 		}
-		for i:=0;i<len(transactions);i++{
+		for i := 0; i < len(transactions); i++ {
 			totalTxFee += transactions[i].Fee
 		}
-	} else{
-		for i:=1;i<len(h.Transactions);i++{
+	} else {
+		for i := 1; i < len(h.Transactions); i++ {
 			totalTxFee += h.Transactions[i].Fee
 		}
 	}
@@ -208,43 +207,43 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig,coinbaseStr string, 
 	coinbaseTx.Tx.TxOut[0].Amount += uint64(totalTxFee)
 	h.AddCoinbaseTx(coinbaseTx)
 	coinbaseTx = fillWitnessToCoinBase(h.transactions)
-	txBuf,err := coinbaseTx.Tx.Serialize()
+	txBuf, err := coinbaseTx.Tx.Serialize()
 	if err != nil {
 		context := "Failed to serialize transaction"
 		common.MinerLoger.Error(context)
-		return nil,[]Transactions{}
+		return nil, []Transactions{}
 	}
-	coinbaseData := fmt.Sprintf("%x",txBuf)
+	coinbaseData := fmt.Sprintf("%x", txBuf)
 	if !h.HasCoinbasePack {
-		newtransactions := make(Transactionses,0)
-		newtransactions = append(newtransactions,Transactions{coinbaseTx.Tx.TxHash(),coinbaseData,0})
-		newtransactions = append(newtransactions,transactions...)
+		newtransactions := make(Transactionses, 0)
+		newtransactions = append(newtransactions, Transactions{coinbaseTx.Tx.TxHash(), coinbaseData, 0})
+		newtransactions = append(newtransactions, transactions...)
 		h.Transactions = newtransactions
 		h.HasCoinbasePack = true
 	} else {
-		h.Transactions[0] = Transactions{coinbaseTx.Tx.TxHash(),coinbaseData,0}
+		h.Transactions[0] = Transactions{coinbaseTx.Tx.TxHash(), coinbaseData, 0}
 	}
 	ha := h.BuildMerkleTreeStore(0)
-	return &ha,h.Transactions
+	return &ha, h.Transactions
 }
 
-func (h *BlockHeader) AddCoinbaseTx(coinbaseTx *types.Tx){
+func (h *BlockHeader) AddCoinbaseTx(coinbaseTx *types.Tx) {
 	if h.HasCoinbasePack {
 		h.transactions[0] = coinbaseTx
-	} else{
-		txs := make([]*types.Tx,0)
-		txs = append(txs,coinbaseTx)
-		txs = append(txs,h.transactions...)
+	} else {
+		txs := make([]*types.Tx, 0)
+		txs = append(txs, coinbaseTx)
+		txs = append(txs, h.transactions...)
 		h.transactions = txs
 	}
 }
 
 func fillWitnessToCoinBase(blockTxns []*types.Tx) *types.Tx {
-	merkles := BuildMerkleTreeStoreWithness(blockTxns,true)
-	txWitnessRoot:=merkles[len(merkles)-1]
-	witnessPreimage:=append(txWitnessRoot.Bytes(),blockTxns[0].Tx.TxIn[0].SignScript...)
+	merkles := BuildMerkleTreeStoreWithness(blockTxns, true)
+	txWitnessRoot := merkles[len(merkles)-1]
+	witnessPreimage := append(txWitnessRoot.Bytes(), blockTxns[0].Tx.TxIn[0].SignScript...)
 	witnessCommitment := hash.DoubleHashH(witnessPreimage[:])
-	blockTxns[0].Tx.TxIn[0].PreviousOut.Hash=witnessCommitment
+	blockTxns[0].Tx.TxIn[0].PreviousOut.Hash = witnessCommitment
 	blockTxns[0].RefreshHash()
 	return blockTxns[0]
 }
