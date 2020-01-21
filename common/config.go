@@ -46,6 +46,7 @@ var (
 	defaultWorkGroupSize = 256
 	defaultEdgeBits = 24
 	version = "0.3.5"
+	DefaultQitmeerVersion = "0.8.5"
 )
 
 type CommandConfig struct {
@@ -88,6 +89,7 @@ type OptionalConfig struct {
 	MiningSyncMode     bool   `long:"mining_sync_mode" description:"force stop the current task when new task come." default-mask:"true"`
 	ForceSolo     bool   `long:"force_solo" description:"force solo mining" default-mask:"false"`
 	BigGraphStartHeight     int   `long:"big_graph_start_height" description:"big graph start main height, how many days later,the r29 will be the main pow" default-mask:"45"`
+	QitmeerVer          string `long:"qitmeerver" description:"Can match qitmeer version"`
 }
 
 type PoolConfig struct {
@@ -221,6 +223,7 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 		MiningSyncMode:true,
 		ForceSolo:false,
 		BigGraphStartHeight:29,
+		QitmeerVer:DefaultQitmeerVersion,
 	}
 
 	// Create the home directory if it doesn't already exist.
