@@ -7,6 +7,7 @@ package common
 import (
 	"fmt"
 	"github.com/Qitmeer/qitmeer/core/address"
+	"github.com/Qitmeer/qitmeer/core/protocol"
 	l "github.com/Qitmeer/qitmeer/log"
 	"github.com/Qitmeer/qitmeer/params"
 	`github.com/Qitmeer/qitmeer/services/common`
@@ -46,7 +47,6 @@ var (
 	defaultWorkGroupSize = 256
 	defaultEdgeBits = 24
 	version = "0.3.5"
-	DefaultQitmeerVersion = "0.8.5"
 )
 
 type CommandConfig struct {
@@ -89,7 +89,6 @@ type OptionalConfig struct {
 	MiningSyncMode     bool   `long:"mining_sync_mode" description:"force stop the current task when new task come." default-mask:"true"`
 	ForceSolo     bool   `long:"force_solo" description:"force solo mining" default-mask:"false"`
 	BigGraphStartHeight     int   `long:"big_graph_start_height" description:"big graph start main height, how many days later,the r29 will be the main pow" default-mask:"45"`
-	QitmeerVer          string `long:"qitmeerver" description:"Can match qitmeer version"`
 }
 
 type PoolConfig struct {
@@ -223,7 +222,6 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 		MiningSyncMode:true,
 		ForceSolo:false,
 		BigGraphStartHeight:29,
-		QitmeerVer:DefaultQitmeerVersion,
 	}
 
 	// Create the home directory if it doesn't already exist.
@@ -403,4 +401,19 @@ func ConvertLogLevel(level string) l.Lvl {
 	default:
 		return l.LvlDebug
 	}
+}
+
+// Can support new version
+func CanSupportNewVersion(blockVersion uint,param *params.Params) bool {
+	switch param.Net {
+	case protocol.MainNet:
+		return blockVersion > 0
+	case protocol.TestNet:
+		return blockVersion > 11
+	case protocol.MixNet:
+		return blockVersion > 17
+	case protocol.PrivNet:
+		return blockVersion > 11
+	}
+	return false
 }

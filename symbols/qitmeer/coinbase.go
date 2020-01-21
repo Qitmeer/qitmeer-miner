@@ -161,9 +161,10 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig, coinbaseStr string,
 		return nil, []Transactions{}
 	}
 	//uit := 100000000
-	subsidy:=uint64(h.Coinbasevalue)
-	if cfg.OptionConfig.QitmeerVer == common.DefaultQitmeerVersion {
-		subsidy-=h.TotalFee
+	subsidy := uint64(h.Coinbasevalue)
+	blockVersion := uint(h.Version)
+	if !common.CanSupportNewVersion(blockVersion, cfg.NecessaryConfig.Param) {
+		subsidy -= h.TotalFee
 	}
 	coinbaseTx, err := createCoinbaseTx(subsidy,
 		coinbaseScript,
@@ -208,7 +209,7 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig, coinbaseStr string,
 	}
 
 	// miner get tx tax
-	if cfg.OptionConfig.QitmeerVer == common.DefaultQitmeerVersion {
+	if !common.CanSupportNewVersion(blockVersion, cfg.NecessaryConfig.Param) {
 		coinbaseTx.Tx.TxOut[0].Amount += uint64(totalTxFee)
 	}
 	h.AddCoinbaseTx(coinbaseTx)
