@@ -31,7 +31,7 @@ type BaseDevice interface {
 	SetWorkSize(lsize int)
 	SetPool(pool bool)
 	SetNewWork(w BaseWork)
-	SetForceUpdate()
+	SetForceUpdate(force bool)
 	Release()
 	GetMinerType() string
 	SubmitShare(substr chan string)
@@ -42,6 +42,7 @@ type Device struct{
 	Cfg *common.GlobalConfig  //must init
 	DeviceName string
 	HasNewWork bool
+	ForceStop bool
 	AllDiffOneShares uint64
 	AverageHashRate    float64
 	MinerId          uint32
@@ -112,11 +113,11 @@ func (this *Device)StopTask() {
 	this.StopTaskChan <- true
 }
 
-func (this *Device)SetForceUpdate() {
+func (this *Device)SetForceUpdate(force bool) {
 	if !this.GetIsValid(){
 		return
 	}
-	this.HasNewWork = true
+	this.ForceStop = force
 	this.AllDiffOneShares = 0
 }
 

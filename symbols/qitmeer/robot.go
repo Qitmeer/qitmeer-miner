@@ -171,6 +171,7 @@ func (this *QitmeerRobot)ListenWork() {
 					if !dev.GetIsValid(){
 						continue
 					}
+					dev.SetForceUpdate(false)
 					validDeviceCount++
 					newWork := this.Work.CopyNew()
 					dev.SetNewWork(&newWork)
@@ -185,7 +186,8 @@ func (this *QitmeerRobot)ListenWork() {
 			} else if this.Work.ForceUpdate {
 				for _, dev := range this.Devices {
 					common.MinerLoger.Debug("task stopped by force")
-					dev.SetForceUpdate()
+					dev.SetNewWork(&this.Work)
+					dev.SetForceUpdate(true)
 				}
 			}
 		}

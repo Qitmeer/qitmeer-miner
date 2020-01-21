@@ -171,7 +171,9 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 		if !this.IsValid {
 			return
 		}
-
+		if this.ForceStop{
+			continue
+		}
 		if len(this.Work.PoolWork.WorkData) <= 0 && this.Work.Block.Height <= 0 {
 			continue
 		}
@@ -190,7 +192,7 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 		this.AllDiffOneShares = 0
 		for {
 			// if has new work ,current calc stop
-			if this.HasNewWork {
+			if this.HasNewWork || this.ForceStop{
 				common.MinerLoger.Debug("================exit because new task coming ==============")
 				this.AllDiffOneShares = 0
 				break

@@ -107,7 +107,7 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 			case w := <- work:
 				this.HasNewWork = false
 				for{
-					if this.HasNewWork{
+					if this.HasNewWork || this.ForceStop{
 						break
 					}
 					this.Work = w.(*QitmeerWork)
@@ -139,6 +139,13 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 				continue
 			}
 			cwork := w.(*QitmeerWork)
+			if this.ForceStop{
+				if this.IsRunning && this.solverCtx != nil{
+					C.stop_solver(this.solverCtx)
+				}
+				common.MinerLoger.Debug("=============force stop because network============")
+				continue
+			}
 			if this.Pool && cwork.PoolWork.JobID != common.JobID{
 				continue
 			}

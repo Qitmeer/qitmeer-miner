@@ -131,6 +131,9 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 		if !this.IsValid {
 			continue
 		}
+		if this.ForceStop{
+			continue
+		}
 		if len(this.Work.PoolWork.WorkData) <= 0 && this.Work.Block.Height <= 0 {
 			continue
 		}
@@ -148,7 +151,7 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 		this.AllDiffOneShares = 0
 		for {
 			// if has new work ,current calc stop
-			if this.HasNewWork {
+			if this.HasNewWork || this.ForceStop{
 				break
 			}
 			this.Update()
