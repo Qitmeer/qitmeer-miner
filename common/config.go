@@ -7,6 +7,7 @@ package common
 import (
 	"fmt"
 	"github.com/Qitmeer/qitmeer/core/address"
+	"github.com/Qitmeer/qitmeer/core/protocol"
 	l "github.com/Qitmeer/qitmeer/log"
 	"github.com/Qitmeer/qitmeer/params"
 	`github.com/Qitmeer/qitmeer/services/common`
@@ -400,4 +401,19 @@ func ConvertLogLevel(level string) l.Lvl {
 	default:
 		return l.LvlDebug
 	}
+}
+
+// Can support new version
+func CanSupportNewVersion(blockVersion uint,param *params.Params) bool {
+	switch param.Net {
+	case protocol.MainNet:
+		return blockVersion > 0
+	case protocol.TestNet:
+		return blockVersion > 11
+	case protocol.MixNet:
+		return blockVersion > 17
+	case protocol.PrivNet:
+		return blockVersion > 11
+	}
+	return false
 }
