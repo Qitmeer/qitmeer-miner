@@ -59,10 +59,10 @@ func calcBlockProportion(coinbaseVal uint64, params *params.Params) (uint64, uin
 //
 // See the comment for NewBlockTemplate for more information about why the nil
 // address handling is useful.
-func createCoinbaseTx(coinBaseVal uint64, coinbaseScript []byte, opReturnPkScript []byte, addr types.Address, params *params.Params) (*types.Tx, error) {
+func createCoinbaseTx(subsidy uint64, coinbaseScript []byte, opReturnPkScript []byte, addr types.Address, params *params.Params) (*types.Tx, error) {
 	tx := types.NewTransaction()
 	tx.AddTxIn(&types.TxInput{
-		// Coinbase transactions have no inputs, so previous outpoint is
+		// Coinbase085 transactions have no inputs, so previous outpoint is
 		// zero hash and max index.
 		PreviousOut: *types.NewOutPoint(&hash.Hash{},
 			types.MaxPrevOutIndex),
@@ -76,8 +76,7 @@ func createCoinbaseTx(coinBaseVal uint64, coinbaseScript []byte, opReturnPkScrip
 		hasTax = true
 	}
 	// Create a coinbase with correct block subsidy and extranonce.
-	subsidy := coinBaseVal
-	tax := CalcBlockTaxSubsidy(coinBaseVal, params)
+	tax := CalcBlockTaxSubsidy(subsidy, params)
 	// output
 	// Create the script to pay to the provided payment address if one was
 	// specified.  Otherwise create a script that allows the coinbase to be
