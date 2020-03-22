@@ -4,15 +4,6 @@ james
 */
 package qitmeer
 /*
-#cgo LDFLAGS: -lcuckoo
-#cgo darwin LDFLAGS: -L../../lib/cuckoo/target/x86_64-apple-darwin/release
-#cgo windows LDFLAGS: -L../../lib/cuckoo/target/x86_64-pc-windows-gnu/release
-#cgo linux LDFLAGS: -L../../lib/cuckoo/target/x86_64-unknown-linux-musl/release
-#cgo windows LDFLAGS: -lws2_32
-#cgo windows LDFLAGS: -luserenv
-#include "../../lib/cuckoo.h"
-#include <stdio.h>
-#include <stdlib.h>
 */
 import "C"
 import (
@@ -219,8 +210,8 @@ func (this *Cuckatoo) Mine(wg *sync.WaitGroup) {
 			// copy the data into the buffer, by converting it to a Go array
 			cBuf := (*[1 << 30]byte)(p)
 			copy(cBuf[:], this.ResultBytes)
-			C.search_circle((*C.uint)(p),(C.ulong)(C.size_t(len(this.ResultBytes))),(*C.uint)(unsafe.Pointer(&noncesBytes[0])))
-			C.free(p)
+			// C.search_circle((*C.uint)(p),(C.ulong)(C.size_t(len(this.ResultBytes))),(*C.uint)(unsafe.Pointer(&noncesBytes[0])))
+			// C.free(p)
 			// when GPU find cuckoo cycle one time GPS/s
 			this.AllDiffOneShares += 1
 			this.Nonces = make([]uint32,0)
