@@ -796,7 +796,7 @@ int run_solver(int device_id,
 	u64 time0, time1;
 	u32 timems;
 	u32 sumnsols = 0;
-	//print_log("\n cudaSetDevice device id %d start \n",device_id);
+	print_log("\n cudaSetDevice device id %d start \n",device_id);
 	cudaSetDevice(device_id);
 	//cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync);
 	SolverCtx * ctx = (SolverCtx *)ctxInfo;
@@ -806,7 +806,7 @@ int run_solver(int device_id,
 	 print_log("Reason: %s\n", LAST_ERROR_REASON);
 	 return 0;
 	}
-	//print_log("\n************begin work! range %lu*************\n",range);
+	print_log("\n************begin work! range %lu*************\n",range);
 	for (u32 r = 0; r < range; r++) {
 	if(ctx->trimmer.abort){
 	    print_log("\n ***************** stop because new task *******************\n");
