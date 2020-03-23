@@ -138,6 +138,9 @@ func (this *Blake2bD) Mine(wg *sync.WaitGroup) {
 		if !this.IsValid {
 			return
 		}
+		if this.ForceStop{
+			continue
+		}
 		if !this.HasNewWork || this.Work == nil{
 			continue
 		}
@@ -159,7 +162,7 @@ func (this *Blake2bD) Mine(wg *sync.WaitGroup) {
 
 		for {
 			// if has new work ,current calc stop
-			if this.HasNewWork {
+			if this.HasNewWork || this.ForceStop{
 				break
 			}
 			this.Update()
