@@ -57,14 +57,15 @@ func (this *CudaCuckaroo) InitDevice() {
 	this.average = [10]float64{0, 0, 0, 0, 0, 0}
 	this.averageJ = 1
 	C.init_solver((C.int)(this.MinerId), &this.solverCtx,
-		this.Cfg.OptionConfig.Expand, this.Cfg.OptionConfig.Ntrims,
-		this.Cfg.OptionConfig.Genablocks,
-		this.Cfg.OptionConfig.Genatpb,
-		this.Cfg.OptionConfig.Genbtpb,
-		this.Cfg.OptionConfig.Trimtpb,
-		this.Cfg.OptionConfig.Tailtpb,
-		this.Cfg.OptionConfig.Recoverblocks,
-		this.Cfg.OptionConfig.Recovertpb,
+		(C.int)(this.Cfg.OptionConfig.Expand),
+		(C.int)(this.Cfg.OptionConfig.Ntrims),
+		(C.int)(this.Cfg.OptionConfig.Genablocks),
+		(C.int)(this.Cfg.OptionConfig.Genatpb),
+		(C.int)(this.Cfg.OptionConfig.Genbtpb),
+		(C.int)(this.Cfg.OptionConfig.Trimtpb),
+		(C.int)(this.Cfg.OptionConfig.Tailtpb),
+		(C.int)(this.Cfg.OptionConfig.Recoverblocks),
+		(C.int)(this.Cfg.OptionConfig.Recovertpb),
 	)
 }
 
