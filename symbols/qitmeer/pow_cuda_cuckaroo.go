@@ -1,4 +1,4 @@
-///+build cuda,!opencl
+//+build cuda,!opencl
 
 /**
 Qitmeer
