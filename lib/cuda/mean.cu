@@ -827,11 +827,13 @@ int run_solver(int device_id,
 	//		print_log("\n************** [info] # Device HashRate:%f GPS **************\n",1000.00/(double)timems);
 	 //}
 
-	 bool isFound = false;
+	 //bool isFound = false;
 	 for (unsigned s = 0; s < nsols; s++) {
+
+        if(s >= 10) break;
 		u32* prf = &ctx->sols[s * PROOFSIZE];
 		for (u32 i = 0; i < PROOFSIZE; i++){
-		    cycleNonces[i] = (unsigned int)prf[i];
+		    cycleNonces[s*PROOFSIZE+i] = (unsigned int)prf[i];
 		}
 		int pow_rc = verify(prf, &ctx->trimmer.sipkeys);
 		if (pow_rc == POW_OK) {
@@ -876,15 +878,15 @@ int run_solver(int device_id,
 					break;
 				}
 			}
-			if(isFound) break;
+			//if(isFound) break;
 		} else {
 			print_log("FAILED due to %s\n", errstr[pow_rc]);
 		}
 	 }
 	 sumnsols += nsols;
-	 if(isFound){
-			break;
-	 }
+	// if(isFound){
+	//		break;
+	 //}
 	}
 	return sumnsols;
 }
