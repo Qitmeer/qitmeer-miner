@@ -900,7 +900,7 @@ int run_solver(int device_id,
 #ifdef ISWINDOWS
 	 __declspec(dllexport)
 #endif
-	 int init_solver(int device_id,void **ctxInfo){
+	 int init_solver(int device_id,void **ctxInfo,int expand,int ntrims,int genablocks,int genatpb,int genbtpb,int trimtpb,int tailtpb,int recoverblocks,int recovertpb){
 			try{
  			// set defaults
  			SolverParams params;
@@ -913,21 +913,22 @@ int run_solver(int device_id,
  			//u64 dbytes = prop.totalGlobalMem;
  			//int dunit;
  			//for (dunit=0; dbytes >= 102400; dbytes>>=10,dunit++) ;
+ 			params.expand = 0;
+			params.ntrims = 70 & -2;
+ 			params.genablocks = 1024;
+			params.genatpb = genatpb;
+			params.genbtpb = genbtpb;
+			params.trimtpb = trimtpb;
+ 			params.tailtpb = tailtpb;
+			params.recoverblocks = recoverblocks;
+ 			params.recovertpb = recovertpb;
  			SolverCtx* ctx = create_solver_ctx(&params);
  	 	 	*ctxInfo = ctx;
  			//u64 bytes = ctx->trimmer.globalbytes();
  			//int unit;
  			//for (unit=0; bytes >= 102400; bytes>>=10,unit++) ;
  			//print_log("\n************init solver success!*************\n");
- 			params->expand = 0;
- 			params->ntrims = 40 & -2;
- 			params->genablocks = 1024;
- 			params->genatpb = 256;
- 			params->genbtpb = 128;
- 			params->trimtpb = 256;
- 			params->tailtpb = 1024;
- 			params->recoverblocks = 1024;
- 			params->recovertpb = 1024;
+
  			return 0;
 			}
 			catch(...){
