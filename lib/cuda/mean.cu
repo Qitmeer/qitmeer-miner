@@ -832,9 +832,7 @@ int run_solver(int device_id,
 
         if(s >= 10) break;
 		u32* prf = &ctx->sols[s * PROOFSIZE];
-		for (u32 i = 0; i < PROOFSIZE; i++){
-		    cycleNonces[s*PROOFSIZE+i] = (unsigned int)prf[i];
-		}
+
 		int pow_rc = verify(prf, &ctx->trimmer.sipkeys);
 		if (pow_rc == POW_OK) {
 			Nonce[0] = nonce+r;
@@ -869,7 +867,10 @@ int run_solver(int device_id,
 
 			for( int j=0;j<32;j++){
 				if(cyclehashd[31-j]<target[j]){
-					isFound = true;
+					//isFound = true;
+						for (u32 i = 0; i < PROOFSIZE; i++){
+                    		    cycleNonces[s*PROOFSIZE+i] = (unsigned int)prf[i];
+                    		}
 					break;
 				} else if(cyclehashd[31-j]>target[j]){
 				    //print_log("\n************** [info] # Found 42-cycles ,But difficulty is not match! **************\n");
