@@ -873,7 +873,7 @@ int run_solver(int device_id,
 					break;
 				} else if(cyclehashd[31-j]>target[j]){
 				    //print_log("\n************** [info] # Found 42-cycles ,But difficulty is not match! **************\n");
-					isFound = false;
+					//isFound = false;
 					nsols--;
 					break;
 				}
