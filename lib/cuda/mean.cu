@@ -809,7 +809,7 @@ int run_solver(int device_id,
 	//print_log("\n************begin work! range %lu*************\n",range);
 	for (u32 r = 0; r < range; r++) {
 	if(ctx->trimmer.abort){
-	    //print_log("\n ***************** stop because new task *******************\n");
+	    print_log("\n ***************** stop because new task *******************\n");
 	    return 0;
 	}
 
@@ -823,9 +823,9 @@ int run_solver(int device_id,
 	 }
 	 average[r%10] = 1000.00/(double)timems;
 
-	// if( (time1/1000000 /1000) % 15 == 0){
-	//		print_log("\n************** [info] # Device HashRate:%f GPS **************\n",1000.00/(double)timems);
-	// }
+	 if( (time1/1000000 /1000) % 15 == 0){
+			print_log("\n************** [info] # Device HashRate:%f GPS **************\n",1000.00/(double)timems);
+	 }
 
 	 bool isFound = false;
 	 for (unsigned s = 0; s < nsols; s++) {
@@ -913,9 +913,9 @@ int run_solver(int device_id,
  			//u64 dbytes = prop.totalGlobalMem;
  			//int dunit;
  			//for (dunit=0; dbytes >= 102400; dbytes>>=10,dunit++) ;
- 			params.expand = 0;
-			params.ntrims = 70 & -2;
- 			params.genablocks = 1024;
+ 			params.expand = expand;
+			params.ntrims = ntrims & -2;
+ 			params.genablocks = genablocks;
 			params.genatpb = genatpb;
 			params.genbtpb = genbtpb;
 			params.trimtpb = trimtpb;
