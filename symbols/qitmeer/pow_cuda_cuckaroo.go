@@ -17,14 +17,17 @@ package qitmeer
 import "C"
 import (
 	"crypto/md5"
+	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"github.com/Qitmeer/qitmeer-miner/common"
 	"github.com/Qitmeer/qitmeer-miner/core"
+	"github.com/Qitmeer/qitmeer/common/hash"
 	"github.com/Qitmeer/qitmeer/core/types"
 	"github.com/Qitmeer/qitmeer/core/types/pow"
 	"math"
 	"math/big"
+	"sort"
 	"sync"
 	"time"
 	"unsafe"
@@ -209,11 +212,11 @@ func (this *CudaCuckaroo) CardRun() bool {
 		copy(hData[108:112], nonceBytes)
 		index := 0
 		for {
+			if index > 9 {
+				break
+			}
 			cbytes := cycleNoncesBytes[index*42*4 : (index+1)*42*4]
 			for jj := 0; jj < len(cbytes); jj += 4 {
-				if index > 9 {
-					break
-				}
 				tj := binary.LittleEndian.Uint32(cbytes[jj : jj+4])
 				if tj <= 0 {
 					isFind = 0
