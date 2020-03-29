@@ -181,7 +181,7 @@ func (this *CudaCuckaroo) CardRun() bool {
 	this.Nonces = make([]uint32, 0)
 	hData := this.header.HeaderBlock.BlockData()[:types.MaxBlockHeaderPayload-pow.PROOF_DATA_CIRCLE_NONCE_END]
 	powStruct := this.header.HeaderBlock.Pow.(*pow.Cuckaroo)
-	cycleNoncesBytes := make([]byte, 42*4*10) //max 10 answers
+	cycleNoncesBytes := make([]byte, 42*4) //max 1 answers
 	nonceBytes := make([]byte, 4)
 	this.average[0] = 0
 	graphWeight := CuckarooGraphWeight(int64(this.header.Height), int64(this.Cfg.OptionConfig.BigGraphStartHeight), uint(this.EdgeBits))
@@ -210,57 +210,48 @@ func (this *CudaCuckaroo) CardRun() bool {
 		common.MinerLoger.Debug(fmt.Sprintf("# %d", this.MinerId) + "will submit header info :" + this.header.JobID + "-" + this.header.Exnonce2 + "-" + this.Work.PoolWork.ExtraNonce1)
 		//nonce
 		copy(hData[108:112], nonceBytes)
-		index := 0
-		for {
-			if index > 9 {
+		cbytes := cycleNoncesBytes[0 : 42*4]
+		for jj := 0; jj < len(cbytes); jj += 4 {
+			tj := binary.LittleEndian.Uint32(cbytes[jj : jj+4])
+			if tj <= 0 {
+				isFind = 0
 				break
 			}
-			cbytes := cycleNoncesBytes[index*42*4 : (index+1)*42*4]
-			for jj := 0; jj < len(cbytes); jj += 4 {
-				tj := binary.LittleEndian.Uint32(cbytes[jj : jj+4])
-				if tj <= 0 {
-					isFind = 0
-					break
-				}
-				this.Nonces = append(this.Nonces, tj)
-			}
-			if isFind != 1 {
-				c <- "not found"
-				return
-			}
-			sort.Slice(this.Nonces, func(i, j int) bool {
-				return this.Nonces[i] < this.Nonces[j]
-			})
-			powStruct.SetCircleEdges(this.Nonces)
-			powStruct.SetNonce(binary.LittleEndian.Uint32(nonceBytes))
-			powStruct.SetEdgeBits(uint8(this.EdgeBits))
-			subData := BlockDataWithProof(this.header.HeaderBlock)
-			copy(subData[:113], hData[:113])
-			h := hash.DoubleHashH(subData)
-			common.MinerLoger.Debug(fmt.Sprintf("# %d Calc Hash %s  target diff:%d  target:%s", this.MinerId, h, this.header.TargetDiff.Uint64(), target))
-
-			subm := hex.EncodeToString(subData)
-
-			if !this.Pool {
-				subm += common.Int2varinthex(int64(len(this.header.Parents)))
-				for j := 0; j < len(this.header.Parents); j++ {
-					subm += this.header.Parents[j].Data
-				}
-				txCount := len(this.header.Transactions)
-				subm += common.Int2varinthex(int64(txCount))
-
-				for j := 0; j < txCount; j++ {
-					subm += this.header.Transactions[j].Data
-				}
-				subm += "-" + fmt.Sprintf("%d", txCount) + "-" + fmt.Sprintf("%d", this.header.Height)
-			} else {
-				subm += "-" + this.header.JobID + "-" + this.header.Exnonce2
-			}
-			common.MinerLoger.Debug(fmt.Sprintf("# %d", this.MinerId)+"subm:", subm)
-			common.MinerLoger.Debug(fmt.Sprintf("# %d submit header job info :", this.MinerId) + this.header.JobID + "-" + this.header.Exnonce2)
-			this.SubmitData <- subm
-			index++
+			this.Nonces = append(this.Nonces, tj)
 		}
+		if isFind != 1 {
+			c <- "not found"
+			return
+		}
+		sort.Slice(this.Nonces, func(i, j int) bool {
+			return this.Nonces[i] < this.Nonces[j]
+		})
+		powStruct.SetCircleEdges(this.Nonces)
+		powStruct.SetNonce(binary.LittleEndian.Uint32(nonceBytes))
+		powStruct.SetEdgeBits(uint8(this.EdgeBits))
+		subData := BlockDataWithProof(this.header.HeaderBlock)
+		copy(subData[:113], hData[:113])
+		h := hash.DoubleHashH(subData)
+		common.MinerLoger.Debug(fmt.Sprintf("# %d Calc Hash %s  target diff:%d  target:%s", this.MinerId, h, this.header.TargetDiff.Uint64(), target))
+
+		subm := hex.EncodeToString(subData)
+
+		if !this.Pool {
+			subm += common.Int2varinthex(int64(len(this.header.Parents)))
+			for j := 0; j < len(this.header.Parents); j++ {
+				subm += this.header.Parents[j].Data
+			}
+			txCount := len(this.header.Transactions)
+			subm += common.Int2varinthex(int64(txCount))
+
+			for j := 0; j < txCount; j++ {
+				subm += this.header.Transactions[j].Data
+			}
+			subm += "-" + fmt.Sprintf("%d", txCount) + "-" + fmt.Sprintf("%d", this.header.Height)
+		} else {
+			subm += "-" + this.header.JobID + "-" + this.header.Exnonce2
+		}
+		this.SubmitData <- subm
 		c <- nil
 	}()
 	this.IsRunning = true

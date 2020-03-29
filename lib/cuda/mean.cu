@@ -18,7 +18,7 @@ typedef u32 node_t;
 typedef u64 nonce_t;
 
 #ifndef XBITS
-#define XBITS 6
+#define XBITS 5
 #endif
 
 #define NODEBITS (EDGEBITS + 1)
@@ -357,7 +357,7 @@ struct trimparams {
 
 	trimparams() {
 	 expand					=	 0;
-	 ntrims					=	176;
+	 ntrims					=	65;
 	 genA.blocks			= 4096;
 	 genA.tpb				=	256;
 	 genB.blocks			=	NX2;
@@ -654,19 +654,22 @@ struct solver_ctx {
 	 return nu;
 	}
 
-	void addedge(uint2 edge) {
+	bool addedge(uint2 edge) {
 	 const u32 u0 = edge.x << 1, v0 = (edge.y << 1) | 1;
 	 if (u0) {
 		u32 nu = path(u0, us), nv = path(v0, vs);
 		if (!nu-- || !nv--)
-			return; // drop edge causing trouble
+			return false; // drop edge causing trouble
 		// print_log("vx %02x ux %02x e %08x uxyz %06x vxyz %06x u0 %x v0 %x nu %d nv %d\n", vx, ux, e, uxyz, vxyz, u0, v0, nu, nv);
 		if (us[nu] == vs[nv]) {
 			const u32 min = nu < nv ? nu : nv;
 			for (nu -= min, nv -= min; us[nu] != vs[nv]; nu++, nv++) ;
 			const u32 len = nu + nv + 1;
-			if (len == PROOFSIZE)
-			 solution(us, nu, vs, nv);
+			if (len == PROOFSIZE){
+			solution(us, nu, vs, nv);
+			return true;
+			}
+
 			// if (len == 2) print_log("edge %x %x\n", edge.x, edge.y);
 		} else if (nu < nv) {
 			while (nu--)
@@ -678,12 +681,13 @@ struct solver_ctx {
 			cuckoo->set(v0, u0);
 		}
 	 }
+	 return false;
 	}
 
 	void findcycles(uint2 *edges, u32 nedges) {
 	 memset(cuckoo->cuckoo, 0, CUCKOO_SIZE * sizeof(u64));
 	 for (u32 i = 0; i < nedges; i++)
-		addedge(edges[i]);
+		if (addedge(edges[i]) ) break;
 	}
 
 	int solve() {
@@ -827,10 +831,9 @@ int run_solver(int device_id,
 	//		print_log("\n************** [info] # Device HashRate:%f GPS **************\n",1000.00/(double)timems);
 	 //}
 
-	 //bool isFound = false;
+	 bool isFound = false;
 	 for (unsigned s = 0; s < nsols; s++) {
 
-        if(s >= 10) break;
 		u32* prf = &ctx->sols[s * PROOFSIZE];
 
 		int pow_rc = verify(prf, &ctx->trimmer.sipkeys);
@@ -867,9 +870,9 @@ int run_solver(int device_id,
 
 			for( int j=0;j<32;j++){
 				if(cyclehashd[31-j]<target[j]){
-					//isFound = true;
+					isFound = true;
 						for (u32 i = 0; i < PROOFSIZE; i++){
-                    		    cycleNonces[s*PROOFSIZE+i] = (unsigned int)prf[i];
+                    		    cycleNonces[i] = (unsigned int)prf[i];
                     		}
 					break;
 				} else if(cyclehashd[31-j]>target[j]){
@@ -879,15 +882,15 @@ int run_solver(int device_id,
 					break;
 				}
 			}
-			//if(isFound) break;
+			if(isFound) break;
 		} else {
 			print_log("FAILED due to %s\n", errstr[pow_rc]);
 		}
 	 }
 	 sumnsols += nsols;
-	// if(isFound){
-	//		break;
-	 //}
+	 if(isFound){
+			break;
+	 }
 	}
 	return sumnsols;
 }
