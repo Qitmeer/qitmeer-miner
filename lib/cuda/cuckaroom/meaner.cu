@@ -811,10 +811,8 @@ const u32 ALL_EDGES_B = EDGES_B * NB;
 #define checkCudaErrors(ans) (gpuAssert((ans), __FILE__, __LINE__) != cudaSuccess)
 
 inline int gpuAssert(cudaError_t code, const char *file, int line, bool abort=true) {
-  int device_id;
-  cudaGetDevice(&device_id);
   if (code != cudaSuccess) {
-    snprintf(LAST_ERROR_REASON, MAX_NAME_LEN, "Device %d GPUassert: %s %s %d", device_id, cudaGetErrorString(code), file, line);
+    snprintf(LAST_ERROR_REASON, MAX_NAME_LEN, " GPUassert: %s %s %d",  cudaGetErrorString(code), file, line);
     cudaDeviceReset();
     if (abort) return code;
   }
@@ -1317,10 +1315,12 @@ int run_solver(int device_id,
 	 int init_solver(int device_id,void **ctxInfo,int expand,int ntrims,int genablocks,int genatpb,int genbtpb,int trimtpb,int tailtpb,int recoverblocks,int recovertpb){
               // set defaults
               SolverParams params;
+
               fill_default_params(&params);
               int nDevices;
                 if (checkCudaErrors(cudaGetDeviceCount(&nDevices)) ) return 0;
                 assert(device_id < nDevices);
+                params->device = device_id;
                 cudaDeviceProp prop;
                 if (checkCudaErrors(cudaGetDeviceProperties(&prop, device_id)) ) return 0;
                 cudaSetDevice(device_id);
