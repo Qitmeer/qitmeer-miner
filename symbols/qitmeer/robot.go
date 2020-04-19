@@ -37,11 +37,19 @@ type QitmeerRobot struct {
 func (this *QitmeerRobot) GetPow(i int, device *cl.Device) core.BaseDevice {
 	switch this.Cfg.NecessaryConfig.Pow {
 	case POW_CUCKROOM:
-		deviceMiner := &CudaCuckaroom{}
-		deviceMiner.MiningType = "cuckaroom"
-		deviceMiner.Init(i, device, this.Pool, this.Quit, this.Cfg)
-		this.Devices = append(this.Devices, deviceMiner)
-		return deviceMiner
+		if !this.Cfg.OptionConfig.Cuda {
+			deviceMiner := &Cuckaroo{}
+			deviceMiner.MiningType = "cuckaroom"
+			deviceMiner.Init(i, device, this.Pool, this.Quit, this.Cfg)
+			this.Devices = append(this.Devices, deviceMiner)
+			return deviceMiner
+		} else {
+			deviceMiner := &CudaCuckaroom{}
+			deviceMiner.MiningType = "cuckaroom"
+			deviceMiner.Init(i, device, this.Pool, this.Quit, this.Cfg)
+			this.Devices = append(this.Devices, deviceMiner)
+			return deviceMiner
+		}
 	case POW_CUCKROO:
 		if !this.Cfg.OptionConfig.Cuda {
 			deviceMiner := &Cuckaroo{}
