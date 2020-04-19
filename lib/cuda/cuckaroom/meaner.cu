@@ -1204,89 +1204,6 @@ static_assert(NLISTS % (RELAY_TPB) == 0, "RELAY_TPB must divide NLISTS"); // for
 static_assert(NZ % (32 * SPLIT_TPB) == 0, "SPLIT_TPB must divide NZ/32"); // for EdgeSplit htnode init
 static_assert(NZ % (32 *  TRIM_TPB) == 0, "TRIM_TPB must divide NZ/32"); // for Round htnode init
 
-int main(int argc, char **argv) {
-  trimparams tp;
-  u32 nonce = 0;
-  u32 range = 1;
-  u32 device = 0;
-  char header[HEADERLEN];
-  u32 len;
-  int c;
-
-  // set defaults
-  SolverParams params;
-  fill_default_params(&params);
-
-  memset(header, 0, sizeof(header));
-  while ((c = getopt(argc, argv, "scd:h:m:n:r:U:Z:z:")) != -1) {
-    switch (c) {
-      case 's':
-        print_log("SYNOPSIS\n  cuda%d [-s] [-c] [-d device] [-h hexheader] [-m trims] [-n nonce] [-r range] [-U seedblocks] [-Z recoverblocks] [-z recoverthreads]\n", EDGEBITS);
-        print_log("DEFAULTS\n  cuda%d -d %d -h \"\" -m %d -n %d -r %d -U %d -Z %d -z %d\n", EDGEBITS, device, tp.ntrims, nonce, range, tp.seed.blocks, tp.recover.blocks, tp.recover.tpb);
-        exit(0);
-      case 'c':
-        params.cpuload = false;
-        break;
-      case 'd':
-        device = params.device = atoi(optarg);
-        break;
-      case 'h':
-        len = strlen(optarg)/2;
-        assert(len <= sizeof(header));
-        for (u32 i=0; i<len; i++)
-          sscanf(optarg+2*i, "%2hhx", header+i); // hh specifies storage of a single byte
-        break;
-      case 'm': // ntrims         =        15;
-        params.ntrims = atoi(optarg);
-        break;
-      case 'n':
-        nonce = atoi(optarg);
-        break;
-      case 'r':
-        range = atoi(optarg);
-        break;
-      case 'U': // seed.blocks    =      1024;
-        params.genablocks = atoi(optarg);
-        break;
-      case 'Z': // recover.blocks =      2048;
-        params.recoverblocks = atoi(optarg);
-        break;
-      case 'z': // recover.tpb    =       256;
-        params.recovertpb = atoi(optarg);
-        break;
-    }
-  }
-
-  int nDevices;
-  if (checkCudaErrors(cudaGetDeviceCount(&nDevices)) ) return 0;
-  assert(device < nDevices);
-  cudaDeviceProp prop;
-  if (checkCudaErrors(cudaGetDeviceProperties(&prop, device)) ) return 0;
-  u64 dbytes = prop.totalGlobalMem;
-  int dunit;
-  for (dunit=0; dbytes >= 102040; dbytes>>=10,dunit++) ;
-  print_log("%s with %d%cB @ %d bits x %dMHz\n", prop.name, (u32)dbytes, " KMGT"[dunit], prop.memoryBusWidth, prop.memoryClockRate/1000);
-  // cudaSetDevice(device);
-
-  print_log("Looking for %d-cycle on cuckaroom%d(\"%s\",%d", PROOFSIZE, EDGEBITS, header, nonce);
-  if (range > 1)
-    print_log("-%d", nonce+range-1);
-  print_log(") with 50%% edges, %d buckets, and %d trims.\n", NB, params.ntrims);
-
-  assert(params.recovertpb >= PROOFSIZE);
-  SolverCtx* ctx = create_solver_ctx(&params);
-
-  u64 bytes = ctx->trimmer.globalbytes();
-  int unit;
-  for (unit=0; bytes >= 102400; bytes>>=10,unit++) ;
-  print_log("Using %d%cB of global memory.\n", (u32)bytes, " KMGT"[unit]);
-
-  run_solver(ctx, header, sizeof(header), nonce, range, NULL, NULL);
-
-  return 0;
-}
-
-
 extern "C" {
 
 #ifdef ISWINDOWS
@@ -1309,16 +1226,12 @@ int run_solver(int device_id,
     u64 time0, time1;
       u32 timems;
       u32 sumnsols = 0;
-      int device_id;
       SolverCtx * ctx = (SolverCtx *)ctxInfo;
       ctx->start();
       if (ctx == NULL || !ctx->trimmer.initsuccess){
         print_log("Error initialising trimmer. Aborting.\n");
         print_log("Reason: %s\n", LAST_ERROR_REASON);
-        if (stats != NULL) {
-           stats->has_errored = true;
-           strncpy(stats->error_reason, LAST_ERROR_REASON, MAX_NAME_LEN);
-        }
+
         return 0;
       }
       for (u32 r = 0; r < range; r++) {
@@ -1329,25 +1242,20 @@ int run_solver(int device_id,
         	}
         time0 = timestamp();
         ctx->setheadernonce(header, header_length, nonce + r);
-        print_log("nonce %d k0 k1 k2 k3 %llx %llx %llx %llx\n", nonce+r, ctx->trimmer.sipkeys.k0, ctx->trimmer.sipkeys.k1, ctx->trimmer.sipkeys.k2, ctx->trimmer.sipkeys.k3);
+        //print_log("nonce %d k0 k1 k2 k3 %llx %llx %llx %llx\n", nonce+r, ctx->trimmer.sipkeys.k0, ctx->trimmer.sipkeys.k1, ctx->trimmer.sipkeys.k2, ctx->trimmer.sipkeys.k3);
         u32 nsols = ctx->solve();
         time1 = timestamp();
         timems = (time1 - time0) / 1000000;
-        print_log("Hashrate: %0.6f gps\n", (double)1000/timems);
+        //print_log("Hashrate: %0.6f gps\n", (double)1000/timems);
         average[r%10] = 1000.00/(double)timems;
+        bool isFound = false;
         for (unsigned s = 0; s < nsols; s++) {
           print_log("Solution");
           u32* prf = &ctx->sols[s * PROOFSIZE];
           //for (u32 i = 0; i < PROOFSIZE; i++)
            // print_log(" %jx", (uintmax_t)prf[i]);
           print_log("\n");
-          if (solutions != NULL){
-            solutions->edge_bits = EDGEBITS;
-            solutions->num_sols++;
-            solutions->sols[sumnsols+s].nonce = nonce + r;
-            for (u32 i = 0; i < PROOFSIZE; i++)
-              solutions->sols[sumnsols+s].proof[i] = (u64) prf[i];
-          }
+
           int pow_rc = verify(prf, ctx->trimmer.sipkeys);
           if (pow_rc == POW_OK) {
 
@@ -1358,6 +1266,7 @@ int run_solver(int device_id,
            			for( int j=0;j<header_length;j++){
            				blockHeader[j] = header[j];
            			}
+           	
             unsigned char edgebits = EDGEBITS;
             blockHeader[113] = edgebits;
             unsigned char * cycleNonce = (unsigned char *)prf;
@@ -1411,10 +1320,10 @@ int run_solver(int device_id,
               fill_default_params(&params);
               int nDevices;
                 if (checkCudaErrors(cudaGetDeviceCount(&nDevices)) ) return 0;
-                assert(device < nDevices);
+                assert(device_id < nDevices);
                 cudaDeviceProp prop;
-                if (checkCudaErrors(cudaGetDeviceProperties(&prop, device)) ) return 0;
-                cudaSetDevice(device);
+                if (checkCudaErrors(cudaGetDeviceProperties(&prop, device_id)) ) return 0;
+                cudaSetDevice(device_id);
                 assert(params.recovertpb >= PROOFSIZE);
                 SolverCtx* ctx = create_solver_ctx(&params);
                 *ctxInfo = ctx;
