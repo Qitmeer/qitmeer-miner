@@ -1320,7 +1320,7 @@ int run_solver(int device_id,
               int nDevices;
                 if (checkCudaErrors(cudaGetDeviceCount(&nDevices)) ) return 0;
                 assert(device_id < nDevices);
-                params->device = device_id;
+                params.device = device_id;
                 cudaDeviceProp prop;
                 if (checkCudaErrors(cudaGetDeviceProperties(&prop, device_id)) ) return 0;
                 cudaSetDevice(device_id);
