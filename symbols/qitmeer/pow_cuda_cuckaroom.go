@@ -251,7 +251,6 @@ func (this *CudaCuckaroom) CardRun() bool {
 		} else {
 			subm += "-" + this.header.JobID + "-" + this.header.Exnonce2
 		}
-		fmt.Println(subm)
 		this.SubmitData <- subm
 		c <- nil
 	}()

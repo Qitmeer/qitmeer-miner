@@ -958,7 +958,7 @@ struct edgetrimmer {
     cudaEventRecord(start, NULL);
   
 #ifdef VERBOSE
-    print_log("Seeding completed in %.0f ms\n", durationA);
+    //print_log("Seeding completed in %.0f ms\n", durationA);
     print_log("EdgeSplit<<<%d,%d>>>\n", NB_NMEM, SPLIT_TPB); // 1024x1024
 #endif
 
@@ -990,7 +990,7 @@ struct edgetrimmer {
     if (checkCudaErrors(cudaEventDestroy(start))) return 0;
 	if (checkCudaErrors(cudaEventDestroy(stop))) return 0;
   
-    print_log("Round completed in %.0f ms\n", durationC);
+    //print_log("Round completed in %.0f ms\n", durationC);
     for (u32 i=0; i < NMEM; i++)
       indexcount(2, indexesB+i*NB);
     indexcount(2, indexesB+NMEM*NB);
@@ -1049,7 +1049,7 @@ struct edgetrimmer {
 
     cudaMemcpy(&nedges, indexesB+2*NB, sizeof(u32), cudaMemcpyDeviceToHost);
     cudaDeviceSynchronize();
-    print_log("%d rounds %d edges\n", tp.ntrims, nedges);
+    //print_log("%d rounds %d edges\n", tp.ntrims, nedges);
     return nedges;
   }
 };
@@ -1266,7 +1266,7 @@ int run_solver(int device_id,
            			for( int j=0;j<header_length;j++){
            				blockHeader[j] = header[j];
            			}
-           	
+
             unsigned char edgebits = EDGEBITS;
             blockHeader[113] = edgebits;
             unsigned char * cycleNonce = (unsigned char *)prf;
