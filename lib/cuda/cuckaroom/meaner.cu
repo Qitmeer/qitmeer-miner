@@ -1128,7 +1128,7 @@ struct solver_ctx {
     time0 = timestamp();
     const u32 ndupes = findcycles(edges, nedges);
     time1 = timestamp(); timems2 = (time1 - time0) / 1000000;
-    print_log("%d trims %d ms %d edges %d dupes %d ms total %d ms\n", trimmer.tp.ntrims, timems, nedges, ndupes, timems2, timems+timems2);
+    //print_log("%d trims %d ms %d edges %d dupes %d ms total %d ms\n", trimmer.tp.ntrims, timems, nedges, ndupes, timems2, timems+timems2);
     return sols.size() / PROOFSIZE;
   }
 
