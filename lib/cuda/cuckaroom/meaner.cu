@@ -19,7 +19,9 @@
 #include "cuckaroom.hpp"
 #include "graph.hpp"
 #include "../crypto/blake2.h"
+#ifdef ISWINDOWS
 #include "getopt.h"
+#endif
 // number of invocations of seeding kernel
 // values larger than 1 reduce pressure on TLB
 // which appears to be an issue on GTX cards
