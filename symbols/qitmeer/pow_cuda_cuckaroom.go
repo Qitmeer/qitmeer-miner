@@ -33,7 +33,7 @@ import (
 	"unsafe"
 )
 
-type CudaCuckaroo struct {
+type CudaCuckaroom struct {
 	core.Device
 	ClearBytes    []byte
 	Work          *QitmeerWork
@@ -51,7 +51,7 @@ type CudaCuckaroo struct {
 	lock          sync.Mutex
 }
 
-func (this *CudaCuckaroo) InitDevice() {
+func (this *CudaCuckaroom) InitDevice() {
 	this.EdgeBits = this.Cfg.OptionConfig.EdgeBits
 	common.MinerLoger.Debug(fmt.Sprintf("==============Mining Cuckaroo with CUDA: deviceID:%d edge bits:%d ============== module=miner", this.MinerId, this.EdgeBits))
 	this.average = [10]float64{0, 0, 0, 0, 0, 0}
@@ -69,7 +69,7 @@ func (this *CudaCuckaroo) InitDevice() {
 	)
 }
 
-func (this *CudaCuckaroo) Update() {
+func (this *CudaCuckaroom) Update() {
 	randStr := fmt.Sprintf("%s%d%d", this.Cfg.SoloConfig.RandStr, this.MinerId, this.CurrentWorkID)
 	//update coinbase tx hash
 	this.Device.Update()
@@ -78,7 +78,7 @@ func (this *CudaCuckaroo) Update() {
 		this.Work.PoolWork.ExtraNonce2 = hex.EncodeToString(h[:])[:8]
 		this.header.Exnonce2 = this.Work.PoolWork.ExtraNonce2
 		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepQitmeerWork()
-		this.header.PackagePoolHeader(this.Work, pow.CUCKAROO)
+		this.header.PackagePoolHeader(this.Work, pow.CUCKAROOM)
 		// common.MinerLoger.Debug(fmt.Sprintf(" # %d",this.MinerId)+"ex2:" + this.header.Exnonce2+" tx root:"+this.header.HeaderBlock.TxRoot.String())
 	} else {
 		txHash, txs := this.Work.Block.CalcCoinBase(this.Cfg, randStr, this.CurrentWorkID, this.Cfg.SoloConfig.MinerAddr)
@@ -87,7 +87,7 @@ func (this *CudaCuckaroo) Update() {
 	}
 }
 
-func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
+func (this *CudaCuckaroom) Mine(wg *sync.WaitGroup) {
 	this.AverageHashRate = 0
 	defer this.Release()
 	defer wg.Done()
@@ -177,10 +177,10 @@ func (this *CudaCuckaroo) Mine(wg *sync.WaitGroup) {
 		}
 	}
 }
-func (this *CudaCuckaroo) CardRun() bool {
+func (this *CudaCuckaroom) CardRun() bool {
 	this.Nonces = make([]uint32, 0)
 	hData := this.header.HeaderBlock.BlockData()[:types.MaxBlockHeaderPayload-pow.PROOF_DATA_CIRCLE_NONCE_END]
-	powStruct := this.header.HeaderBlock.Pow.(*pow.Cuckaroo)
+	powStruct := this.header.HeaderBlock.Pow.(*pow.Cuckaroom)
 	cycleNoncesBytes := make([]byte, 42*4) //max 1 answers
 	nonceBytes := make([]byte, 4)
 	this.average[0] = 0
@@ -265,7 +265,7 @@ func (this *CudaCuckaroo) CardRun() bool {
 		}
 	}
 }
-func (this *CudaCuckaroo) Status(wg *sync.WaitGroup) {
+func (this *CudaCuckaroom) Status(wg *sync.WaitGroup) {
 	defer wg.Done()
 	t := time.NewTicker(time.Second * 10)
 	defer t.Stop()
@@ -308,7 +308,7 @@ func (this *CudaCuckaroo) Status(wg *sync.WaitGroup) {
 	}
 }
 
-func (this *CudaCuckaroo) SubmitShare(substr chan string) {
+func (this *CudaCuckaroom) SubmitShare(substr chan string) {
 	if !this.GetIsValid() {
 		return
 	}

@@ -15,11 +15,11 @@ export LD_LIBRARY_PATH=`pwd`/lib/cuckoo/target/x86_64-unknown-linux-musl/release
 echo $LD_LIBRARY_PATH
 sudo cp `pwd`/lib/opencl/linux/libOpenCL.a /usr/lib/x86_64-linux-musl/
 
-cd lib/cuda
+cd lib/cuda/cuckaroom
 
-nvcc -m64 -arch=sm_35 -o libcudacuckoo.so --shared -std=c++11 -Xcompiler -fPIC -DEDGEBITS=29 -DSIPHASH_COMPAT=1 mean.cu ./crypto/blake2b-ref.c
+nvcc -m64 -arch=sm_35 -o libcudacuckoo.so --shared -std=c++11 -Xcompiler -fPIC -DEDGEBITS=29 -DSIPHASH_COMPAT=1 meaner.cu ../crypto/blake2b-ref.c
 sudo cp `pwd`/libcudacuckoo.so /usr/lib/x86_64-linux-musl/
-cd ../../
+cd ../../../
 
 go mod tidy
 

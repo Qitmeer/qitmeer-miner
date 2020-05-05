@@ -1,15 +1,10 @@
 package main
 
 import (
-    `fmt`
-    `github.com/Qitmeer/qitmeer-miner/common`
-	`time`
+	"fmt"
 )
 
-func main()  {
-	for{
-	    fmt.Println(time.Now().Unix())
-	    common.Usleep(1000)
-    }
+func main() {
+	fmt.Println(1024 & -2)
+	return
 }
-

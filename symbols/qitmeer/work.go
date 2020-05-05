@@ -8,52 +8,55 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/Qitmeer/qitmeer/core/types/pow"
-	`math/big`
 	"github.com/Qitmeer/qitmeer-miner/common"
 	"github.com/Qitmeer/qitmeer-miner/core"
+	"github.com/Qitmeer/qitmeer/core/types/pow"
+	"math/big"
 	"strings"
 	"time"
 )
+
 type getResponseJson struct {
-	Result BlockHeader
-	Id int `json:"id"`
-	Error string `json:"error"`
+	Result  BlockHeader
+	Id      int    `json:"id"`
+	Error   string `json:"error"`
 	JsonRpc string `json:"jsonrpc"`
 }
+
 var ErrSameWork = fmt.Errorf("Same work, Had Submitted!")
+
 type getSubmitResponseJson struct {
-	Result string `json:"result"`
-	Id int `json:"id"`
-	Error string `json:"error"`
+	Result  string `json:"result"`
+	Id      int    `json:"id"`
+	Error   string `json:"error"`
 	JsonRpc string `json:"jsonrpc"`
 }
 type QitmeerWork struct {
 	core.Work
-	Block *BlockHeader
-	PoolWork NotifyWork
-	stra *QitmeerStratum
-	StartWork bool
+	Block       *BlockHeader
+	PoolWork    NotifyWork
+	stra        *QitmeerStratum
+	StartWork   bool
 	ForceUpdate bool
 }
 
-func (this *QitmeerWork) CopyNew() QitmeerWork{
+func (this *QitmeerWork) CopyNew() QitmeerWork {
 	newWork := QitmeerWork{}
 	newWork.Cfg = this.Cfg
-	if this.Cfg.PoolConfig.Pool != ""{
+	if this.Cfg.PoolConfig.Pool != "" {
 		//pool work
 		newWork.stra = this.stra
-		b,_ := json.Marshal(this.stra.PoolWork)
+		b, _ := json.Marshal(this.stra.PoolWork)
 		var pw NotifyWork
-		_ = json.Unmarshal(b,&pw)
+		_ = json.Unmarshal(b, &pw)
 		newWork.PoolWork = pw
-		
-	} else{
+
+	} else {
 		newWork.Rpc = this.Rpc
 		newWork.StartWork = this.StartWork
-		b,_ := json.Marshal(this.Block)
+		b, _ := json.Marshal(this.Block)
 		var w BlockHeader
-		_ = json.Unmarshal(b,&w)
+		_ = json.Unmarshal(b, &w)
 		newWork.Block = &w
 		newWork.Block.SetTxs(this.Block.transactions)
 		newWork.Block.Pow = this.Block.Pow
@@ -69,29 +72,29 @@ func (this *QitmeerWork) CopyNew() QitmeerWork{
 }
 
 //GetBlockTemplate
-func (this *QitmeerWork) Get () bool {
+func (this *QitmeerWork) Get() bool {
 	this.ForceUpdate = false
-	body := this.Rpc.RpcResult("getBlockTemplate",[]interface{}{[]string{}})
-	if body == nil{
-		if this.Cfg.OptionConfig.TaskForceStop{
+	body := this.Rpc.RpcResult("getBlockTemplate", []interface{}{[]string{}})
+	if body == nil {
+		if this.Cfg.OptionConfig.TaskForceStop {
 			this.ForceUpdate = true
 		}
 		return false
 	}
 	var blockTemplate getResponseJson
-	err := json.Unmarshal(body,&blockTemplate)
+	err := json.Unmarshal(body, &blockTemplate)
 	if err != nil {
 		var r map[string]interface{}
-		_ = json.Unmarshal(body,&r)
-		common.MinerLoger.Debug("[getBlockTemplate error]","result",string(body))
-		if this.Cfg.OptionConfig.TaskForceStop{
+		_ = json.Unmarshal(body, &r)
+		common.MinerLoger.Debug("[getBlockTemplate error]", "result", string(body))
+		if this.Cfg.OptionConfig.TaskForceStop {
 			this.ForceUpdate = true
 		}
 		return false
 	}
 
-	if this.Block!=nil && this.Block.Height == blockTemplate.Result.Height &&
-		(time.Now().Unix() - this.GetWorkTime) < int64(this.Cfg.OptionConfig.Timeout)*10{
+	if this.Block != nil && this.Block.Height == blockTemplate.Result.Height &&
+		(time.Now().Unix()-this.GetWorkTime) < int64(this.Cfg.OptionConfig.Timeout)*10 {
 		//not has new work
 		return false
 	}
@@ -100,7 +103,7 @@ func (this *QitmeerWork) Get () bool {
 	n := new(big.Int)
 	switch this.Cfg.NecessaryConfig.Pow {
 	case POW_DOUBLE_BLAKE2B:
-		blockTemplate.Result.Pow = pow.GetInstance(pow.BLAKE2BD,0,[]byte{})
+		blockTemplate.Result.Pow = pow.GetInstance(pow.BLAKE2BD, 0, []byte{})
 		target = blockTemplate.Result.PowDiffReference.Blake2bTarget
 		n, _ = n.SetString(target, 16)
 		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
@@ -108,76 +111,82 @@ func (this *QitmeerWork) Get () bool {
 	case POW_CUCKROO:
 		fallthrough
 	case POW_CUCKROO29:
-		blockTemplate.Result.Pow = pow.GetInstance(pow.CUCKAROO,0,[]byte{})
+		blockTemplate.Result.Pow = pow.GetInstance(pow.CUCKAROO, 0, []byte{})
 		powStruct := blockTemplate.Result.Pow.(*pow.Cuckaroo)
 		powStruct.SetEdgeBits(24)
 		n.SetUint64(blockTemplate.Result.PowDiffReference.CuckarooMinDiff)
 		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
-		target = fmt.Sprintf("min difficulty %d",blockTemplate.Result.PowDiffReference.CuckarooMinDiff)
-		blockTemplate.Result.Target = fmt.Sprintf("%064x",blockTemplate.Result.PowDiffReference.CuckarooMinDiff)
+		target = fmt.Sprintf("min difficulty %d", blockTemplate.Result.PowDiffReference.CuckarooMinDiff)
+		blockTemplate.Result.Target = fmt.Sprintf("%064x", blockTemplate.Result.PowDiffReference.CuckarooMinDiff)
+	case POW_CUCKROOM:
+		blockTemplate.Result.Pow = pow.GetInstance(pow.CUCKAROOM, 0, []byte{})
+		n.SetUint64(blockTemplate.Result.PowDiffReference.CuckaroomMinDiff)
+		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
+		target = fmt.Sprintf("min difficulty %d", blockTemplate.Result.PowDiffReference.CuckaroomMinDiff)
+		blockTemplate.Result.Target = fmt.Sprintf("%064x", blockTemplate.Result.PowDiffReference.CuckaroomMinDiff)
 	case POW_CUCKTOO:
-		blockTemplate.Result.Pow = pow.GetInstance(pow.CUCKATOO,0,[]byte{})
+		blockTemplate.Result.Pow = pow.GetInstance(pow.CUCKATOO, 0, []byte{})
 		powStruct := blockTemplate.Result.Pow.(*pow.Cuckatoo)
 		powStruct.SetEdgeBits(29)
 		n.SetUint64(blockTemplate.Result.PowDiffReference.CuckatooMinDiff)
 		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
-		target = fmt.Sprintf("min difficulty %d",blockTemplate.Result.PowDiffReference.CuckatooMinDiff)
-		blockTemplate.Result.Target = fmt.Sprintf("%064x",blockTemplate.Result.PowDiffReference.CuckatooMinDiff)
+		target = fmt.Sprintf("min difficulty %d", blockTemplate.Result.PowDiffReference.CuckatooMinDiff)
+		blockTemplate.Result.Target = fmt.Sprintf("%064x", blockTemplate.Result.PowDiffReference.CuckatooMinDiff)
 	}
 
 	blockTemplate.Result.HasCoinbasePack = false
-	_,_ = blockTemplate.Result.CalcCoinBase(this.Cfg,this.Cfg.SoloConfig.RandStr,uint64(0),this.Cfg.SoloConfig.MinerAddr)
+	_, _ = blockTemplate.Result.CalcCoinBase(this.Cfg, this.Cfg.SoloConfig.RandStr, uint64(0), this.Cfg.SoloConfig.MinerAddr)
 	blockTemplate.Result.BuildMerkleTreeStore(0)
 	this.Block = &blockTemplate.Result
 	this.Started = uint32(time.Now().Unix())
 	this.GetWorkTime = time.Now().Unix()
 	common.CurrentHeight = this.Block.Height
 	this.Cfg.OptionConfig.Target = this.Block.Target
-	common.MinerLoger.Info(fmt.Sprintf("getBlockTemplate height:%d , target :%s",this.Block.Height,target))
+	common.MinerLoger.Info(fmt.Sprintf("getBlockTemplate height:%d , target :%s", this.Block.Height, target))
 	return true
 }
 
 //Submit
-func (this *QitmeerWork) Submit (subm string) error {
+func (this *QitmeerWork) Submit(subm string) error {
 	this.Lock()
 	defer this.Unlock()
-	if this.LastSub == subm{
+	if this.LastSub == subm {
 		return ErrSameWork
 	}
 	this.LastSub = subm
 	var body []byte
 	var res getSubmitResponseJson
 	startTime := time.Now().Unix()
-	for{
+	for {
 		// if the reason of submit error is network failed
 		// to keep the work
 		// then retry submit
-		body = this.Rpc.RpcResult("submitBlock",[]interface{}{subm})
+		body = this.Rpc.RpcResult("submitBlock", []interface{}{subm})
 		err := json.Unmarshal(body, &res)
 		if err != nil {
 			// 2min timeout
-			if time.Now().Unix() - startTime >= 120{
+			if time.Now().Unix()-startTime >= 120 {
 				break
 			}
-			common.MinerLoger.Error(fmt.Sprintf("[submit error]"+string(body)+err.Error()))
+			common.MinerLoger.Error(fmt.Sprintf("[submit error]" + string(body) + err.Error()))
 			common.Usleep(1000)
 			continue
 		}
 		break
 	}
 
-	if !strings.Contains(res.Result,"Block submitted accepted") {
-		common.MinerLoger.Error("[submit error] "+string(body))
-		if strings.Contains(res.Result,"The tips of block is expired"){
+	if !strings.Contains(res.Result, "Block submitted accepted") {
+		common.MinerLoger.Error("[submit error] " + string(body))
+		if strings.Contains(res.Result, "The tips of block is expired") {
 			return ErrSameWork
 		}
-		return errors.New("[submit data failed]"+res.Result)
+		return errors.New("[submit data failed]" + res.Result)
 	}
 	return nil
 }
 
 // pool get work
-func (this *QitmeerWork) PoolGet () bool {
+func (this *QitmeerWork) PoolGet() bool {
 	if !this.stra.PoolWork.NewWork {
 		return false
 	}
@@ -187,9 +196,9 @@ func (this *QitmeerWork) PoolGet () bool {
 		return false
 	}
 
-	if (this.stra.PoolWork.JobID != "" && this.stra.PoolWork.Clean) || this.PoolWork.JobID != this.stra.PoolWork.JobID{
+	if (this.stra.PoolWork.JobID != "" && this.stra.PoolWork.Clean) || this.PoolWork.JobID != this.stra.PoolWork.JobID {
 		this.stra.PoolWork.Clean = false
-		this.Cfg.OptionConfig.Target = fmt.Sprintf("%064x",common.BlockBitsToTarget(this.stra.PoolWork.Nbits,2))
+		this.Cfg.OptionConfig.Target = fmt.Sprintf("%064x", common.BlockBitsToTarget(this.stra.PoolWork.Nbits, 2))
 		this.PoolWork = this.stra.PoolWork
 		common.CurrentHeight = uint64(this.stra.PoolWork.Height)
 		common.JobID = this.stra.PoolWork.JobID
@@ -200,17 +209,17 @@ func (this *QitmeerWork) PoolGet () bool {
 }
 
 //pool submit work
-func (this *QitmeerWork) PoolSubmit (subm string) error {
-	if this.LastSub == subm{
+func (this *QitmeerWork) PoolSubmit(subm string) error {
+	if this.LastSub == subm {
 		return ErrSameWork
 	}
 	this.LastSub = subm
-	arr := strings.Split(subm,"-")
-	data,err := hex.DecodeString(arr[0])
+	arr := strings.Split(subm, "-")
+	data, err := hex.DecodeString(arr[0])
 	if err != nil {
 		return err
 	}
-	sub, err := this.stra.PrepSubmit(data,arr[1],arr[2])
+	sub, err := this.stra.PrepSubmit(data, arr[1], arr[2])
 	if err != nil {
 		return err
 	}
@@ -220,7 +229,7 @@ func (this *QitmeerWork) PoolSubmit (subm string) error {
 	}
 	_, err = this.stra.Conn.Write(m)
 	if err != nil {
-		common.MinerLoger.Debug("[submit error][pool connect error]","error",err)
+		common.MinerLoger.Debug("[submit error][pool connect error]", "error", err)
 		return err
 	}
 	_, err = this.stra.Conn.Write([]byte("\n"))
