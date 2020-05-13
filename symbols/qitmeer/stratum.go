@@ -264,7 +264,6 @@ func (s *QitmeerStratum) handleNotifyRes(resp interface{}) {
 		common.MinerLoger.Error(err.Error())
 	}
 	//sync the pool base difficulty
-	fmt.Println("==============s.Diff", s.Diff)
 	s.Target, _ = common.DiffToTarget(s.Diff, s.CalcBasePowLimit(), s.PowType)
 	s.PoolWork.Ntime = nResp.Ntime
 	s.PoolWork.NtimeDelta = parsedNtime - time.Now().Unix()
