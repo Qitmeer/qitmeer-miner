@@ -26,6 +26,7 @@ const (
 	POW_CUCKTOO        = "cuckatoo"
 	POW_X8R16          = "x8r16"
 	POW_X16RV3         = "x16rv3"
+	POW_KECCAK256      = "keccak256"
 )
 
 type QitmeerRobot struct {
@@ -88,6 +89,12 @@ func (this *QitmeerRobot) GetPow(i int, device *cl.Device) core.BaseDevice {
 	case POW_X16RV3:
 		deviceMiner := &X16rv3{}
 		deviceMiner.MiningType = "x16rv3"
+		deviceMiner.Init(i, device, this.Pool, this.Quit, this.Cfg)
+		this.Devices = append(this.Devices, deviceMiner)
+		return deviceMiner
+	case POW_KECCAK256:
+		deviceMiner := &Keccak256{}
+		deviceMiner.MiningType = "keccak256"
 		deviceMiner.Init(i, device, this.Pool, this.Quit, this.Cfg)
 		this.Devices = append(this.Devices, deviceMiner)
 		return deviceMiner
