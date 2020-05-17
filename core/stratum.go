@@ -4,14 +4,15 @@ import (
 	"bufio"
 	"encoding/json"
 	"errors"
-	`github.com/Qitmeer/qitmeer/core/types/pow`
-	"net"
 	"github.com/Qitmeer/qitmeer-miner/common"
 	"github.com/Qitmeer/qitmeer-miner/common/socks"
+	"github.com/Qitmeer/qitmeer/core/types/pow"
+	"net"
 	"strings"
 	"sync"
 	"time"
 )
+
 // ErrJsonType is an error for json that we do not expect.
 var ErrJsonType = errors.New("Unexpected type in json.")
 
@@ -24,25 +25,29 @@ type StratumMsg struct {
 
 type Stratum struct {
 	sync.Mutex
-	Cfg       *common.GlobalConfig
-	Conn      net.Conn
-	Reader    *bufio.Reader
-	ID        uint64
-	Started uint32
-	Timeout uint32
-	ValidShares uint64
+	Cfg           *common.GlobalConfig
+	Conn          net.Conn
+	Reader        *bufio.Reader
+	ID            uint64
+	Started       uint32
+	Timeout       uint32
+	ValidShares   uint64
 	InvalidShares uint64
-	StaleShares uint64
-	SubmitIDs	[]uint64
-	SubID	uint64
-	AuthID uint64
-	PowType pow.PowType
+	StaleShares   uint64
+	SubmitIDs     []uint64
+	SubID         uint64
+	AuthID        uint64
+	PowType       pow.PowType
 }
 
 func GetPowType(powName string) pow.PowType {
 	switch powName {
 	case "blake2bd":
 		return pow.BLAKE2BD
+	case "x8r16":
+		return pow.X8R16
+	case "x16rv3":
+		return pow.X16RV3
 	case "cuckaroo":
 		return pow.CUCKAROO
 	case "cuckatoo":
@@ -53,10 +58,10 @@ func GetPowType(powName string) pow.PowType {
 
 // StratumConn starts the initial connection to a stratum pool and sets defaults
 // in the pool object.
-func (this *Stratum)StratumConn(cfg *common.GlobalConfig) error {
+func (this *Stratum) StratumConn(cfg *common.GlobalConfig) error {
 	this.Cfg = cfg
 	pool := cfg.PoolConfig.Pool
-	common.MinerLoger.Debug("[Connect pool]", "address",pool)
+	common.MinerLoger.Debug("[Connect pool]", "address", pool)
 	proto := "stratum+tcp://"
 	if strings.HasPrefix(this.Cfg.PoolConfig.Pool, proto) {
 		pool = strings.Replace(pool, proto, "", 1)
@@ -71,31 +76,31 @@ func (this *Stratum)StratumConn(cfg *common.GlobalConfig) error {
 	return nil
 }
 
-func (this *Stratum)ConnectRetry(){
+func (this *Stratum) ConnectRetry() {
 	var err error
-	for{
+	for {
 		common.Usleep(2000)
 		err = this.Reconnect()
 		if err != nil {
-			common.MinerLoger.Debug("[Connect error , It will reconnect after 2s].","error",err.Error())
+			common.MinerLoger.Debug("[Connect error , It will reconnect after 2s].", "error", err.Error())
 			continue
 		}
 		break
 	}
 }
 
-func (this *Stratum)Listen(handle func(data string))  {
+func (this *Stratum) Listen(handle func(data string)) {
 	common.MinerLoger.Debug("Starting Stratum Listener")
 	var data string
 	var err error
 	// start := time.Now().Unix()
 	for {
-		if this.Reader != nil{
+		if this.Reader != nil {
 			data, err = this.Reader.ReadString('\n')
-			if err != nil{
-				common.MinerLoger.Error("TCP Read Error:","detail",err.Error())
+			if err != nil {
+				common.MinerLoger.Error("TCP Read Error:", "detail", err.Error())
 			}
-		} else{
+		} else {
 			err = errors.New("network wrong!")
 		}
 		if err != nil {
@@ -124,20 +129,20 @@ func (s *Stratum) Reconnect() error {
 		conn, err = net.Dial("tcp", s.Cfg.PoolConfig.Pool)
 	}
 	if err != nil {
-		common.MinerLoger.Debug("[init reconnect error]","error",err)
+		common.MinerLoger.Debug("[init reconnect error]", "error", err)
 		return err
 	}
 	s.Conn = conn
 	s.Reader = bufio.NewReader(s.Conn)
 	err = s.Subscribe()
 	if err != nil {
-		common.MinerLoger.Debug("[subscribe reconnect]","error",err)
+		common.MinerLoger.Debug("[subscribe reconnect]", "error", err)
 		return nil
 	}
 	// XXX Do I really need to re-auth here?
 	err = s.Auth()
 	if err != nil {
-		common.MinerLoger.Debug("[auth reconnect]","error",err)
+		common.MinerLoger.Debug("[auth reconnect]", "error", err)
 		return nil
 	}
 	// If we were able to reconnect, restart counter
@@ -167,7 +172,7 @@ func (s *Stratum) Auth() error {
 	}
 	_, err = s.Conn.Write(m)
 	if err != nil {
-		common.MinerLoger.Debug("[auth connect]","error",err)
+		common.MinerLoger.Debug("[auth connect]", "error", err)
 		return err
 	}
 	_, err = s.Conn.Write([]byte("\n"))
@@ -192,7 +197,7 @@ func (s *Stratum) Subscribe() error {
 	}
 	_, err = s.Conn.Write(m)
 	if err != nil {
-		common.MinerLoger.Debug("[subscribe connect]","error",err)
+		common.MinerLoger.Debug("[subscribe connect]", "error", err)
 		return err
 	}
 	_, err = s.Conn.Write([]byte("\n"))

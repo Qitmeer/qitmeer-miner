@@ -10,7 +10,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	qitmeer "github.com/Qitmeer/qitmeer/common/hash"
-	`github.com/Qitmeer/qitmeer/core/types/pow`
+	"github.com/Qitmeer/qitmeer/core/types/pow"
 	"log"
 	"math"
 	"math/big"
@@ -44,27 +44,27 @@ func SliceRemove(s []uint64, e uint64) []uint64 {
 	return s
 }
 
-func BlockBitsToTarget(bits string,width int) []byte {
-	nbits ,err:=hex.DecodeString(bits[0:2])
-	if err != nil{
-		fmt.Println("error",err.Error())
+func BlockBitsToTarget(bits string, width int) []byte {
+	nbits, err := hex.DecodeString(bits[0:2])
+	if err != nil {
+		fmt.Println("error", err.Error())
 	}
 	shift := nbits[0] - 3
-	value,_ := hex.DecodeString(bits[2:])
-	target0 :=make([]byte,int(shift))
+	value, _ := hex.DecodeString(bits[2:])
+	target0 := make([]byte, int(shift))
 	tmp := string(value) + string(target0)
 	target1 := []byte(tmp)
-	if len(target1)<width {
-		head:=make([]byte,width-len(target1))
-		target := string(head)+string(target1)
+	if len(target1) < width {
+		head := make([]byte, width-len(target1))
+		target := string(head) + string(target1)
 		return []byte(target)
 	}
 	return target1
 }
 
-func Int2varinthex(x int64) string  {
+func Int2varinthex(x int64) string {
 	if x < 0xfd {
-		return fmt.Sprintf("%02x",x)
+		return fmt.Sprintf("%02x", x)
 	} else if x < 0xffff {
 		return "fd" + Int2lehex(x, 2)
 	} else if x < 0xffffffff {
@@ -73,9 +73,9 @@ func Int2varinthex(x int64) string  {
 		return "ff" + Int2lehex(x, 8)
 	}
 }
-func Int2lehex(x int64,width int ) string {
+func Int2lehex(x int64, width int) string {
 	if x <= 0 {
-		return fmt.Sprintf("%016x",x)
+		return fmt.Sprintf("%016x", x)
 	}
 	bs := make([]byte, width)
 	switch width {
@@ -98,36 +98,35 @@ func Reverse(src []byte) []byte {
 	return dst
 }
 
-
 // FormatHashRate sets the units properly when displaying a hashrate.
-func FormatHashRate(h float64,unit string) string {
+func FormatHashRate(h float64, unit string) string {
 	if h > 1000000000000 {
-		return fmt.Sprintf("%.4fT%s", h/1000000000000,unit)
+		return fmt.Sprintf("%.4fT%s", h/1000000000000, unit)
 	} else if h > 1000000000 {
-		return fmt.Sprintf("%.4fG%s", h/1000000000,unit)
+		return fmt.Sprintf("%.4fG%s", h/1000000000, unit)
 	} else if h > 1000000 {
-		return fmt.Sprintf("%.4fM%s", h/1000000,unit)
+		return fmt.Sprintf("%.4fM%s", h/1000000, unit)
 	} else if h > 1000 {
-		return fmt.Sprintf("%.4fk%s", h/1000,unit)
+		return fmt.Sprintf("%.4fk%s", h/1000, unit)
 	} else if h == 0 {
-		return fmt.Sprintf("0%s",unit)
-	}else if h > 0 {
-		return fmt.Sprintf("%.4f%s",h,unit)
+		return fmt.Sprintf("0%s", unit)
+	} else if h > 0 {
+		return fmt.Sprintf("%.4f%s", h, unit)
 	}
 
-	return fmt.Sprintf("%.4f T%s", h,unit)
+	return fmt.Sprintf("%.4f T%s", h, unit)
 }
 
-func ReverseByWidth(s []byte,width int ) []byte {
-	newS := make([]byte,len(s))
-	for i := 0;i< (len(s) / width) ; i += 1 {
+func ReverseByWidth(s []byte, width int) []byte {
+	newS := make([]byte, len(s))
+	for i := 0; i < (len(s) / width); i += 1 {
 		j := i * width
-		copy(newS[len(s)-j-width:len(s)-j],s[j:j+width])
+		copy(newS[len(s)-j-width:len(s)-j], s[j:j+width])
 	}
 	return newS
 }
 
-func DiffToTarget(diff float64, powLimit *big.Int,powType pow.PowType) (*big.Int, error) {
+func DiffToTarget(diff float64, powLimit *big.Int, powType pow.PowType) (*big.Int, error) {
 	if diff <= 0 {
 		return nil, fmt.Errorf("invalid pool difficulty %v (0 or less than "+
 			"zero passed)", diff)
@@ -143,10 +142,10 @@ func DiffToTarget(diff float64, powLimit *big.Int,powType pow.PowType) (*big.Int
 	divisor := new(big.Int).SetInt64(int64(diff))
 	max := powLimit
 	target := new(big.Int)
-	if powType == pow.BLAKE2BD{
+	if powType == pow.BLAKE2BD || powType == pow.X8R16 {
 		target.Div(max, divisor)
-	} else{
-		target.Div(divisor,max )
+	} else {
+		target.Div(divisor, max)
 	}
 
 	return target, nil
@@ -168,10 +167,9 @@ func RolloverExtraNonce(v *uint32) {
 	}
 }
 
-
-func ConvertHashToString( hash qitmeer.Hash )string{
-	newB := make([]byte,32)
-	copy(newB[:],hash[:])
+func ConvertHashToString(hash qitmeer.Hash) string {
+	newB := make([]byte, 32)
+	copy(newB[:], hash[:])
 	return hex.EncodeToString(newB)
 }
 
@@ -268,7 +266,7 @@ func AppDataDir(appName string, roaming bool) string {
 
 func Target2BlockBits(target string) []byte {
 	// 8
-	d,_ := hex.DecodeString(target[0:16])
+	d, _ := hex.DecodeString(target[0:16])
 	return Reverse(d)
 }
 
@@ -289,11 +287,9 @@ func GetCurrentDir() string {
 	return strings.Replace(dir, "\\", "/", -1)
 }
 
-
 func RandUint64() uint64 {
 	return rand.Uint64()
 }
-
 
 func RandUint32() (uint32, error) {
 	var b [4]byte
@@ -303,19 +299,17 @@ func RandUint32() (uint32, error) {
 	return uint32(binary.LittleEndian.Uint32(b[:])), nil
 }
 
-
-
-func InArray( val interface{},arr interface{}) bool {
+func InArray(val interface{}, arr interface{}) bool {
 	switch arr.(type) {
 	case []string:
-		for _,v := range arr.([]string){
-			if v == val{
+		for _, v := range arr.([]string) {
+			if v == val {
 				return true
 			}
 		}
 	case []int:
-		for _,v := range arr.([]int){
-			if v == val{
+		for _, v := range arr.([]int) {
+			if v == val {
 				return true
 			}
 		}
@@ -325,7 +319,7 @@ func InArray( val interface{},arr interface{}) bool {
 }
 
 func Timeout(timeout time.Duration, runFunc func()) bool {
-	var wg= new(sync.WaitGroup)
+	var wg = new(sync.WaitGroup)
 	c := make(chan interface{})
 	wg.Add(1)
 	go func() {
@@ -345,8 +339,8 @@ func Timeout(timeout time.Duration, runFunc func()) bool {
 	}
 }
 
-func TimeoutRun(timeout time.Duration, runFunc ,afterFun func()) bool {
-	var wg= new(sync.WaitGroup)
+func TimeoutRun(timeout time.Duration, runFunc, afterFun func()) bool {
+	var wg = new(sync.WaitGroup)
 	c := make(chan interface{})
 	wg.Add(1)
 	go func() {
@@ -368,19 +362,19 @@ func TimeoutRun(timeout time.Duration, runFunc ,afterFun func()) bool {
 		return true
 	}
 }
-func GetNeedHashTimesByTarget( target string ) *big.Int {
+func GetNeedHashTimesByTarget(target string) *big.Int {
 	times := big.NewInt(1)
-	for i:=0;i<len(target)-1 ;i++  {
-		tmp := target[i:i+1]
-		if tmp == "0"{
-			times.Lsh(times,4)
-		} else{
+	for i := 0; i < len(target)-1; i++ {
+		tmp := target[i : i+1]
+		if tmp == "0" {
+			times.Lsh(times, 4)
+		} else {
 			n, _ := strconv.ParseUint(tmp, 16, 32)
-			if n <= 1{
+			if n <= 1 {
 				n = 1
 			}
-			n1 := int64( 16 / n )
-			times.Mul(times,big.NewInt(n1))
+			n1 := int64(16 / n)
+			times.Mul(times, big.NewInt(n1))
 			break
 		}
 	}
