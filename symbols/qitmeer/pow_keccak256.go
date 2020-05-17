@@ -37,7 +37,7 @@ func (this *Keccak256) Update() {
 		this.Work.PoolWork.ExtraNonce2 = fmt.Sprintf("%08x", this.CurrentWorkID<<this.MinerId)[:8]
 		this.header.Exnonce2 = this.Work.PoolWork.ExtraNonce2
 		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepQitmeerWork()
-		this.header.PackagePoolHeader(this.Work, pow.KECCAK256)
+		this.header.PackagePoolHeader(this.Work, pow.QITMEERKECCAK256)
 	} else {
 		randStr := fmt.Sprintf("%s%d%d", this.Cfg.SoloConfig.RandStr, this.MinerId, this.CurrentWorkID)
 		txHash, txs := this.Work.Block.CalcCoinBase(this.Cfg, randStr, this.CurrentWorkID, this.Cfg.SoloConfig.MinerAddr)
@@ -96,7 +96,7 @@ func (this *Keccak256) Mine(wg *sync.WaitGroup) {
 			b := make([]byte, 4)
 			binary.LittleEndian.PutUint32(b, nonce)
 			copy(hData[108:112], b)
-			h := hash.HashKeccak256(hData[:113])
+			h := hash.HashQitmeerKeccak256(hData[:113])
 			if HashToBig(&h).Cmp(this.header.TargetDiff) <= 0 {
 				headerData := BlockDataWithProof(this.header.HeaderBlock)
 				copy(headerData[0:113], hData[0:113])
