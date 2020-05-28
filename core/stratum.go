@@ -48,6 +48,8 @@ func GetPowType(powName string) pow.PowType {
 		return pow.X8R16
 	case "x16rv3":
 		return pow.X16RV3
+	case "qitmeer_keccak256":
+		return pow.QITMEERKECCAK256
 	case "cuckaroo":
 		return pow.CUCKAROO
 	case "cuckatoo":

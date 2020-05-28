@@ -114,7 +114,7 @@ func (this *QitmeerWork) Get() bool {
 		n, _ = n.SetString(target, 16)
 		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
 		blockTemplate.Result.Target = target
-	case POW_KECCAK256:
+	case POW_QITMEER_KECCAK256:
 		blockTemplate.Result.Pow = pow.GetInstance(pow.QITMEERKECCAK256, 0, []byte{})
 		target = blockTemplate.Result.PowDiffReference.QitmeerKeccak256Target
 		n, _ = n.SetString(target, 16)

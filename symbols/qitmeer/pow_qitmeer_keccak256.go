@@ -19,18 +19,18 @@ import (
 	"time"
 )
 
-type Keccak256 struct {
+type QitmeerKeccak256 struct {
 	core.Device
 	Work   *QitmeerWork
 	header MinerBlockData
 }
 
-func (this *Keccak256) InitDevice() {
+func (this *QitmeerKeccak256) InitDevice() {
 	this.Started = time.Now().Unix()
 	common.MinerLoger.Debug(fmt.Sprintf("==============Mining X8R16=============="))
 }
 
-func (this *Keccak256) Update() {
+func (this *QitmeerKeccak256) Update() {
 	//update coinbase tx hash
 	this.Device.Update()
 	if this.Pool {
@@ -46,7 +46,7 @@ func (this *Keccak256) Update() {
 	}
 }
 
-func (this *Keccak256) Mine(wg *sync.WaitGroup) {
+func (this *QitmeerKeccak256) Mine(wg *sync.WaitGroup) {
 	defer wg.Done()
 	defer this.Release()
 	var w core.BaseWork
@@ -97,12 +97,12 @@ func (this *Keccak256) Mine(wg *sync.WaitGroup) {
 			binary.LittleEndian.PutUint32(b, nonce)
 			copy(hData[108:112], b)
 			h := hash.HashQitmeerKeccak256(hData[:113])
+			common.MinerLoger.Debug(fmt.Sprintf("%064x", this.header.TargetDiff))
 			if HashToBig(&h).Cmp(this.header.TargetDiff) <= 0 {
 				headerData := BlockDataWithProof(this.header.HeaderBlock)
 				copy(headerData[0:113], hData[0:113])
 				common.MinerLoger.Debug(fmt.Sprintf("device #%d found hash : %s nonce:%d target:%064x", this.MinerId, h, nonce, this.header.TargetDiff))
 				subm := hex.EncodeToString(headerData)
-				fmt.Println("subm", subm[:226])
 				if !this.Pool {
 					subm += common.Int2varinthex(int64(len(this.header.Parents)))
 					for j := 0; j < len(this.header.Parents); j++ {
@@ -119,6 +119,7 @@ func (this *Keccak256) Mine(wg *sync.WaitGroup) {
 				} else {
 					subm += "-" + this.header.JobID + "-" + this.header.Exnonce2
 				}
+				fmt.Println("subm", subm)
 				this.SubmitData <- subm
 				break
 			}
