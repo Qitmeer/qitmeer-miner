@@ -52,6 +52,8 @@ func GetPowType(powName string) pow.PowType {
 		return pow.QITMEERKECCAK256
 	case "cuckaroo":
 		return pow.CUCKAROO
+	case "cuckaroom":
+		return pow.CUCKAROOM
 	case "cuckatoo":
 		return pow.CUCKATOO
 	}
