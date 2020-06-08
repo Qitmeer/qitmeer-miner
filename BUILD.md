@@ -58,19 +58,9 @@ $ cd qitmeer-miner
 $ sh installLibrary.sh
 ```
 
-### 3. Build the cudacuckaroo library 
+### 3. Build the cudacuckaroom library 
 
-```bash
-$ cd lib/cuda
-# mac
-$  nvcc -m64 -arch=sm_35 -o libcudacuckoo.dylib --shared -Xcompiler -fPIC -DEDGEBITS=29 -DSIPHASH_COMPAT=1 mean.cu ./crypto/blake2b-ref.c
-# ubuntu
-$  nvcc -m64 -arch=sm_35 -o libcudacuckoo.so --shared -Xcompiler -fPIC -DEDGEBITS=29 -DSIPHASH_COMPAT=1 mean.cu ./crypto/blake2b-ref.c
-# or below 
-$  nvcc -m64 -arch=sm_35 -o libcudacuckoo.so --shared -std=c++11 -Xcompiler -fPIC -DEDGEBITS=29 -DSIPHASH_COMPAT=1 mean.cu ./crypto/blake2b-ref.c
-# windows 
-$  nvcc -m64 -arch=sm_35 -o cudacuckoo.dll --shared -Xcompiler -fPIC -DEDGEBITS=29 -DSIPHASH_COMPAT=1 -DISWINDOWS=1 mean.cu ./crypto/blake2b-ref.c
-```
+[Build Step](lib/cuda/cuckaroom/README.md)
 
 ### 3. Build qitmeer-miner  
 
