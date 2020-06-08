@@ -19,14 +19,14 @@ import (
 )
 
 const (
-	POW_DOUBLE_BLAKE2B = "blake2bd"
-	POW_CUCKROO        = "cuckaroo"
-	POW_CUCKROOM       = "cuckaroom"
-	POW_CUCKROO29      = "cuckaroo29"
-	POW_CUCKTOO        = "cuckatoo"
-	POW_X8R16          = "x8r16"
-	POW_X16RV3         = "x16rv3"
-	POW_KECCAK256      = "keccak256"
+	POW_DOUBLE_BLAKE2B    = "blake2bd"
+	POW_CUCKROO           = "cuckaroo"
+	POW_CUCKROOM          = "cuckaroom"
+	POW_CUCKROO29         = "cuckaroo29"
+	POW_CUCKTOO           = "cuckatoo"
+	POW_X8R16             = "x8r16"
+	POW_X16RV3            = "x16rv3"
+	POW_QITMEER_KECCAK256 = "qitmeer_keccak256"
 )
 
 type QitmeerRobot struct {
@@ -92,8 +92,8 @@ func (this *QitmeerRobot) GetPow(i int, device *cl.Device) core.BaseDevice {
 		deviceMiner.Init(i, device, this.Pool, this.Quit, this.Cfg)
 		this.Devices = append(this.Devices, deviceMiner)
 		return deviceMiner
-	case POW_KECCAK256:
-		deviceMiner := &Keccak256{}
+	case POW_QITMEER_KECCAK256:
+		deviceMiner := &QitmeerKeccak256{}
 		deviceMiner.MiningType = "keccak256"
 		deviceMiner.Init(i, device, this.Pool, this.Quit, this.Cfg)
 		this.Devices = append(this.Devices, deviceMiner)

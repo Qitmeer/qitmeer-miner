@@ -134,6 +134,8 @@ func (s *QitmeerStratum) CalcBasePowLimit() *big.Int {
 		return new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 255), big.NewInt(1))
 	case pow.CUCKAROO:
 		return big.NewInt(1)
+	case pow.CUCKAROOM:
+		return big.NewInt(1)
 	case pow.CUCKATOO:
 		return big.NewInt(1)
 	}
@@ -169,6 +171,7 @@ func (this *QitmeerStratum) HandleReply() {
 func (s *QitmeerStratum) handleSubscribeReply(resp interface{}) {
 	nResp := resp.(*SubscribeReply)
 	s.PoolWork.ExtraNonce1 = nResp.ExtraNonce1
+	fmt.Println(nResp.ExtraNonce1, "============")
 	s.PoolWork.ExtraNonce2Length = nResp.ExtraNonce2Length
 }
 
