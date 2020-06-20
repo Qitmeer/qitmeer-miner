@@ -171,7 +171,7 @@ func (this *QitmeerStratum) HandleReply() {
 func (s *QitmeerStratum) handleSubscribeReply(resp interface{}) {
 	nResp := resp.(*SubscribeReply)
 	s.PoolWork.ExtraNonce1 = nResp.ExtraNonce1
-	fmt.Println(nResp.ExtraNonce1, "============")
+	// fmt.Println(nResp.ExtraNonce1, "============")
 	s.PoolWork.ExtraNonce2Length = nResp.ExtraNonce2Length
 }
 
