@@ -119,7 +119,7 @@ func (this *QitmeerKeccak256) Mine(wg *sync.WaitGroup) {
 				} else {
 					subm += "-" + this.header.JobID + "-" + this.header.Exnonce2
 				}
-				fmt.Println("subm", subm)
+				// fmt.Println("subm", subm)
 				this.SubmitData <- subm
 				break
 			}
