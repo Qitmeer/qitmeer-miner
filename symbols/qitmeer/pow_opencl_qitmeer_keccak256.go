@@ -18,6 +18,7 @@ import (
 	"github.com/Qitmeer/qitmeer-miner/common"
 	"github.com/Qitmeer/qitmeer-miner/core"
 	"github.com/Qitmeer/qitmeer-miner/kernel"
+	"github.com/Qitmeer/qitmeer/common/hash"
 	"github.com/Qitmeer/qitmeer/core/types"
 	"github.com/Qitmeer/qitmeer/core/types/pow"
 	"math/big"
@@ -58,39 +59,31 @@ func (this *OpenCLKeccak256) InitDevice() {
 		this.IsValid = false
 		return
 	}
-	this.BlockObj, this.Err = this.Context.CreateEmptyBuffer(cl.MemReadOnly, 80)
+	this.BlockObj, this.Err = this.Context.CreateEmptyBuffer(cl.MemReadOnly, 120)
 	if this.Err != nil {
 		common.MinerLoger.Error(fmt.Sprintf("-%d,%v CreateEmptyBuffer BlockObj", this.MinerId, this.Err))
 		this.IsValid = false
 		return
 	}
 	_ = this.Kernel.SetArgBuffer(0, this.BlockObj)
-	this.NonceOutObj, this.Err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, 32)
+	this.NonceOutObj, this.Err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, 4)
 	if this.Err != nil {
 		common.MinerLoger.Error(fmt.Sprintf("-%d,%v CreateEmptyBuffer NonceOutObj", this.MinerId, this.Err))
 		this.IsValid = false
 		return
 	}
 	_ = this.Kernel.SetArgBuffer(1, this.NonceOutObj)
-	// this.NonceRandObj, this.Err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, 8)
-	// if this.Err != nil {
-	// 	common.MinerLoger.Error(fmt.Sprintf("-%d,%v CreateEmptyBuffer NonceRandObj", this.MinerId, this.Err))
-	// 	this.IsValid = false
-	// 	return
-	// }
-	// this.Target2Obj, this.Err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, 32)
-	// if this.Err != nil {
-	// 	common.MinerLoger.Error(fmt.Sprintf("-%d,%v CreateEmptyBuffer Target2Obj", this.MinerId, this.Err))
-	// 	this.IsValid = false
-	// 	return
-	// }
-	// _ = this.Kernel.SetArgBuffer(1, this.NonceOutObj)
+	this.Target2Obj, this.Err = this.Context.CreateEmptyBuffer(cl.MemReadWrite, 32)
+	if this.Err != nil {
+		common.MinerLoger.Error(fmt.Sprintf("-%d,%v CreateEmptyBuffer Target2Obj", this.MinerId, this.Err))
+		this.IsValid = false
+		return
+	}
+	_ = this.Kernel.SetArgBuffer(2, this.Target2Obj)
 	this.LocalItemSize = this.Cfg.OptionConfig.WorkSize
-	// _ = this.Kernel.SetArgBuffer(2, this.NonceRandObj)
-	// _ = this.Kernel.SetArgBuffer(3, this.Target2Obj)
 	common.MinerLoger.Debug(fmt.Sprintf("==============Mining OpenCLKeccak256=============="))
 	common.MinerLoger.Debug(fmt.Sprintf("- Device ID:%d- Global item size:%d- Local item size:%d", this.MinerId, this.GlobalItemSize, this.LocalItemSize))
-	this.NonceOut = make([]byte, 32)
+	this.NonceOut = make([]byte, 4)
 	if this.Event, this.Err = this.CommandQueue.EnqueueWriteBufferByte(this.NonceOutObj, true, 0, this.NonceOut, nil); this.Err != nil {
 		common.MinerLoger.Error(fmt.Sprintf("-%d %v EnqueueWriteBufferByte NonceOutObj", this.MinerId, this.Err))
 		this.IsValid = false
@@ -161,12 +154,26 @@ func (this *OpenCLKeccak256) Mine(wg *sync.WaitGroup) {
 			}
 			this.Update()
 			var err error
-			hData := make([]byte, 113)
+			hData := make([]byte, 120)
 			copy(hData[0:types.MaxBlockHeaderPayload-pow.PROOFDATA_LENGTH], this.header.HeaderBlock.BlockData())
 			hData = []byte("helloworldhelloworldhelloworldhelloworldhelloworldhelloworldhelloworldhelloworldhelloworldhelloworldhelloworldhel")
-			newD := hData[:80]
+			hData = append(hData, []byte{129, 0, 0, 0, 0, 0, 0}...) //append 0x80
+			newD := hData
 			common.MinerLoger.Info("input:"+string(newD), "length", len(newD))
 			if this.Event, err = this.CommandQueue.EnqueueWriteBufferByte(this.BlockObj, true, 0, newD, nil); err != nil {
+				common.MinerLoger.Error(fmt.Sprintf("-%d %v", this.MinerId, err))
+				this.IsValid = false
+				return
+			}
+			this.Event.Release()
+			if !this.IsValid {
+				break
+			}
+			target := "000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+			tb, _ := hex.DecodeString(target)
+			tb = common.Reverse(tb)
+			fmt.Println(hex.EncodeToString(tb))
+			if this.Event, err = this.CommandQueue.EnqueueWriteBufferByte(this.Target2Obj, true, 0, tb, nil); err != nil {
 				common.MinerLoger.Error(fmt.Sprintf("-%d %v", this.MinerId, err))
 				this.IsValid = false
 				return
@@ -183,7 +190,7 @@ func (this *OpenCLKeccak256) Mine(wg *sync.WaitGroup) {
 				return
 			}
 			this.Event.Release()
-			this.NonceOut = make([]byte, 32)
+			this.NonceOut = make([]byte, 4)
 			//Get output
 			if this.Event, this.Err = this.CommandQueue.EnqueueReadBufferByte(this.NonceOutObj, true, 0, this.NonceOut, nil); this.Err != nil {
 				common.MinerLoger.Error(fmt.Sprintf("-%d %v EnqueueReadBufferByte NonceOutObj", this.MinerId, this.Err))
@@ -191,8 +198,11 @@ func (this *OpenCLKeccak256) Mine(wg *sync.WaitGroup) {
 				return
 			}
 			this.Event.Release()
-			common.MinerLoger.Info("result:" + hex.EncodeToString(this.NonceOut))
+			common.MinerLoger.Info("nonce:" + hex.EncodeToString(this.NonceOut))
 			atomic.AddUint64(&this.AllDiffOneShares, uint64(this.GlobalItemSize))
+			copy(hData[108:112], this.NonceOut)
+			h := hash.HashQitmeerKeccak256(hData[:113])
+			fmt.Println("result:", h.String())
 			// xnonce := binary.LittleEndian.Uint32(this.NonceOut[4:8])
 			// if xnonce > 0 {
 			// 	//Found Hash
@@ -234,7 +244,7 @@ func (this *OpenCLKeccak256) Mine(wg *sync.WaitGroup) {
 }
 
 func (this *OpenCLKeccak256) ClearNonceData() {
-	this.NonceOut = make([]byte, 32)
+	this.NonceOut = make([]byte, 4)
 	if this.Event, this.Err = this.CommandQueue.EnqueueWriteBufferByte(this.NonceOutObj, true, 0, this.NonceOut, nil); this.Err != nil {
 		common.MinerLoger.Error(fmt.Sprintf("-%d %v EnqueueWriteBufferByte", this.MinerId, this.Err))
 		this.IsValid = false

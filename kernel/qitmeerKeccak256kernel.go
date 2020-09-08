@@ -89,11 +89,19 @@ void keccak_block_noabsorb(ARGS_25(uint2* s))
 		RND(i);
 }
 
+ulong uint2ToUlong(uint2 x) {
+	uchar *a = (uchar *) &x;
+	uchar b[8] = {a[7],a[6],a[5],a[4],a[3],a[2],a[1],a[0]};
+	ulong *res1 = (ulong *) b;
+	ulong hash0 = as_ulong(as_uchar8(*res1).s76543210);
+	return hash0;
+}
+
 __attribute__((reqd_work_group_size(256, 1, 1)))
-__kernel void search(__global const uint2*restrict in, __global uint*restrict output)
+__kernel void search(__global const uint2*restrict in, __global uint*restrict xnonce,__global uint2 *target)
 {
 	uint2 ARGS_25(state);
-	
+	uint nonce = get_global_id(0) + 0xF0000000;
 	state0 = in[0];
 	state1 = in[1];
 	state2 = in[2];
@@ -103,14 +111,14 @@ __kernel void search(__global const uint2*restrict in, __global uint*restrict ou
 	state6 = in[6];
 	state7 = in[7];
 	state8 = in[8];
-	// state9 = (uint2)(in[9].x, base + get_global_id(0));
 	state9 = in[9];
-	state10 = (uint2)(0x81,0);
-	state11 = 0;
-	state12 = 0;
-	state13 = 0;
-	state14 = 0;
-	state15 = 0;
+	state10 = in[10];
+	state11 = in[11];
+	state12 = in[12];
+	// state13 = in[13];
+	state13 = (uint2)(in[13].x, nonce);
+	state14 = in[14];
+	state15 = in[15];
 	state16 = (uint2)(0,0xf1000000U);
 	state17 = 0;
 	state18 = 0;
@@ -122,15 +130,38 @@ __kernel void search(__global const uint2*restrict in, __global uint*restrict ou
 	state24 = 0;
 	
 	keccak_block_noabsorb(ARGS_25(&state));
-	
-#define FOUND (0x0F)
-#define SETFOUND(Xnonce) output[output[FOUND]++] = Xnonce
-	*output = state3.y;
-	return;
-	// if ((state3.y & 0xFFFFFFF0U) == 0)
-	// {
-	// 	SETFOUND(base + get_global_id(0));
-	// }
+	if(state3.y < target[3].y){
+		*xnonce = nonce;
+		return;
+	}
+	if(state3.y == 0 && state3.x < target[3].x){
+		*xnonce = nonce;
+		return;
+	}
+	if(state3.y == 0 && state3.x == 0 && state2.y < target[2].y){
+		*xnonce = nonce;
+		return;
+	}
+	if(state3.y == 0 && state3.x == 0 && state2.y == 0 && state2.x < target[2].x){
+		*xnonce = nonce;
+		return;
+	}
+	if(state3.y == 0 && state3.x == 0 && state2.y == 0 && state2.x == 0 && state1.y < target[1].y){
+		*xnonce = nonce;
+		return;
+	}
+	if(state3.y == 0 && state3.x == 0 && state2.y == 0 && state2.x == 0 && state1.y == 0 && state1.x < target[1].x){
+		*xnonce = nonce;
+		return;
+	}
+	if(state3.y == 0 && state3.x == 0 && state2.y == 0 && state2.x == 0 && state1.y == 0 && state1.x == 0 && state0.y < target[0].y){
+		*xnonce = nonce;
+		return;
+	}
+	if(state3.y == 0 && state3.x == 0 && state2.y == 0 && state2.x == 0 && state1.y == 0 && state1.x == 0 && state0.y == 0 && state0.x < target[0].x){
+		*xnonce = nonce;
+		return;
+	}
 }
 
 `
