@@ -58,7 +58,7 @@ func (this *OpenCLKeccak256) InitDevice() {
 		this.IsValid = false
 		return
 	}
-	this.BlockObj, this.Err = this.Context.CreateEmptyBuffer(cl.MemReadOnly, 113)
+	this.BlockObj, this.Err = this.Context.CreateEmptyBuffer(cl.MemReadOnly, 80)
 	if this.Err != nil {
 		common.MinerLoger.Error(fmt.Sprintf("-%d,%v CreateEmptyBuffer BlockObj", this.MinerId, this.Err))
 		this.IsValid = false
@@ -164,8 +164,9 @@ func (this *OpenCLKeccak256) Mine(wg *sync.WaitGroup) {
 			hData := make([]byte, 113)
 			copy(hData[0:types.MaxBlockHeaderPayload-pow.PROOFDATA_LENGTH], this.header.HeaderBlock.BlockData())
 			hData = []byte("helloworldhelloworldhelloworldhelloworldhelloworldhelloworldhelloworldhelloworldhelloworldhelloworldhelloworldhel")
-			common.MinerLoger.Info("input:"+string(hData), "length", len(hData))
-			if this.Event, err = this.CommandQueue.EnqueueWriteBufferByte(this.BlockObj, true, 0, hData, nil); err != nil {
+			newD := hData[:80]
+			common.MinerLoger.Info("input:"+string(newD), "length", len(newD))
+			if this.Event, err = this.CommandQueue.EnqueueWriteBufferByte(this.BlockObj, true, 0, newD, nil); err != nil {
 				common.MinerLoger.Error(fmt.Sprintf("-%d %v", this.MinerId, err))
 				this.IsValid = false
 				return
