@@ -3,6 +3,8 @@ package kernel
 const QitmeerKeccak256kernelSource = `
 /*
  * Scrypt-jane public domain, OpenCL implementation of scrypt(keccak,chacha,SCRYPTN,1,1) 2013 mtrlt
+ * Modify By Qitmeer Team 2020-09-07
+ * Mining Qitmeer - 0.9.2
  */
 
 // kernel-interface: fullheader Keccak
