@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"github.com/Qitmeer/qitmeer/common/hash"
 	"github.com/Qitmeer/qitmeer/core/json"
-	"github.com/Qitmeer/qitmeer/core/types/pow"
 	s "github.com/Qitmeer/qitmeer/core/serialization"
 	"github.com/Qitmeer/qitmeer/core/types"
+	"github.com/Qitmeer/qitmeer/core/types/pow"
 	"io"
 	"sync"
 )
@@ -26,11 +26,11 @@ type BlockHeader struct {
 	StateRoot hash.Hash `json:"stateroot"`
 
 	Transactions []Transactions `json:"transactions"`
-	Parents []ParentItems `json:"parents"`
+	Parents      []ParentItems  `json:"parents"`
 	// Difficulty target for tx
 
 	// block number
-	Height uint64 `json:"height"`
+	Height     uint64 `json:"height"`
 	Difficulty uint64 `json:"difficulty"`
 
 	// TimeStamp
@@ -45,11 +45,11 @@ type BlockHeader struct {
 
 	Coinbasevalue   int64 `json:"coinbasevalue"`
 	HasCoinbasePack bool
-	TotalFee uint64
-	transactions []*types.Tx
+	TotalFee        uint64
+	transactions    []*types.Tx
 }
 
-func (h*BlockHeader) SetTxs(transactions []*types.Tx)  {
+func (h *BlockHeader) SetTxs(transactions []*types.Tx) {
 	h.transactions = transactions
 }
 
@@ -71,10 +71,10 @@ func writeBlockHeaderWithProof(w io.Writer, pver uint32, bh *types.BlockHeader) 
 // decoding block headers stored to disk, such as in a database, as opposed to
 // decoding from the type.
 // TODO, redefine the protocol version and storage
-func ReadBlockHeader(b []byte,bh *types.BlockHeader) error {
+func ReadBlockHeader(b []byte, bh *types.BlockHeader) error {
 	r := bytes.NewReader(b)
 	// TODO fix time ambiguous
 	return s.ReadElements(r, &bh.Version, &bh.ParentRoot, &bh.TxRoot,
-		&bh.StateRoot, &bh.Difficulty,(*s.Uint32Time)(&bh.Timestamp),
+		&bh.StateRoot, &bh.Difficulty, (*s.Uint32Time)(&bh.Timestamp),
 		&bh.Pow)
 }

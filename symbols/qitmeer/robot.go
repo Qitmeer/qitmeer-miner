@@ -93,7 +93,7 @@ func (this *QitmeerRobot) GetPow(i int, device *cl.Device) core.BaseDevice {
 		this.Devices = append(this.Devices, deviceMiner)
 		return deviceMiner
 	case POW_QITMEER_KECCAK256:
-		deviceMiner := &QitmeerKeccak256{}
+		deviceMiner := &OpenCLKeccak256{}
 		deviceMiner.MiningType = "keccak256"
 		deviceMiner.Init(i, device, this.Pool, this.Quit, this.Cfg)
 		this.Devices = append(this.Devices, deviceMiner)
