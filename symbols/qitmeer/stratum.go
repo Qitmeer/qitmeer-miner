@@ -129,7 +129,7 @@ func (s *QitmeerStratum) CalcBasePowLimit() *big.Int {
 	case pow.X8R16:
 		return new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 255), big.NewInt(1))
 	case pow.QITMEERKECCAK256:
-		return new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 255), big.NewInt(1))
+		return new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 224), big.NewInt(1))
 	case pow.X16RV3:
 		return new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 255), big.NewInt(1))
 	case pow.CUCKAROO:

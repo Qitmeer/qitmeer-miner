@@ -194,13 +194,12 @@ func (d *Device) Release() {
 	d.BlockObj.Release()
 	d.NonceOutObj.Release()
 	d.Program.Release()
-	d.NonceRandObj.Release()
 	d.Target2Obj.Release()
 	d.CommandQueue.Release()
 }
 
 func (this *Device) Status(wg *sync.WaitGroup) {
-	t := time.NewTicker(time.Second * 15)
+	t := time.NewTicker(time.Second * 10)
 	defer t.Stop()
 	defer wg.Done()
 	for {
@@ -227,7 +226,7 @@ func (this *Device) Status(wg *sync.WaitGroup) {
 			//recent stats 95% percent
 			this.AverageHashRate = (this.AverageHashRate*50 + averageHashRate*950) / 1000
 			unit := " H/s"
-			if this.GetMinerType() != "blake2bd" {
+			if this.GetMinerType() != "blake2bd" && this.GetMinerType() != "keccak256" {
 				unit = " GPS"
 			}
 			common.MinerLoger.Info(fmt.Sprintf("# %d [%s] : %s", this.MinerId, this.ClDevice.Name(), common.FormatHashRate(this.AverageHashRate, unit)))

@@ -97,7 +97,7 @@ ulong uint2ToUlong(uint2 x) {
 	return hash0;
 }
 
-__attribute__((reqd_work_group_size(256, 1, 1)))
+// __attribute__((reqd_work_group_size(256, 1, 1)))
 __kernel void search(__global const uint2*restrict in, __global uint*restrict xnonce,__global uint2 *target)
 {
 	uint2 ARGS_25(state);

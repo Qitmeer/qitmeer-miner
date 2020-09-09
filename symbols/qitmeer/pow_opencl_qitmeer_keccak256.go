@@ -12,6 +12,7 @@ package qitmeer
 */
 import "C"
 import (
+	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"github.com/Qitmeer/go-opencl/cl"
@@ -154,14 +155,11 @@ func (this *OpenCLKeccak256) Mine(wg *sync.WaitGroup) {
 			}
 			this.Update()
 			var err error
-			hData := make([]byte, 120)
+			hData := make([]byte, 113)
 			copy(hData[0:types.MaxBlockHeaderPayload-pow.PROOFDATA_LENGTH], this.header.HeaderBlock.BlockData())
-			hData = []byte("helloworldhelloworldhelloworldhelloworldhelloworldhelloworldhelloworldhelloworldhelloworldhelloworldhelloworldhel")
 			hData = append(hData, []byte{129, 0, 0, 0, 0, 0, 0}...) //append 0x80
-			newD := hData
-			common.MinerLoger.Info("input:"+string(newD), "length", len(newD))
-			if this.Event, err = this.CommandQueue.EnqueueWriteBufferByte(this.BlockObj, true, 0, newD, nil); err != nil {
-				common.MinerLoger.Error(fmt.Sprintf("-%d %v", this.MinerId, err))
+			if this.Event, err = this.CommandQueue.EnqueueWriteBufferByte(this.BlockObj, true, 0, hData, nil); err != nil {
+				common.MinerLoger.Error(fmt.Sprintf("-%d %v EnqueueWriteBufferByte", this.MinerId, err))
 				this.IsValid = false
 				return
 			}
@@ -169,11 +167,7 @@ func (this *OpenCLKeccak256) Mine(wg *sync.WaitGroup) {
 			if !this.IsValid {
 				break
 			}
-			target := "000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-			tb, _ := hex.DecodeString(target)
-			tb = common.Reverse(tb)
-			fmt.Println(hex.EncodeToString(tb))
-			if this.Event, err = this.CommandQueue.EnqueueWriteBufferByte(this.Target2Obj, true, 0, tb, nil); err != nil {
+			if this.Event, err = this.CommandQueue.EnqueueWriteBufferByte(this.Target2Obj, true, 0, this.header.Target2, nil); err != nil {
 				common.MinerLoger.Error(fmt.Sprintf("-%d %v", this.MinerId, err))
 				this.IsValid = false
 				return
@@ -198,46 +192,40 @@ func (this *OpenCLKeccak256) Mine(wg *sync.WaitGroup) {
 				return
 			}
 			this.Event.Release()
-			common.MinerLoger.Info("nonce:" + hex.EncodeToString(this.NonceOut))
 			atomic.AddUint64(&this.AllDiffOneShares, uint64(this.GlobalItemSize))
+			xnonce := binary.LittleEndian.Uint32(this.NonceOut[0:4])
+			//Found Hash
+			this.header.HeaderBlock.Pow.SetNonce(xnonce)
 			copy(hData[108:112], this.NonceOut)
 			h := hash.HashQitmeerKeccak256(hData[:113])
-			fmt.Println("result:", h.String())
-			// xnonce := binary.LittleEndian.Uint32(this.NonceOut[4:8])
-			// if xnonce > 0 {
-			// 	//Found Hash
-			// 	this.header.HeaderBlock.Pow.SetNonce(xnonce)
-			// 	copy(hData[104:112], this.NonceOut)
-			// 	h = hash.DoubleHashH(hData[:113])
-			// 	headerData := BlockDataWithProof(this.header.HeaderBlock)
-			// 	copy(headerData[0:113], hData[0:113])
-			// 	if HashToBig(&h).Cmp(this.header.TargetDiff) <= 0 {
-			// 		common.MinerLoger.Debug(fmt.Sprintf("device #%d found hash : %s nonce:%d target:%064x", this.MinerId, h, xnonce, this.header.TargetDiff))
-			// 		subm = hex.EncodeToString(headerData)
-			// 		if !this.Pool {
-			// 			subm += common.Int2varinthex(int64(len(this.header.Parents)))
-			// 			for j = 0; j < len(this.header.Parents); j++ {
-			// 				subm += this.header.Parents[j].Data
-			// 			}
-			//
-			// 			txCount = len(this.header.Transactions) //real transaction count except coinbase
-			// 			subm += common.Int2varinthex(int64(txCount))
-			//
-			// 			for j = 0; j < txCount; j++ {
-			// 				subm += this.header.Transactions[j].Data
-			// 			}
-			// 			subm += "-" + fmt.Sprintf("%d", txCount) + "-" + fmt.Sprintf("%d", this.Work.Block.Height)
-			// 		} else {
-			// 			subm += "-" + this.header.JobID + "-" + this.header.Exnonce2
-			// 		}
-			// 		this.SubmitData <- subm
-			// 		if !this.Pool {
-			// 			//solo wait new task
-			// 			this.ClearNonceData()
-			// 		}
-			// 		break
-			// 	}
-			// }
+			headerData := BlockDataWithProof(this.header.HeaderBlock)
+			copy(headerData[0:113], hData[0:113])
+			if HashToBig(&h).Cmp(this.header.TargetDiff) <= 0 {
+				common.MinerLoger.Debug(fmt.Sprintf("device #%d found hash : %s nonce:%d target:%064x", this.MinerId, h, xnonce, this.header.TargetDiff))
+				subm := hex.EncodeToString(headerData)
+				if !this.Pool {
+					subm += common.Int2varinthex(int64(len(this.header.Parents)))
+					for j := 0; j < len(this.header.Parents); j++ {
+						subm += this.header.Parents[j].Data
+					}
+
+					txCount := len(this.header.Transactions) //real transaction count except coinbase
+					subm += common.Int2varinthex(int64(txCount))
+
+					for j := 0; j < txCount; j++ {
+						subm += this.header.Transactions[j].Data
+					}
+					subm += "-" + fmt.Sprintf("%d", txCount) + "-" + fmt.Sprintf("%d", this.Work.Block.Height)
+				} else {
+					subm += "-" + this.header.JobID + "-" + this.header.Exnonce2
+				}
+				this.SubmitData <- subm
+				if !this.Pool {
+					//solo wait new task
+					this.ClearNonceData()
+				}
+				break
+			}
 			this.ClearNonceData()
 		}
 	}
