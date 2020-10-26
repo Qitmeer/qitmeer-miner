@@ -71,10 +71,31 @@ func (this *QitmeerWork) CopyNew() QitmeerWork {
 	return newWork
 }
 
+func (this *QitmeerWork) GetPowType() pow.PowType {
+	switch this.Cfg.NecessaryConfig.Pow {
+	case POW_CUCKROOM:
+		return pow.CUCKAROOM
+	case POW_CUCKROO:
+		return pow.CUCKAROO
+	case POW_CUCKTOO:
+		return pow.CUCKATOO
+	case POW_DOUBLE_BLAKE2B:
+		return pow.BLAKE2BD
+	case POW_X8R16:
+		return pow.X8R16
+	case POW_X16RV3:
+		return pow.X16RV3
+	case POW_QITMEER_KECCAK256:
+		return pow.QITMEERKECCAK256
+	default:
+		return pow.BLAKE2BD
+	}
+}
+
 //GetBlockTemplate
 func (this *QitmeerWork) Get() bool {
 	this.ForceUpdate = false
-	body := this.Rpc.RpcResult("getBlockTemplate", []interface{}{[]string{}})
+	body := this.Rpc.RpcResult("getBlockTemplate", []interface{}{[]string{}, this.GetPowType()})
 	if body == nil {
 		if this.Cfg.OptionConfig.TaskForceStop {
 			this.ForceUpdate = true
@@ -104,25 +125,25 @@ func (this *QitmeerWork) Get() bool {
 	switch this.Cfg.NecessaryConfig.Pow {
 	case POW_DOUBLE_BLAKE2B:
 		blockTemplate.Result.Pow = pow.GetInstance(pow.BLAKE2BD, 0, []byte{})
-		target = blockTemplate.Result.PowDiffReference.Blake2bTarget
+		target = blockTemplate.Result.PowDiffReference.Target
 		n, _ = n.SetString(target, 16)
 		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
 		blockTemplate.Result.Target = target
 	case POW_X8R16:
 		blockTemplate.Result.Pow = pow.GetInstance(pow.X8R16, 0, []byte{})
-		target = blockTemplate.Result.PowDiffReference.X8r16Target
+		target = blockTemplate.Result.PowDiffReference.Target
 		n, _ = n.SetString(target, 16)
 		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
 		blockTemplate.Result.Target = target
 	case POW_QITMEER_KECCAK256:
 		blockTemplate.Result.Pow = pow.GetInstance(pow.QITMEERKECCAK256, 0, []byte{})
-		target = blockTemplate.Result.PowDiffReference.QitmeerKeccak256Target
+		target = blockTemplate.Result.PowDiffReference.Target
 		n, _ = n.SetString(target, 16)
 		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
 		blockTemplate.Result.Target = target
 	case POW_X16RV3:
 		blockTemplate.Result.Pow = pow.GetInstance(pow.X16RV3, 0, []byte{})
-		target = blockTemplate.Result.PowDiffReference.X16rv3Target
+		target = blockTemplate.Result.PowDiffReference.Target
 		n, _ = n.SetString(target, 16)
 		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
 		blockTemplate.Result.Target = target
@@ -132,24 +153,27 @@ func (this *QitmeerWork) Get() bool {
 		blockTemplate.Result.Pow = pow.GetInstance(pow.CUCKAROO, 0, []byte{})
 		powStruct := blockTemplate.Result.Pow.(*pow.Cuckaroo)
 		powStruct.SetEdgeBits(24)
-		n.SetUint64(blockTemplate.Result.PowDiffReference.CuckarooMinDiff)
+		target = blockTemplate.Result.PowDiffReference.Target
+		n, _ = n.SetString(target, 16)
 		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
-		target = fmt.Sprintf("min difficulty %d", blockTemplate.Result.PowDiffReference.CuckarooMinDiff)
-		blockTemplate.Result.Target = fmt.Sprintf("%064x", blockTemplate.Result.PowDiffReference.CuckarooMinDiff)
+		target = fmt.Sprintf("min difficulty %d", n.Uint64())
+		blockTemplate.Result.Target = target
 	case POW_CUCKROOM:
 		blockTemplate.Result.Pow = pow.GetInstance(pow.CUCKAROOM, 0, []byte{})
-		n.SetUint64(blockTemplate.Result.PowDiffReference.CuckaroomMinDiff)
+		target = blockTemplate.Result.PowDiffReference.Target
+		n, _ = n.SetString(target, 16)
 		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
-		target = fmt.Sprintf("min difficulty %d", blockTemplate.Result.PowDiffReference.CuckaroomMinDiff)
-		blockTemplate.Result.Target = fmt.Sprintf("%064x", blockTemplate.Result.PowDiffReference.CuckaroomMinDiff)
+		target = fmt.Sprintf("min difficulty %d", n.Uint64())
+		blockTemplate.Result.Target = target
 	case POW_CUCKTOO:
 		blockTemplate.Result.Pow = pow.GetInstance(pow.CUCKATOO, 0, []byte{})
 		powStruct := blockTemplate.Result.Pow.(*pow.Cuckatoo)
 		powStruct.SetEdgeBits(29)
-		n.SetUint64(blockTemplate.Result.PowDiffReference.CuckatooMinDiff)
+		target = blockTemplate.Result.PowDiffReference.Target
+		n, _ = n.SetString(target, 16)
 		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
-		target = fmt.Sprintf("min difficulty %d", blockTemplate.Result.PowDiffReference.CuckatooMinDiff)
-		blockTemplate.Result.Target = fmt.Sprintf("%064x", blockTemplate.Result.PowDiffReference.CuckatooMinDiff)
+		target = fmt.Sprintf("min difficulty %d", n.Uint64())
+		blockTemplate.Result.Target = target
 	}
 
 	blockTemplate.Result.HasCoinbasePack = false
