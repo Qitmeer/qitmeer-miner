@@ -27,8 +27,8 @@ type MinerBlockData struct {
 // Header structure of assembly pool
 func BlockComputePoolData(b []byte) []byte {
 	//the qitmeer order
-	powType := hex.EncodeToString(b[POWTYPE_START:POWTYPE_END])
 	nonce := hex.EncodeToString(b[NONCESTART:NONCEEND])
+	powType := hex.EncodeToString(b[POWTYPE_START:POWTYPE_END])
 	ntime := hex.EncodeToString(b[TIMESTART:TIMEEND])
 	nbits := hex.EncodeToString(b[NBITSTART:NBITEND])
 	state := hex.EncodeToString(b[STATESTART:STATEEND])
@@ -36,7 +36,7 @@ func BlockComputePoolData(b []byte) []byte {
 	prevhash := hex.EncodeToString(b[PRESTART:PREEND])
 	version := hex.EncodeToString(b[VERSIONSTART:VERSIONEND])
 	//the pool order
-	header := powType + nonce + ntime + nbits + state + merkle + prevhash + version
+	header := nonce + powType + ntime + nbits + state + merkle + prevhash + version
 
 	bb, _ := hex.DecodeString(header)
 	bb = common.Reverse(bb)
@@ -52,7 +52,7 @@ func (this *MinerBlockData) PackagePoolHeader(work *QitmeerWork, powType pow.Pow
 	copy(this.HeaderData[NONCESTART:NONCEEND], nbitesBy[:])
 	instance := pow.GetInstance(powType, 0, []byte{})
 	proofData, _ := hex.DecodeString(instance.GetProofData())
-	this.HeaderData = append(this.HeaderData, proofData...) //328 bytes
+	this.HeaderData = append(this.HeaderData, proofData...)
 	this.JobID = work.PoolWork.JobID
 	this.HeaderBlock = &types.BlockHeader{}
 	_ = ReadBlockHeader(this.HeaderData, this.HeaderBlock)
@@ -93,6 +93,6 @@ func (this *MinerBlockData) PackageRpcHeader(work *QitmeerWork, txs []Transactio
 	this.HeaderBlock.StateRoot = work.Block.StateRoot
 	this.HeaderBlock.Difficulty = uint32(work.Block.Difficulty)
 	this.HeaderBlock.Timestamp = time.Unix(int64(work.Block.Curtime), 0)
-	this.HeaderBlock.Pow = pow.GetInstance(work.Block.Pow.GetPowType(), binary.LittleEndian.Uint32(bitesBy), []byte{})
+	this.HeaderBlock.Pow = pow.GetInstance(work.Block.Pow.GetPowType(), binary.LittleEndian.Uint64(bitesBy), []byte{})
 	this.Height = work.Block.Height
 }

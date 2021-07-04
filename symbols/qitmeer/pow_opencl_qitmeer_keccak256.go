@@ -195,7 +195,7 @@ func (this *OpenCLKeccak256) Mine(wg *sync.WaitGroup) {
 			atomic.AddUint64(&this.AllDiffOneShares, uint64(this.GlobalItemSize))
 			xnonce := binary.LittleEndian.Uint32(this.NonceOut[0:4])
 			//Found Hash
-			this.header.HeaderBlock.Pow.SetNonce(xnonce)
+			this.header.HeaderBlock.Pow.SetNonce(uint64(xnonce))
 			copy(hData[108:112], this.NonceOut)
 			h := hash.HashQitmeerKeccak256(hData[:113])
 			headerData := BlockDataWithProof(this.header.HeaderBlock)

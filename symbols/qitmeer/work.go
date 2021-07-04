@@ -87,6 +87,8 @@ func (this *QitmeerWork) GetPowType() pow.PowType {
 		return pow.X16RV3
 	case POW_QITMEER_KECCAK256:
 		return pow.QITMEERKECCAK256
+	case POW_MEER_CRYPTO:
+		return pow.MEER_CRYPTO
 	default:
 		return pow.BLAKE2BD
 	}

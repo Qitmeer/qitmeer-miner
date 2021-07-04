@@ -198,7 +198,7 @@ func (this *Cuckaroo) Mine(wg *sync.WaitGroup) {
 				break
 			}
 			this.Update()
-			nonce, _ := common.RandUint32()
+			nonce := common.RandUint64()
 			this.header.HeaderBlock.Pow.SetNonce(nonce)
 			hData := this.header.HeaderBlock.BlockData()
 			hdrkey := this.header.HeaderBlock.Pow.(*pow.Cuckaroo).GetSipHash(hData)

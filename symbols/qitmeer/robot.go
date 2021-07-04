@@ -27,6 +27,7 @@ const (
 	POW_X8R16             = "x8r16"
 	POW_X16RV3            = "x16rv3"
 	POW_QITMEER_KECCAK256 = "qitmeer_keccak256"
+	POW_MEER_CRYPTO       = "meer_crypto"
 )
 
 type QitmeerRobot struct {
@@ -95,6 +96,12 @@ func (this *QitmeerRobot) GetPow(i int, device *cl.Device) core.BaseDevice {
 	case POW_QITMEER_KECCAK256:
 		deviceMiner := &OpenCLKeccak256{}
 		deviceMiner.MiningType = "keccak256"
+		deviceMiner.Init(i, device, this.Pool, this.Quit, this.Cfg)
+		this.Devices = append(this.Devices, deviceMiner)
+		return deviceMiner
+	case POW_MEER_CRYPTO:
+		deviceMiner := &MeerCrypto{}
+		deviceMiner.MiningType = "meer_crypto"
 		deviceMiner.Init(i, device, this.Pool, this.Quit, this.Cfg)
 		this.Devices = append(this.Devices, deviceMiner)
 		return deviceMiner

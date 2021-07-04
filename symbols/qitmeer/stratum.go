@@ -138,6 +138,8 @@ func (s *QitmeerStratum) CalcBasePowLimit() *big.Int {
 		return big.NewInt(1)
 	case pow.CUCKATOO:
 		return big.NewInt(1)
+	case pow.MEER_CRYPTO:
+		return new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 250), big.NewInt(1))
 	}
 	return params.MainNetParams.PowConfig.Blake2bdPowLimit
 }
@@ -509,7 +511,7 @@ func (s *NotifyWork) PrepQitmeerWork() []byte {
 
 	ddd = common.Reverse(ddd)
 	merkleRootStr2 := hex.EncodeToString(ddd)
-	nonceStr := fmt.Sprintf("%08x", 0)
+	nonceStr := fmt.Sprintf("%016x", 0)
 	//pool tx hash has converse every 4 bit
 	tmpHash := s.Hash
 	tmpBytes, _ := hex.DecodeString(tmpHash)
@@ -517,7 +519,8 @@ func (s *NotifyWork) PrepQitmeerWork() []byte {
 	prevHash := hex.EncodeToString(normalBytes)
 	//prevHash :=s.Hash
 	ntime, _ := hex.DecodeString(s.Ntime)
-	blockheader := s.Version + prevHash + merkleRootStr2 + s.StateRoot + s.Nbits + hex.EncodeToString(ntime) + nonceStr + hex.EncodeToString([]byte{uint8(s.PowType)}) + hex.EncodeToString(s.CuckooProof[:])
+	blockheader := s.Version + prevHash + merkleRootStr2 + s.StateRoot + s.Nbits + hex.EncodeToString(ntime) +
+		hex.EncodeToString([]byte{uint8(s.PowType)}) + nonceStr + hex.EncodeToString(s.CuckooProof[:])
 	workData, _ := hex.DecodeString(blockheader)
 
 	return workData

@@ -6,14 +6,12 @@ import (
 
 const (
 	//every mode position
-	POWTYPE_START = 112
-	POWTYPE_END   = 113
+	POWTYPE_START = 108
+	POWTYPE_END   = 109
 	TIMESTART     = 104
 	TIMEEND       = 108
-	NONCESTART    = 108
-	NONCEEND      = 112
-	HEIGHTSTART   = 104
-	HEIGHTEND     = 112
+	NONCESTART    = 109
+	NONCEEND      = 117
 	NBITSTART     = 100
 	NBITEND       = 104
 	STATESTART    = 68

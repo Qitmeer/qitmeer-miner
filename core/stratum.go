@@ -56,6 +56,8 @@ func GetPowType(powName string) pow.PowType {
 		return pow.CUCKAROOM
 	case "cuckatoo":
 		return pow.CUCKATOO
+	case "meer_crypto":
+		return pow.MEER_CRYPTO
 	}
 	return pow.BLAKE2BD
 }
