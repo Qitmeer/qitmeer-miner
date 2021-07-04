@@ -6,7 +6,6 @@ package core
 
 import (
 	"fmt"
-	"github.com/Qitmeer/go-opencl/cl"
 	"github.com/Qitmeer/qitmeer-miner/common"
 	"math"
 	"os"
@@ -46,17 +45,8 @@ type Device struct {
 	AllDiffOneShares uint64
 	AverageHashRate  float64
 	MinerId          uint32
-	Context          *cl.Context
-	CommandQueue     *cl.CommandQueue
 	LocalItemSize    int
 	NonceOut         []byte
-	BlockObj         *cl.MemObject
-	NonceOutObj      *cl.MemObject
-	NonceRandObj     *cl.MemObject
-	Target2Obj       *cl.MemObject
-	Kernel           *cl.Kernel
-	Program          *cl.Program
-	ClDevice         *cl.Device
 	Started          int64
 	GlobalItemSize   int
 	CurrentWorkID    uint64
@@ -69,21 +59,15 @@ type Device struct {
 	NewWork      chan BaseWork
 	Err          error
 	MiningType   string
-	Event        *cl.Event
 	StopTaskChan chan bool
 	IsRunning    bool
 }
 
-func (this *Device) Init(i int, device *cl.Device, pool bool, q chan os.Signal, cfg *common.GlobalConfig) {
+func (this *Device) Init(i int, pool bool, q chan os.Signal, cfg *common.GlobalConfig) {
 	this.MinerId = uint32(i)
 	this.NewWork = make(chan BaseWork, 1)
 	this.Cfg = cfg
 	this.DeviceName = "CPU Miner"
-	if !cfg.OptionConfig.CPUMiner {
-		this.DeviceName = device.Name()
-	}
-
-	this.ClDevice = device
 	this.CurrentWorkID = 0
 	this.IsValid = true
 	this.Pool = pool
@@ -134,18 +118,6 @@ func (this *Device) Update() {
 }
 
 func (this *Device) InitDevice() {
-	var err error
-	this.Context, err = cl.CreateContext([]*cl.Device{this.ClDevice})
-	if err != nil {
-		this.IsValid = false
-		common.MinerLoger.Info("CreateContext", "minerId", this.MinerId, "error", err)
-		return
-	}
-	this.CommandQueue, err = this.Context.CreateCommandQueue(this.ClDevice, 0)
-	if err != nil {
-		this.IsValid = false
-		common.MinerLoger.Info("CreateCommandQueue", "minerId", this.MinerId, "error", err)
-	}
 }
 
 func (this *Device) SetPool(b bool) {
@@ -189,13 +161,6 @@ func (this *Device) GetAverageHashRate() float64 {
 }
 
 func (d *Device) Release() {
-	d.Kernel.Release()
-	d.Context.Release()
-	d.BlockObj.Release()
-	d.NonceOutObj.Release()
-	d.Program.Release()
-	d.Target2Obj.Release()
-	d.CommandQueue.Release()
 }
 
 func (this *Device) Status(wg *sync.WaitGroup) {
@@ -229,7 +194,7 @@ func (this *Device) Status(wg *sync.WaitGroup) {
 			if this.GetMinerType() != "blake2bd" && this.GetMinerType() != "keccak256" {
 				unit = " GPS"
 			}
-			common.MinerLoger.Info(fmt.Sprintf("# %d [%s] : %s", this.MinerId, this.ClDevice.Name(), common.FormatHashRate(this.AverageHashRate, unit)))
+			common.MinerLoger.Info(fmt.Sprintf("# %d : %s", this.MinerId, common.FormatHashRate(this.AverageHashRate, unit)))
 		}
 	}
 }

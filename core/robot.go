@@ -4,7 +4,6 @@
 package core
 
 import (
-	"github.com/Qitmeer/go-opencl/cl"
 	"github.com/Qitmeer/qitmeer-miner/common"
 	"os"
 	"strings"
@@ -33,7 +32,7 @@ type MinerRobot struct {
 	Started          uint32
 	Quit             chan os.Signal
 	Work             *Work
-	ClDevices        []*cl.Device
+	ClDevices        []string
 	Rpc              *common.RpcClient
 	Pool             bool
 	SubmitStr        chan string
@@ -42,22 +41,6 @@ type MinerRobot struct {
 
 //init GPU device
 func (this *MinerRobot) InitDevice() {
-	var typ = common.DevicesTypesForGPUMining
-	if this.Cfg.OptionConfig.CPUMiner {
-		common.MinerLoger.Warn("The parameter CPUMiner is deprecated !")
-		cpuDevice := &cl.Device{}
-		this.ClDevices = append(this.ClDevices, cpuDevice)
-		return
-	}
-	needPlatform := ""
-	if this.Cfg.OptionConfig.Cuda {
-		needPlatform = "CUDA"
-	}
-	this.ClDevices = common.GetDevices(typ, needPlatform)
-	if this.ClDevices == nil {
-		common.MinerLoger.Info("Some GPU drivers error occurs! please check your GPU drivers.")
-		return
-	}
 	this.UseDevices = []string{}
 	if this.Cfg.OptionConfig.UseDevices != "" {
 		this.UseDevices = strings.Split(this.Cfg.OptionConfig.UseDevices, ",")

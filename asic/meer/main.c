@@ -74,14 +74,20 @@ int end(uint8_t* end){
 //int main(int argc, char* argv[])
 int meer_pow(char* pheader_str,int pheader_len,char* ptarget_str,uint8_t* result_nonce,uint8_t* end)
 {
+    printf("header: ");
+    for(int i=0;i<pheader_len;i++) {
+       printf("%02x", pheader_str[i]);
+    }
+    printf("\n target: ");
+    for(int i=0;i<32;i++) {
+       printf("%02x", ptarget_str[i]);
+    }
     int fd;
     uint8_t target[32] = {0};
     struct work work_temp;    
     uint8_t header[117]= {0};
 	
-	printf("meer driver %s\n", MEER_DRV_VERSION);
-	
-    
+	printf("\nmeer driver %s\n", MEER_DRV_VERSION);
 	//初始化算力板
     if(meer_drv_init(&fd, NUM_OF_CHIPS)) {
         return -1;
@@ -121,6 +127,7 @@ int meer_pow(char* pheader_str,int pheader_len,char* ptarget_str,uint8_t* result
     memcpy(work_temp.target, target, 32); //难度目标配置
     
 //    char * pheader_str = "1200000003c60b43da920ae08be3dd91e174fc7b5d538ca5601a4ea9fbcfc703447dd4871b7fac4e54a887df6c1801f4ac37883d6808cb93855f1f07aa4c2cfa73eea3b1000000000000000000000000000000000000000000000000000000000000000000f5231c83cf1060080000000000000000";
+
     hex2bin(header, pheader_str, sizeof(header));
     memcpy(work_temp.header, header, pheader_len); //meer区块头
     
@@ -150,7 +157,7 @@ int meer_pow(char* pheader_str,int pheader_len,char* ptarget_str,uint8_t* result
                         work_temp.header[109+i] = nonce[i];
                     }
                     printf("header in:\n");
-                    for(int i=0;i<117;i++) {
+                    for(int i=0;i<pheader_len;i++) {
                         printf("%02x", work_temp.header[i]);
                     }
                     printf("\n");

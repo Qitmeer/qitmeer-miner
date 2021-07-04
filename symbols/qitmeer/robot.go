@@ -5,7 +5,6 @@ package qitmeer
 
 import (
 	"fmt"
-	"github.com/Qitmeer/go-opencl/cl"
 	"github.com/Qitmeer/qitmeer-miner/common"
 	"github.com/Qitmeer/qitmeer-miner/core"
 	"github.com/Qitmeer/qitmeer-miner/stats_server"
@@ -38,71 +37,12 @@ type QitmeerRobot struct {
 	AllTransactionsCount int64
 }
 
-func (this *QitmeerRobot) GetPow(i int, device *cl.Device) core.BaseDevice {
+func (this *QitmeerRobot) GetPow(i int) core.BaseDevice {
 	switch this.Cfg.NecessaryConfig.Pow {
-	case POW_CUCKROOM:
-		if !this.Cfg.OptionConfig.Cuda {
-			deviceMiner := &Cuckaroo{}
-			deviceMiner.MiningType = "cuckaroom"
-			deviceMiner.Init(i, device, this.Pool, this.Quit, this.Cfg)
-			this.Devices = append(this.Devices, deviceMiner)
-			return deviceMiner
-		} else {
-			deviceMiner := &CudaCuckaroom{}
-			deviceMiner.MiningType = "cuckaroom"
-			deviceMiner.Init(i, device, this.Pool, this.Quit, this.Cfg)
-			this.Devices = append(this.Devices, deviceMiner)
-			return deviceMiner
-		}
-	case POW_CUCKROO:
-		if !this.Cfg.OptionConfig.Cuda {
-			deviceMiner := &Cuckaroo{}
-			deviceMiner.MiningType = "cuckaroo"
-			deviceMiner.Init(i, device, this.Pool, this.Quit, this.Cfg)
-			this.Devices = append(this.Devices, deviceMiner)
-			return deviceMiner
-		} else {
-			deviceMiner := &CudaCuckaroo{}
-			deviceMiner.MiningType = "cuckaroo"
-			deviceMiner.Init(i, device, this.Pool, this.Quit, this.Cfg)
-			this.Devices = append(this.Devices, deviceMiner)
-			return deviceMiner
-		}
-
-	case POW_CUCKTOO:
-		deviceMiner := &Cuckatoo{}
-		deviceMiner.MiningType = "cuckatoo"
-		deviceMiner.Init(i, device, this.Pool, this.Quit, this.Cfg)
-		this.Devices = append(this.Devices, deviceMiner)
-		return deviceMiner
-	case POW_DOUBLE_BLAKE2B:
-		deviceMiner := &Blake2bD{}
-		deviceMiner.MiningType = "blake2bd"
-		deviceMiner.Init(i, device, this.Pool, this.Quit, this.Cfg)
-		this.Devices = append(this.Devices, deviceMiner)
-		return deviceMiner
-	case POW_X8R16:
-		deviceMiner := &X8r16{}
-		deviceMiner.MiningType = "x8r16"
-		deviceMiner.Init(i, device, this.Pool, this.Quit, this.Cfg)
-		this.Devices = append(this.Devices, deviceMiner)
-		return deviceMiner
-	case POW_X16RV3:
-		deviceMiner := &X16rv3{}
-		deviceMiner.MiningType = "x16rv3"
-		deviceMiner.Init(i, device, this.Pool, this.Quit, this.Cfg)
-		this.Devices = append(this.Devices, deviceMiner)
-		return deviceMiner
-	case POW_QITMEER_KECCAK256:
-		deviceMiner := &OpenCLKeccak256{}
-		deviceMiner.MiningType = "keccak256"
-		deviceMiner.Init(i, device, this.Pool, this.Quit, this.Cfg)
-		this.Devices = append(this.Devices, deviceMiner)
-		return deviceMiner
 	case POW_MEER_CRYPTO:
 		deviceMiner := &MeerCrypto{}
 		deviceMiner.MiningType = "meer_crypto"
-		deviceMiner.Init(i, device, this.Pool, this.Quit, this.Cfg)
+		deviceMiner.Init(i, this.Pool, this.Quit, this.Cfg)
 		this.Devices = append(this.Devices, deviceMiner)
 		return deviceMiner
 
@@ -114,12 +54,7 @@ func (this *QitmeerRobot) GetPow(i int, device *cl.Device) core.BaseDevice {
 
 func (this *QitmeerRobot) InitDevice() {
 	this.MinerRobot.InitDevice()
-	for i, device := range this.ClDevices {
-		deviceMiner := this.GetPow(i, device)
-		if deviceMiner == nil {
-			return
-		}
-	}
+	this.GetPow(0)
 }
 
 // runing

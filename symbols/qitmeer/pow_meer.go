@@ -1,15 +1,11 @@
+//+build cpu,!asic
+
 /**
 Qitmeer
 james
 */
 package qitmeer
 
-/*
-#cgo LDFLAGS: -L../../asic/meer
-#cgo LDFLAGS: -lmain
-#cgo CFLAGS: -g -O3 -fno-stack-protector
-#include "../../asic/meer.h"
-*/
 import "C"
 import (
 	"encoding/binary"

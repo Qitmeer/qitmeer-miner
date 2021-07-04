@@ -25,9 +25,9 @@ const (
 // These constants define the application version and follow the semantic
 // versioning 2.0.0 spec (http://semver.org/).
 const (
-	Major uint = 0
-	Minor uint = 5
-	Patch uint = 1
+	Major uint = 1
+	Minor uint = 0
+	Patch uint = 0
 )
 
 var (
