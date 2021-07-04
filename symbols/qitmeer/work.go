@@ -125,56 +125,11 @@ func (this *QitmeerWork) Get() bool {
 	target := ""
 	n := new(big.Int)
 	switch this.Cfg.NecessaryConfig.Pow {
-	case POW_DOUBLE_BLAKE2B:
-		blockTemplate.Result.Pow = pow.GetInstance(pow.BLAKE2BD, 0, []byte{})
+	case POW_MEER_CRYPTO:
+		blockTemplate.Result.Pow = pow.GetInstance(pow.MEER_CRYPTO, 0, []byte{})
 		target = blockTemplate.Result.PowDiffReference.Target
 		n, _ = n.SetString(target, 16)
 		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
-		blockTemplate.Result.Target = target
-	case POW_X8R16:
-		blockTemplate.Result.Pow = pow.GetInstance(pow.X8R16, 0, []byte{})
-		target = blockTemplate.Result.PowDiffReference.Target
-		n, _ = n.SetString(target, 16)
-		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
-		blockTemplate.Result.Target = target
-	case POW_QITMEER_KECCAK256:
-		blockTemplate.Result.Pow = pow.GetInstance(pow.QITMEERKECCAK256, 0, []byte{})
-		target = blockTemplate.Result.PowDiffReference.Target
-		n, _ = n.SetString(target, 16)
-		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
-		blockTemplate.Result.Target = target
-	case POW_X16RV3:
-		blockTemplate.Result.Pow = pow.GetInstance(pow.X16RV3, 0, []byte{})
-		target = blockTemplate.Result.PowDiffReference.Target
-		n, _ = n.SetString(target, 16)
-		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
-		blockTemplate.Result.Target = target
-	case POW_CUCKROO:
-		fallthrough
-	case POW_CUCKROO29:
-		blockTemplate.Result.Pow = pow.GetInstance(pow.CUCKAROO, 0, []byte{})
-		powStruct := blockTemplate.Result.Pow.(*pow.Cuckaroo)
-		powStruct.SetEdgeBits(24)
-		target = blockTemplate.Result.PowDiffReference.Target
-		n, _ = n.SetString(target, 16)
-		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
-		target = fmt.Sprintf("min difficulty %d", n.Uint64())
-		blockTemplate.Result.Target = target
-	case POW_CUCKROOM:
-		blockTemplate.Result.Pow = pow.GetInstance(pow.CUCKAROOM, 0, []byte{})
-		target = blockTemplate.Result.PowDiffReference.Target
-		n, _ = n.SetString(target, 16)
-		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
-		target = fmt.Sprintf("min difficulty %d", n.Uint64())
-		blockTemplate.Result.Target = target
-	case POW_CUCKTOO:
-		blockTemplate.Result.Pow = pow.GetInstance(pow.CUCKATOO, 0, []byte{})
-		powStruct := blockTemplate.Result.Pow.(*pow.Cuckatoo)
-		powStruct.SetEdgeBits(29)
-		target = blockTemplate.Result.PowDiffReference.Target
-		n, _ = n.SetString(target, 16)
-		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
-		target = fmt.Sprintf("min difficulty %d", n.Uint64())
 		blockTemplate.Result.Target = target
 	}
 
