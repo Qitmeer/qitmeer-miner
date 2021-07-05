@@ -122,6 +122,9 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 				start = true
 				go func(start, miningEnd bool) {
 					defer func() {
+						if r := recover(); r != nil {
+							fmt.Println("Recovered in f", r)
+						}
 						start = false
 						miningEnd = true
 					}()
@@ -159,8 +162,8 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 						this.SubmitData <- subm
 					}
 				}(start, miningEnd)
-				time.Sleep(1 * time.Second)
 			}
+			time.Sleep(1 * time.Second)
 		}
 	}
 }

@@ -6,7 +6,6 @@ james
 */
 package qitmeer
 
-import "C"
 import (
 	"encoding/binary"
 	"encoding/hex"
@@ -92,7 +91,6 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 				break
 			}
 			this.Update()
-			C.meer_pow()
 			hData := make([]byte, 128)
 			copy(hData[0:types.MaxBlockHeaderPayload-pow.PROOFDATA_LENGTH], this.header.HeaderBlock.BlockData())
 			nonce++
