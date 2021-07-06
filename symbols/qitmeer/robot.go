@@ -54,7 +54,14 @@ func (this *QitmeerRobot) GetPow(i int) core.BaseDevice {
 
 func (this *QitmeerRobot) InitDevice() {
 	this.MinerRobot.InitDevice()
-	this.GetPow(0)
+	if this.Cfg.OptionConfig.CPUMiner {
+		for i := 0; i < this.Cfg.OptionConfig.CpuWorkers; i++ {
+			this.GetPow(i)
+		}
+	} else {
+		this.GetPow(0)
+	}
+
 }
 
 // runing

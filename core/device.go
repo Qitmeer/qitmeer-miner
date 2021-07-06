@@ -164,6 +164,7 @@ func (d *Device) Release() {
 }
 
 func (this *Device) Status(wg *sync.WaitGroup) {
+	common.MinerLoger.Info("start listen hashrate")
 	t := time.NewTicker(time.Second * 10)
 	defer t.Stop()
 	defer wg.Done()
@@ -191,7 +192,7 @@ func (this *Device) Status(wg *sync.WaitGroup) {
 			//recent stats 95% percent
 			this.AverageHashRate = (this.AverageHashRate*50 + averageHashRate*950) / 1000
 			unit := " H/s"
-			if this.GetMinerType() != "blake2bd" && this.GetMinerType() != "keccak256" {
+			if this.GetMinerType() != "blake2bd" && this.GetMinerType() != "keccak256" && this.GetMinerType() != "meer_crypto" {
 				unit = " GPS"
 			}
 			common.MinerLoger.Info(fmt.Sprintf("# %d : %s", this.MinerId, common.FormatHashRate(this.AverageHashRate, unit)))

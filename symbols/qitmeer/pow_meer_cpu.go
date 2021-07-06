@@ -28,7 +28,7 @@ type MeerCrypto struct {
 
 func (this *MeerCrypto) InitDevice() {
 	this.Started = time.Now().Unix()
-	common.MinerLoger.Debug(fmt.Sprintf("==============Mining MeerCrypto=============="))
+	common.MinerLoger.Debug(fmt.Sprintf("CPUMiner [%d] ==============Mining MeerCrypto==============", this.MinerId))
 }
 
 func (this *MeerCrypto) Update() {
@@ -52,7 +52,6 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 	defer this.Release()
 	var w core.BaseWork
 	for {
-
 		select {
 		case w = <-this.NewWork:
 			this.Work = w.(*QitmeerWork)
@@ -91,6 +90,7 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 				break
 			}
 			this.Update()
+			this.AllDiffOneShares++
 			hData := make([]byte, 128)
 			copy(hData[0:types.MaxBlockHeaderPayload-pow.PROOFDATA_LENGTH], this.header.HeaderBlock.BlockData())
 			nonce++

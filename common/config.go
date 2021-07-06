@@ -62,6 +62,7 @@ type FileConfig struct {
 type OptionalConfig struct {
 	// Config / log options
 	CPUMiner            bool   `long:"cpuminer" description:"CPUMiner" default-mask:"false"`
+	CpuWorkers          int    `long:"cpuworkers" description:"CPUWorkers" default-mask:"1"`
 	Proxy               string `long:"proxy" description:"Connect via SOCKS5 proxy (eg. 127.0.0.1:9050)"`
 	ProxyUser           string `long:"proxyuser" description:"Username for proxy server"`
 	ProxyPass           string `long:"proxypass" default-mask:"-" description:"Password for proxy server"`
