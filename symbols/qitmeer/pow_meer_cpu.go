@@ -38,7 +38,7 @@ func (this *MeerCrypto) Update() {
 		this.Work.PoolWork.ExtraNonce2 = fmt.Sprintf("%08x", this.CurrentWorkID<<this.MinerId)[:8]
 		this.header.Exnonce2 = this.Work.PoolWork.ExtraNonce2
 		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepQitmeerWork()
-		this.header.PackagePoolHeader(this.Work, pow.MeerXKeccakV1)
+		this.header.PackagePoolHeader(this.Work, pow.MEERXKECCAKV1)
 	} else {
 		randStr := fmt.Sprintf("%s%d%d", this.Cfg.SoloConfig.RandStr, this.MinerId, this.CurrentWorkID)
 		txHash, txs := this.Work.Block.CalcCoinBase(this.Cfg, randStr, this.CurrentWorkID, this.Cfg.SoloConfig.MinerAddr)
@@ -97,7 +97,7 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 			b := make([]byte, 8)
 			binary.LittleEndian.PutUint64(b, nonce)
 			copy(hData[NONCESTART:NONCEEND], b)
-			h := hash.HashMeerCrypto(hData[:117])
+			h := hash.HashMeerXKeccakV1(hData[:117])
 			if HashToBig(&h).Cmp(this.header.TargetDiff) <= 0 {
 				headerData := BlockDataWithProof(this.header.HeaderBlock)
 				copy(headerData[0:117], hData[0:117])

@@ -143,7 +143,7 @@ func DiffToTarget(diff float64, powLimit *big.Int, powType pow.PowType) (*big.In
 	max := powLimit
 	target := new(big.Int)
 	if powType == pow.BLAKE2BD || powType == pow.X8R16 ||
-		powType == pow.QITMEERKECCAK256 || powType == pow.X16RV3 || powType == pow.MeerXKeccakV1 {
+		powType == pow.QITMEERKECCAK256 || powType == pow.X16RV3 || powType == pow.MEERXKECCAKV1 {
 		target.Div(max, divisor)
 	} else {
 		target.Div(divisor, max)

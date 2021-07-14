@@ -138,7 +138,7 @@ func (s *QitmeerStratum) CalcBasePowLimit() *big.Int {
 		return big.NewInt(1)
 	case pow.CUCKATOO:
 		return big.NewInt(1)
-	case pow.MeerXKeccakV1:
+	case pow.MEERXKECCAKV1:
 		return new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 250), big.NewInt(1))
 	}
 	return params.MainNetParams.PowConfig.Blake2bdPowLimit

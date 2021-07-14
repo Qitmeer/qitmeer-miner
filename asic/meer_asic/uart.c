@@ -132,7 +132,13 @@ unsigned int uart_write_register(int fd, uint32_t writemode,uint32_t burst_cn, u
 	read_reg_cmd[7] = (value>>24)&0xff;
 	
 	uart_write(fd, read_reg_cmd, 8);
-
+	/**
+	printf("\n串口数据写入:");
+	for (int i=0; i<7; i++)
+	{
+		printf("0x%02x ", read_reg_cmd[i]);
+	}
+	printf("\n"); **/
 	return  ret;
 }
 

@@ -130,11 +130,6 @@ unsigned int uart_write_register(int fd, uint32_t writemode,uint32_t burst_cn, u
 	read_reg_cmd[5] = (value>>8)&0xff;
 	read_reg_cmd[6] = (value>>16)&0xff;
 	read_reg_cmd[7] = (value>>24)&0xff;
-	printf("\n写数据:");
-    for(int i=0;i<7;i++) {
-       printf("%02x", read_reg_cmd[i]);
-    }
-    printf("\n");
 	uart_write(fd, read_reg_cmd, 8);
 
 	return  ret;

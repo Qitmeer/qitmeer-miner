@@ -88,7 +88,7 @@ func (this *QitmeerWork) GetPowType() pow.PowType {
 	case POW_QITMEER_KECCAK256:
 		return pow.QITMEERKECCAK256
 	case POW_MEER_CRYPTO:
-		return pow.MeerXKeccakV1
+		return pow.MEERXKECCAKV1
 	default:
 		return pow.BLAKE2BD
 	}
@@ -125,7 +125,7 @@ func (this *QitmeerWork) Get() bool {
 	n := new(big.Int)
 	switch this.Cfg.NecessaryConfig.Pow {
 	case POW_MEER_CRYPTO:
-		blockTemplate.Result.Pow = pow.GetInstance(pow.MeerXKeccakV1, 0, []byte{})
+		blockTemplate.Result.Pow = pow.GetInstance(pow.MEERXKECCAKV1, 0, []byte{})
 		target = blockTemplate.Result.PowDiffReference.Target
 		n, _ = n.SetString(target, 16)
 		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
