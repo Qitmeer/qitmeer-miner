@@ -8,10 +8,8 @@
 #include "meer_drv.h"
 #include "meer.h"
 
-#define MEER_DRV_VERSION	"0.2asic"
+#define MEER_DRV_VERSION	"0.1"
 #define NUM_OF_CHIPS    1
-#define DEF_WORK_INTERVAL   30000 //ms
-
 
 //辅助函数
 static const int hex2bin_tbl[256] = {
@@ -84,10 +82,9 @@ int main(int argc, char* argv[])
     if(meer_drv_init(&fd, NUM_OF_CHIPS)) {
         return -1;
     }
-    meer_drv_set_freq(fd, 100);
-//    printf("\nmeer_drv_set_freq complete\n");
-//    usleep(500000);
-  /**
+
+    /*meer_drv_set_freq(fd, 100);
+    usleep(500000);
     meer_drv_set_freq(fd, 200);
     usleep(500000);
     meer_drv_set_freq(fd, 300);
@@ -97,22 +94,7 @@ int main(int argc, char* argv[])
     meer_drv_set_freq(fd, 500);
     usleep(500000);*/
 
-    uart_write_register(fd,0x90,0x00,0x00,0xff,0x00);   //门控
-    usleep(100000);
-    uart_write_register(fd,0x90,0x00,00,0x57,0x01);   //group 1
-    usleep(100000);
-    uart_write_register(fd,0x90,0x00,00,0x58,0x01);   //group 2
-    usleep(100000);
-    uart_write_register(fd,0x90,0x00,00,0x59,0x01);   //group 3
-    usleep(100000);
-    uart_write_register(fd,0x90,0x00,0x00,0xff,0x01);
-    usleep(100000);
-
-    uart_read_register(fd, 0x01, 0x00);
-    uart_read_register(fd, 0x01, 0x57);
-    uart_read_register(fd, 0x01, 0x58);
-    uart_read_register(fd, 0x01, 0x59);
-
+    
     char * ptarget_str = "0000000000000000000000000000000000000000000000000000ffff00000000"; //diff 1
     hex2bin(target, ptarget_str, sizeof(target));
     memcpy(work_temp.target, target, 32); //难度目标配置
@@ -121,66 +103,59 @@ int main(int argc, char* argv[])
     hex2bin(header, pheader_str, sizeof(header));
     memcpy(work_temp.header, header, 117); //meer区块头
     
-    uint32_t accepts = 0;
-    uint32_t rejects = 0;
+    meer_drv_set_work(fd, &work_temp, NUM_OF_CHIPS); //对算力板下任务
     struct timeval time_prev;
     gettimeofday(&time_prev, NULL);
     while(1) {
         uint8_t nonce[8];
         uint8_t chip_id;
         uint8_t job_id;
-        
-        
-        meer_drv_set_work(fd, &work_temp, NUM_OF_CHIPS); //对算力板下任务
-        volatile int interval = 0;
-        while(interval < DEF_WORK_INTERVAL/10) {
-            bool matched = false;
-            if(get_nonce(fd, nonce, &chip_id, &job_id)) {	//读取nonce
-                if (1/*(chip_id >= 1) && (chip_id <= NUM_OF_CHIPS)*/) {                
-                    uint8_t hash_out[32]={0};
-                    for(int i=0;i<8;i++) {
-                        work_temp.header[109+i] = nonce[i];
-                    }
-                    printf("header in:\n");
-                    for(int i=0;i<117;i++) {
-                        printf("%02x", work_temp.header[i]);
-                    }
-                    printf("\n");
-                    meer_hash(hash_out, (uint8_t*)(work_temp.header));	//计算返回nonce hash值
-                    printf("target cmp:\n");
-                    for(int i=0;i<32;i++) {
-                        printf("%02x", target[i]);
-                    }
-                    printf("\n");
-                    for(int i=0;i<32;i++) {
-                        printf("%02x", hash_out[i]);
-                    }
-                    printf("\n");
-                    for(int i=0;i<32;i++) {
-                        if(hash_out[31-i] < target[31-i]) {
-                            accepts++;
-                            matched = true;
-                            printf("target matched!");
-                            break;
-                        }
-                    }
-                    if(!matched) {
-                        rejects++;
-                    }
-                    struct timeval time_now;
-                    gettimeofday(&time_now, NULL);
-                    int64_t diffone = 0x00000000FFFFFFFF;
-                    float diffone_f = (float)diffone;
-                    int duration = time_now.tv_sec - time_prev.tv_sec;
-                    if(duration <= 0) {
-                        duration = 1;
-                    }
-                    printf("Running %d Seconds, accept %d, reject %d, MHS %.2f GH/S, Reject rate %0.2f\n", duration, accepts, rejects, accepts*1.0f*diffone_f/duration/1000000000, ((float)rejects)/((float)(accepts+rejects)));
+        uint32_t accepts = 0;
+        uint32_t rejects = 0;
+        bool matched = false;
+        if(get_nonce(fd, nonce, &chip_id, &job_id)) {	//读取nonce
+            if (1/*(chip_id >= 1) && (chip_id <= NUM_OF_CHIPS)*/) {
+                uint8_t hash_out[32]={0};
+                for(int i=0;i<8;i++) {
+                    work_temp.header[109+i] = nonce[i];
                 }
+                printf("header in:\n");
+                for(int i=0;i<117;i++) {
+                    printf("%02x", work_temp.header[i]);
+                }
+                printf("\n");
+                meer_hash(hash_out, (uint8_t*)(work_temp.header));	//计算返回nonce hash值
+                printf("target cmp:\n");
+                for(int i=0;i<32;i++) {
+                    printf("%02x", target[i]);
+                }
+                printf("\n");
+                for(int i=0;i<32;i++) {
+                    printf("%02x", hash_out[i]);
+                }
+                printf("\n");
+                for(int i=0;i<32;i++) {
+                    if(hash_out[31-i] < target[31-i]) {
+                        accepts++;
+                        matched = true;
+                        break;
+                    }
+                }
+                if(!matched) {
+                    rejects++;
+                }
+                struct timeval time_now;
+                gettimeofday(&time_now, NULL);
+                int64_t diffone = 0x00000000FFFFFFFF;
+                float diffone_f = (float)diffone;
+                int duration = time_now.tv_sec - time_prev.tv_sec;
+                if(duration <= 0) {
+                    duration = 1;
+                }
+                printf("Running %d Seconds, MHS %.2f GH/S, Reject rate %0.2f\n", duration, accepts*1.0f*diffone_f/duration/1000000000, ((float)rejects)/((float)(accepts+rejects)));
             }
-            usleep(10000);
-            interval++;
         }
+        usleep(10000);
     }
 
     meer_drv_deinit(fd);

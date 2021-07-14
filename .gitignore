@@ -34,3 +34,5 @@ libcuckoo.zip
 *.zip
 *.tar.gz
 *_checksum.txt
+asic/test_meer
+test_meer

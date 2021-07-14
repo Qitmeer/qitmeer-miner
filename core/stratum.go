@@ -57,7 +57,7 @@ func GetPowType(powName string) pow.PowType {
 	case "cuckatoo":
 		return pow.CUCKATOO
 	case "meer_crypto":
-		return pow.MEER_CRYPTO
+		return pow.MeerXKeccakV1
 	}
 	return pow.BLAKE2BD
 }
@@ -85,7 +85,7 @@ func (this *Stratum) StratumConn(cfg *common.GlobalConfig) error {
 func (this *Stratum) ConnectRetry() {
 	var err error
 	for {
-		common.Usleep(2000)
+		common.Usleep(2)
 		err = this.Reconnect()
 		if err != nil {
 			common.MinerLoger.Debug("[Connect error , It will reconnect after 2s].", "error", err.Error())

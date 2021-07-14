@@ -138,7 +138,7 @@ func (s *QitmeerStratum) CalcBasePowLimit() *big.Int {
 		return big.NewInt(1)
 	case pow.CUCKATOO:
 		return big.NewInt(1)
-	case pow.MEER_CRYPTO:
+	case pow.MeerXKeccakV1:
 		return new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 250), big.NewInt(1))
 	}
 	return params.MainNetParams.PowConfig.Blake2bdPowLimit
@@ -210,7 +210,7 @@ func (s *QitmeerStratum) handleStratumMsg(resp interface{}) {
 			common.MinerLoger.Debug(err.Error())
 			return
 		}
-		common.Usleep(wait * 1000)
+		common.Usleep(wait)
 		pool := nResp.Params[0] + ":" + nResp.Params[1]
 		s.Cfg.PoolConfig.Pool = pool
 		err = s.Reconnect()

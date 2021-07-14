@@ -113,7 +113,9 @@ int main(int argc, char* argv[])
     uart_read_register(fd, 0x01, 0x58);
     uart_read_register(fd, 0x01, 0x59);
 
-    
+    meer_drv_deinit(fd);
+    return 0;
+    /*
     char * ptarget_str = "0000000000000000000000000000000000000000000000000000ffff00000000"; //diff 1
     hex2bin(target, ptarget_str, sizeof(target));
     memcpy(work_temp.target, target, 32); //难度目标配置
@@ -134,10 +136,12 @@ int main(int argc, char* argv[])
         
         meer_drv_set_work(fd, &work_temp, NUM_OF_CHIPS); //对算力板下任务
         volatile int interval = 0;
+        printf("get nonce");
         while(interval < DEF_WORK_INTERVAL/10) {
             bool matched = false;
             if(get_nonce(fd, nonce, &chip_id, &job_id)) {	//读取nonce
-                if (1/*(chip_id >= 1) && (chip_id <= NUM_OF_CHIPS)*/) {                
+                printf("get chip_id %d",chip_id);
+                if ((chip_id >= 1) && (chip_id <= NUM_OF_CHIPS)) {
                     uint8_t hash_out[32]={0};
                     for(int i=0;i<8;i++) {
                         work_temp.header[109+i] = nonce[i];
@@ -186,4 +190,5 @@ int main(int argc, char* argv[])
 
     meer_drv_deinit(fd);
 	return 0;
+	*/
 }

@@ -250,7 +250,7 @@ func (this *QitmeerRobot) Status() {
 			return
 		default:
 			if this.Work.stra == nil && this.Work.Block == nil {
-				common.Usleep(20 * 1000)
+				common.Usleep(20)
 				continue
 			}
 			valid = atomic.LoadUint64(&this.ValidShares)
@@ -271,7 +271,7 @@ func (this *QitmeerRobot) Status() {
 				rejected,
 				total,
 			))
-			common.Usleep(20 * 1000)
+			common.Usleep(20)
 		}
 	}
 }
