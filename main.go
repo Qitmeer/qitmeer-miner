@@ -4,45 +4,48 @@
 package main
 
 import (
-	"log"
-	"os"
-	"os/signal"
+	"context"
 	"github.com/Qitmeer/qitmeer-miner/common"
 	"github.com/Qitmeer/qitmeer-miner/core"
 	"github.com/Qitmeer/qitmeer-miner/symbols/qitmeer"
+	"log"
+	"os"
+	"os/signal"
 	"runtime"
 	"strings"
 	"time"
 )
+
 var robotminer core.Robot
 
 //init the config file
-func init(){
+func init() {
 	cfg, _, err := common.LoadConfig()
 	if err != nil {
-		log.Fatal("[error] config error,please check it.[",err,"]")
+		log.Fatal("[error] config error,please check it.[", err, "]")
 		return
 	}
 	//init miner robot
 	robotminer = GetRobot(cfg)
 }
 
-func main()  {
+func main() {
 	// Use all processor cores.
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
-
+	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
 		<-c
-		common.MinerLoger.Info("Got Control+C, exiting...")
-		os.Exit(0)
+		cancel()
+		common.MinerLoger.Info("Got Control+C, exiting... wait 20 second")
 	}()
-	if robotminer == nil{
+	if robotminer == nil {
 		common.MinerLoger.Error("[error] Please check the coin in the README.md! if this coin is supported, use -S to set")
 		return
 	}
-	robotminer.Run()
+	robotminer.Run(ctx)
+	common.MinerLoger.Info("All services exited")
 }
 
 //get current coin miner
@@ -52,7 +55,7 @@ func GetRobot(cfg *common.GlobalConfig) core.Robot {
 		r := &qitmeer.QitmeerRobot{}
 		r.Cfg = cfg
 		r.Started = uint32(time.Now().Unix())
-		r.Rpc = &common.RpcClient{Cfg:cfg,}
+		r.Rpc = &common.RpcClient{Cfg: cfg}
 		r.SubmitStr = make(chan string)
 		return r
 	default:

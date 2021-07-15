@@ -61,16 +61,17 @@ bool get_nonce(int fd, uint8_t *nonce, uint8_t *chip_id, uint8_t* job_id)
     rd_ret = uart_gets(fd, pbuf, size);
 
     if(rd_ret > 0) {
+        /**
         printf("return:");
         for(int i=0;i<nonce_packet_size;i++) {
             printf("%02x", buffer[i]);
         }
-        printf("\n");
+        printf("\n"); **/
         if (buffer[0] == MAGIC_HEADER) {            
             memcpy((uint8_t *)(nonce), buffer+3, 8); //nonce: 8 bytes
             *chip_id = buffer[1]; //chip id: start from 1
             *job_id = buffer[2]&0x0f; //job id: 0~15 total 4bits           
-            printf("%s chip_id %d, job_id %d, %02x%02x%02x%02x%02x%02x%02x%02x\n", __func__, buffer[1], buffer[2]&0x0f, nonce[0], nonce[1], nonce[2], nonce[3], nonce[4], nonce[5], nonce[6], nonce[7]);
+            printf("\n%s chip_id %d, job_id %d, %02x%02x%02x%02x%02x%02x%02x%02x\n", __func__, buffer[1], buffer[2]&0x0f, nonce[0], nonce[1], nonce[2], nonce[3], nonce[4], nonce[5], nonce[6], nonce[7]);
 			return true;
         }
         

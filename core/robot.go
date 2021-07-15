@@ -4,8 +4,8 @@
 package core
 
 import (
+	"context"
 	"github.com/Qitmeer/qitmeer-miner/common"
-	"os"
 	"strings"
 	"sync"
 )
@@ -17,9 +17,9 @@ const (
 //var devicesTypesForMining = cl.DeviceTypeAll
 
 type Robot interface {
-	Run()        // uses device to calulate the nonce
-	ListenWork() //listen the solo or pool work
-	SubmitWork() //submit the work
+	Run(ctx context.Context) // uses device to calulate the nonce
+	ListenWork()             //listen the solo or pool work
+	SubmitWork()             //submit the work
 }
 
 type MinerRobot struct {
@@ -30,7 +30,7 @@ type MinerRobot struct {
 	AllDiffOneShares uint64
 	Wg               *sync.WaitGroup
 	Started          uint32
-	Quit             chan os.Signal
+	Quit             context.Context
 	Work             *Work
 	ClDevices        []string
 	Rpc              *common.RpcClient

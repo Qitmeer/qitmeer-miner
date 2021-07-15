@@ -3,13 +3,14 @@
 #include <string.h>
 #include <sys/time.h>
 
+
 #include "uart.h"
 #include "meer_drv.h"
 #include "meer.h"
-#include "main.h"
+
 #define MEER_DRV_VERSION	"0.2asic"
 #define NUM_OF_CHIPS    1
-#define DEF_WORK_INTERVAL   30000 //msx
+#define DEF_WORK_INTERVAL   30000 //ms
 
 
 //辅助函数
@@ -66,36 +67,28 @@ bool hex2bin(unsigned char *p, const char *hexstr, size_t len)
 	return ret;
 }
 
-int end(uint8_t* end){
-    end[0] = 1;
-}
+
 
 //测试主程序
-//int main(int argc, char* argv[])
-int meer_pow(char* pheader_str,int pheader_len,char* ptarget_str,uint8_t* result_nonce,uint8_t* end)
+int main(int argc, char* argv[])
 {
-    printf("header: ");
-    for(int i=0;i<pheader_len;i++) {
-       printf("%02x", pheader_str[i]);
-    }
-    printf("\n target: ");
-    for(int i=0;i<32;i++) {
-       printf("%02x", ptarget_str[i]);
-    }
     int fd;
     uint8_t target[32] = {0};
     struct work work_temp;    
     uint8_t header[117]= {0};
 	
-	printf("\nmeer driver %s\n", MEER_DRV_VERSION);
+	printf("meer driver %s\n", MEER_DRV_VERSION);
+	
+    
 	//初始化算力板
     if(meer_drv_init(&fd, NUM_OF_CHIPS)) {
         return -1;
     }
-
     meer_drv_set_freq(fd, 100);
-    usleep(500000);
-    /*meer_drv_set_freq(fd, 200);
+//    printf("\nmeer_drv_set_freq complete\n");
+//    usleep(500000);
+  /**
+    meer_drv_set_freq(fd, 200);
     usleep(500000);
     meer_drv_set_freq(fd, 300);
     usleep(500000);
@@ -103,7 +96,6 @@ int meer_pow(char* pheader_str,int pheader_len,char* ptarget_str,uint8_t* result
     usleep(500000);
     meer_drv_set_freq(fd, 500);
     usleep(500000);*/
-
 
     uart_write_register(fd,0x90,0x00,0x00,0xff,0x00);   //门控
     usleep(100000);
@@ -121,15 +113,13 @@ int meer_pow(char* pheader_str,int pheader_len,char* ptarget_str,uint8_t* result
     uart_read_register(fd, 0x01, 0x58);
     uart_read_register(fd, 0x01, 0x59);
 
-    
-//    char * ptarget_str = "0000000000000000000000000000000000000000000000000000ffff00000000"; //diff 1
+    char * ptarget_str = "0000000000000000000000000000000000000000000000000000ffff00000000"; //diff 1
     hex2bin(target, ptarget_str, sizeof(target));
     memcpy(work_temp.target, target, 32); //难度目标配置
     
-//    char * pheader_str = "1200000003c60b43da920ae08be3dd91e174fc7b5d538ca5601a4ea9fbcfc703447dd4871b7fac4e54a887df6c1801f4ac37883d6808cb93855f1f07aa4c2cfa73eea3b1000000000000000000000000000000000000000000000000000000000000000000f5231c83cf1060080000000000000000";
-
+    char * pheader_str = "1200000003c60b43da920ae08be3dd91e174fc7b5d538ca5601a4ea9fbcfc703447dd4871b7fac4e54a887df6c1801f4ac37883d6808cb93855f1f07aa4c2cfa73eea3b1000000000000000000000000000000000000000000000000000000000000000000f5231c83cf1060080000000000000000";    
     hex2bin(header, pheader_str, sizeof(header));
-    memcpy(work_temp.header, header, pheader_len); //meer区块头
+    memcpy(work_temp.header, header, 117); //meer区块头
     
     uint32_t accepts = 0;
     uint32_t rejects = 0;
@@ -139,26 +129,20 @@ int meer_pow(char* pheader_str,int pheader_len,char* ptarget_str,uint8_t* result
         uint8_t nonce[8];
         uint8_t chip_id;
         uint8_t job_id;
-        if (end[0] == 1){ // 等待新任务
-            usleep(1000000);
-            continue;
-        }
+        
         
         meer_drv_set_work(fd, &work_temp, NUM_OF_CHIPS); //对算力板下任务
         volatile int interval = 0;
         while(interval < DEF_WORK_INTERVAL/10) {
-            if (end[0] == 1){
-                break;
-            }
             bool matched = false;
             if(get_nonce(fd, nonce, &chip_id, &job_id)) {	//读取nonce
-                if (1/*(chip_id >= 1) && (chip_id <= NUM_OF_CHIPS)*/) {
+                if (1/*(chip_id >= 1) && (chip_id <= NUM_OF_CHIPS)*/) {                
                     uint8_t hash_out[32]={0};
                     for(int i=0;i<8;i++) {
                         work_temp.header[109+i] = nonce[i];
                     }
                     printf("header in:\n");
-                    for(int i=0;i<pheader_len;i++) {
+                    for(int i=0;i<117;i++) {
                         printf("%02x", work_temp.header[i]);
                     }
                     printf("\n");
@@ -177,8 +161,7 @@ int meer_pow(char* pheader_str,int pheader_len,char* ptarget_str,uint8_t* result
                             accepts++;
                             matched = true;
                             printf("target matched!");
-                            result_nonce = nonce;
-                            return 1;
+                            break;
                         }
                     }
                     if(!matched) {
@@ -192,7 +175,6 @@ int meer_pow(char* pheader_str,int pheader_len,char* ptarget_str,uint8_t* result
                     if(duration <= 0) {
                         duration = 1;
                     }
-
                     printf("Running %d Seconds, accept %d, reject %d, MHS %.2f GH/S, Reject rate %0.2f\n", duration, accepts, rejects, accepts*1.0f*diffone_f/duration/1000000000, ((float)rejects)/((float)(accepts+rejects)));
                 }
             }

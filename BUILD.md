@@ -69,7 +69,7 @@ $ sh installLibrary.sh
 $ go build --tags opencl
 //# linux apt install musl-tools g++ -y
 $ apt-get install gcc-arm*
-$ CGO_ENABLED=1 GOOS=linux GOARCH=arm CC=arm-linux-gnueabihf-gcc go build -ldflags="-extldflags=-static" -a --tags asic
+$ CGO_ENABLED=1 GOOS=linux GOARCH=arm CC=arm-linux-gnueabihf-gcc go build -a --tags asic
 //# windows 
 $ CGO_ENABLED=1 GOOS=windows GOARCH=amd64 go build -tags cuda -o win-miner.exe main.go
 ```

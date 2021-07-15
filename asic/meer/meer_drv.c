@@ -270,6 +270,7 @@ void meer_drv_deinit(int fd)
 
 void meer_drv_set_freq(int fd, uint32_t freq)
 {
+    printf("\n********************set freq %d\n",freq);
     uart_write_register(fd, 0x90, 0, 0, 0xf3, 0x2f);
     uart_write_register(fd, 0x90, 0, 0, 0xf0, 0x00);
     uart_write_register(fd, 0x90, 0, 0, 0xf1, get_freq_reg_data(freq));            
@@ -295,6 +296,9 @@ void meer_drv_softreset(int fd)
 bool meer_drv_set_work(int fd, struct work *work, int num_chips)
 {
     uint8_t chip_id = 1;
+    uint64_t index = 0;
+    uint64_t max = 0xffffffffffffffff;
+    uint64_t unit = max/DEF_CHIP_MAX_GROUPS/num_chips;
     for(;chip_id<=num_chips;chip_id++) {
         unsigned char midstate[256]={0};
         int midstate_len = 0;
@@ -322,13 +326,17 @@ bool meer_drv_set_work(int fd, struct work *work, int num_chips)
         bin[1] = (bpos-4)/4-1; //data size
         bin[2] = chip_id; //chip id
         for(group_id = 0; group_id < DEF_CHIP_MAX_GROUPS; group_id++) {
-            if(1 == group_id) {
-                memcpy(&(bin[bpos-8]), "\x55\x55\x55\x55\x55\x55\x55\x55", 8); //init nonce range 1
-            } else if(2 == group_id) {
-                memcpy(&(bin[bpos-8]), "\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa", 8); //init nonce range 2
-            } else {
-                memcpy(&(bin[bpos-8]), "\x00\x00\x00\x00\x00\x00\x00\x00", 8); //init nonce range 0
-            }
+            uint64_t step = unit * index;
+            index++;
+            uint8_t *p = (uint8_t *)&step;
+//            if(1 == group_id) {
+//                memcpy(&(bin[bpos-8]), "\x55\x55\x55\x55\x55\x55\x55\x55", 8); //init nonce range 1
+//            } else if(2 == group_id) {
+//                memcpy(&(bin[bpos-8]), "\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa", 8); //init nonce range 2
+//            } else {
+//                memcpy(&(bin[bpos-8]), "\x00\x00\x00\x00\x00\x00\x00\x00", 8); //init nonce range 0
+//            }
+            memcpy(&(bin[bpos-8]), p, 8); //init nonce range 0
             uart_write(fd, bin, bpos);
             
             uart_write_register(fd,0x44,0x00,chip_id,0x40, 0xf1818001);            
@@ -351,7 +359,7 @@ bool meer_drv_set_work(int fd, struct work *work, int num_chips)
             }            
             pstart[1] += (jobid<<4);    
         	uart_write_register(fd,0x44,0x00,chip_id,0x41,force_start); //group1
-            //printf("%s, chip %d, group %d, job %d\n", __func__, chip_id, group_id, jobid);
+            printf("%s, chip %d, group %d, job %d nonce start %llu \n", __func__, chip_id, group_id, jobid,step);
             jobid++;            
         }
     }

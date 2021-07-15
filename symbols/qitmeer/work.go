@@ -73,20 +73,6 @@ func (this *QitmeerWork) CopyNew() QitmeerWork {
 
 func (this *QitmeerWork) GetPowType() pow.PowType {
 	switch this.Cfg.NecessaryConfig.Pow {
-	case POW_CUCKROOM:
-		return pow.CUCKAROOM
-	case POW_CUCKROO:
-		return pow.CUCKAROO
-	case POW_CUCKTOO:
-		return pow.CUCKATOO
-	case POW_DOUBLE_BLAKE2B:
-		return pow.BLAKE2BD
-	case POW_X8R16:
-		return pow.X8R16
-	case POW_X16RV3:
-		return pow.X16RV3
-	case POW_QITMEER_KECCAK256:
-		return pow.QITMEERKECCAK256
 	case POW_MEER_CRYPTO:
 		return pow.MEERXKECCAKV1
 	default:

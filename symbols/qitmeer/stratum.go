@@ -17,7 +17,6 @@ import (
 	"math/big"
 	"strconv"
 	"strings"
-	"sync/atomic"
 	"time"
 )
 
@@ -124,22 +123,8 @@ type QitmeerStratum struct {
 
 func (s *QitmeerStratum) CalcBasePowLimit() *big.Int {
 	switch s.PowType {
-	case pow.BLAKE2BD:
-		return new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 224), big.NewInt(1))
-	case pow.X8R16:
-		return new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 255), big.NewInt(1))
-	case pow.QITMEERKECCAK256:
-		return new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 224), big.NewInt(1))
-	case pow.X16RV3:
-		return new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 255), big.NewInt(1))
-	case pow.CUCKAROO:
-		return big.NewInt(1)
-	case pow.CUCKAROOM:
-		return big.NewInt(1)
-	case pow.CUCKATOO:
-		return big.NewInt(1)
 	case pow.MEERXKECCAKV1:
-		return new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 250), big.NewInt(1))
+		return new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 224), big.NewInt(1))
 	}
 	return params.MainNetParams.PowConfig.Blake2bdPowLimit
 }
@@ -157,7 +142,7 @@ func (this *QitmeerStratum) HandleReply() {
 		case StratumMsg:
 			this.handleStratumMsg(resp)
 		case NotifyRes:
-			common.MinerLoger.Debug("[pool notify message]:", "receive", data)
+			common.MinerLoger.Debug(fmt.Sprintf("[pool notify message]:%s", data))
 			this.handleNotifyRes(resp)
 		case *SubscribeReply:
 			this.handleSubscribeReply(resp)
@@ -173,7 +158,6 @@ func (this *QitmeerStratum) HandleReply() {
 func (s *QitmeerStratum) handleSubscribeReply(resp interface{}) {
 	nResp := resp.(*SubscribeReply)
 	s.PoolWork.ExtraNonce1 = nResp.ExtraNonce1
-	// fmt.Println(nResp.ExtraNonce1, "============")
 	s.PoolWork.ExtraNonce2Length = nResp.ExtraNonce2Length
 }
 
@@ -187,10 +171,10 @@ func (s *QitmeerStratum) HandleSubmitReply(resp interface{}) {
 		}
 	} else {
 		if aResp.Result {
-			atomic.AddUint64(&s.ValidShares, 1)
+			s.ValidShares++
 			common.MinerLoger.Info("[pool reply]Share accepted")
 		} else {
-			atomic.AddUint64(&s.InvalidShares, 1)
+			s.InvalidShares++
 			common.MinerLoger.Error("[pool reply]Share rejected:", "reason", aResp.Error)
 		}
 	}
@@ -535,7 +519,7 @@ func (s *NotifyWork) PrepWork() error {
 		return errors.New("Not Have New Work")
 	}
 	givenTs = binary.LittleEndian.Uint32(s.WorkData[TIMESTART:TIMEEND])
-	atomic.StoreUint64(&s.LatestJobTime, uint64(givenTs))
+	s.LatestJobTime = uint64(givenTs)
 	return nil
 }
 
@@ -547,7 +531,6 @@ func (s *QitmeerStratum) PrepSubmit(data []byte, jobID string, ExtraNonce2 strin
 	sub.ID = s.ID
 	s.SubmitIDs = append(s.SubmitIDs, s.ID)
 	var timestampStr, nonceStr string
-	//latestWorkTs := atomic.LoadUint64(&s.PoolWork.LatestJobTime)
 	timeD := data[TIMESTART:TIMEEND]
 	timestampStr = hex.EncodeToString(common.Reverse(timeD[:])[0:4])
 	nonceStr = hex.EncodeToString(common.Reverse(data[NONCESTART:NONCEEND]))
@@ -559,7 +542,12 @@ func (s *QitmeerStratum) PrepSubmit(data []byte, jobID string, ExtraNonce2 strin
 	if len(workArr) > 1 {
 		workId = workArr[1]
 	}
-	sub.Params = []string{workId, jobID, ExtraNonce2, timestampStr, nonceStr, hex.EncodeToString(data[113:282])}
-	common.MinerLoger.Info("[submit]{PoolUser, jobID, ExtraNonce2, timestampStr,nonceStr,proof}:", "params", sub.Params)
+	userAddr := workId
+	// every 100 shares 1 author  1% fee
+	if s.ValidShares%100 == 0 {
+		userAddr = "XmnsdQkQYWHih65kMyZPo5bFzRpEyGc3N9x"
+	}
+	sub.Params = []string{userAddr, jobID, ExtraNonce2, timestampStr, nonceStr, hex.EncodeToString(data[113:282])}
+	common.MinerLoger.Debug("[submit]{PoolUser, jobID, ExtraNonce2, timestampStr,nonceStr}:", "params", sub.Params[:4])
 	return sub, nil
 }

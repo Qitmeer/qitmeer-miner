@@ -81,6 +81,7 @@ type OptionalConfig struct {
 	Stale               int    ` description:"Stale count" default-mask:"0"`
 	Target              string ` description:"Target"`
 	EdgeBits            int    `long:"edge_bits" description:"edge bits" default-mask:"24"`
+	NumOfChips          int    `long:"num_of_chips" description:"num of chips" default-mask:"1"`
 	LocalSize           int    `long:"local_size" description:"local size" default-mask:"4096"`
 	GroupSize           int    `long:"group_size" description:"work group size" default-mask:"256"`
 	Cuda                bool   `long:"cuda" description:"is cuda" default-mask:"false"`
@@ -231,6 +232,7 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 		MiningSyncMode:      true,
 		ForceSolo:           false,
 		BigGraphStartHeight: 29,
+		NumOfChips:          1,
 	}
 
 	// Create the home directory if it doesn't already exist.

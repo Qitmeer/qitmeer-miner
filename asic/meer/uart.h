@@ -29,6 +29,6 @@ unsigned int uart_write_register(int fd, uint32_t writemode,uint32_t burst_cn, u
 
 void uart_set_host_baudrate(int fd, speed_t speed);
 
-bool get_nonce(int fd, uint8_t *nonce, uint8_t *chip_id, uint8_t* job_id);
+extern bool get_nonce(int fd, uint8_t *nonce, uint8_t *chip_id, uint8_t* job_id);
 
 #endif

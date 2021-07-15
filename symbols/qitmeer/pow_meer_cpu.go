@@ -55,7 +55,8 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 		select {
 		case w = <-this.NewWork:
 			this.Work = w.(*QitmeerWork)
-		case <-this.Quit:
+		case <-this.Quit.Done():
+			common.MinerLoger.Debug("mining service exit")
 			return
 
 		}
@@ -85,6 +86,12 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 		}
 		nonce := uint64(0)
 		for {
+			select {
+			case <-this.Quit.Done():
+				common.MinerLoger.Debug("mining service exit")
+				return
+			default:
+			}
 			// if has new work ,current calc stop
 			if this.HasNewWork || this.ForceStop {
 				break

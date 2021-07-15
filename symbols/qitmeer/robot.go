@@ -4,6 +4,7 @@
 package qitmeer
 
 import (
+	"context"
 	"fmt"
 	"github.com/Qitmeer/qitmeer-miner/common"
 	"github.com/Qitmeer/qitmeer-miner/core"
@@ -13,20 +14,11 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
 const (
-	POW_DOUBLE_BLAKE2B    = "blake2bd"
-	POW_CUCKROO           = "cuckaroo"
-	POW_CUCKROOM          = "cuckaroom"
-	POW_CUCKROO29         = "cuckaroo29"
-	POW_CUCKTOO           = "cuckatoo"
-	POW_X8R16             = "x8r16"
-	POW_X16RV3            = "x16rv3"
-	POW_QITMEER_KECCAK256 = "qitmeer_keccak256"
-	POW_MEER_CRYPTO       = "meer_crypto"
+	POW_MEER_CRYPTO = "meer_crypto"
 )
 
 type QitmeerRobot struct {
@@ -37,12 +29,12 @@ type QitmeerRobot struct {
 	AllTransactionsCount int64
 }
 
-func (this *QitmeerRobot) GetPow(i int) core.BaseDevice {
+func (this *QitmeerRobot) GetPow(i int, ctx context.Context) core.BaseDevice {
 	switch this.Cfg.NecessaryConfig.Pow {
 	case POW_MEER_CRYPTO:
 		deviceMiner := &MeerCrypto{}
 		deviceMiner.MiningType = "meer_crypto"
-		deviceMiner.Init(i, this.Pool, this.Quit, this.Cfg)
+		deviceMiner.Init(i, this.Pool, ctx, this.Cfg)
 		this.Devices = append(this.Devices, deviceMiner)
 		return deviceMiner
 
@@ -52,29 +44,30 @@ func (this *QitmeerRobot) GetPow(i int) core.BaseDevice {
 	return nil
 }
 
-func (this *QitmeerRobot) InitDevice() {
+func (this *QitmeerRobot) InitDevice(ctx context.Context) {
 	this.MinerRobot.InitDevice()
 	if this.Cfg.OptionConfig.CPUMiner {
 		for i := 0; i < this.Cfg.OptionConfig.CpuWorkers; i++ {
-			this.GetPow(i)
+			this.GetPow(i, ctx)
 		}
 	} else {
-		this.GetPow(0)
+		this.GetPow(0, ctx)
 	}
 
 }
 
 // runing
-func (this *QitmeerRobot) Run() {
+func (this *QitmeerRobot) Run(ctx context.Context) {
 	this.Wg = &sync.WaitGroup{}
-	this.InitDevice()
+	this.Quit = ctx
+	this.InitDevice(ctx)
 	//mining service
 	connectName := "solo"
 	this.Pool = false
 	if this.Cfg.PoolConfig.Pool != "" { //is pool mode
 		connectName = "pool"
 		this.Stratu = &QitmeerStratum{}
-		_ = this.Stratu.StratumConn(this.Cfg)
+		_ = this.Stratu.StratumConn(this.Cfg, ctx)
 		this.Wg.Add(1)
 		go func() {
 			defer this.Wg.Done()
@@ -141,7 +134,8 @@ func (this *QitmeerRobot) ListenWork() {
 	r := false
 	for {
 		select {
-		case <-this.Quit:
+		case <-this.Quit.Done():
+			common.MinerLoger.Debug("listen new work service exit")
 			return
 		case <-t.C:
 			r = false
@@ -151,7 +145,7 @@ func (this *QitmeerRobot) ListenWork() {
 				r = this.Work.Get() // get new work
 			}
 			if r {
-				common.MinerLoger.Debug("new task started")
+				common.MinerLoger.Debug("New task coming")
 				validDeviceCount := 0
 				for _, dev := range this.Devices {
 					if !dev.GetIsValid() {
@@ -171,7 +165,7 @@ func (this *QitmeerRobot) ListenWork() {
 				}
 			} else if this.Work.ForceUpdate {
 				for _, dev := range this.Devices {
-					common.MinerLoger.Debug("task stopped by force")
+					common.MinerLoger.Debug("Task stopped by force")
 					dev.SetNewWork(&this.Work)
 					dev.SetForceUpdate(true)
 				}
@@ -191,13 +185,13 @@ func (this *QitmeerRobot) SubmitWork() {
 		var count int
 		var arr []string
 		for {
-			common.MinerLoger.Debug("===============================Listen Submit=====================")
 			select {
-			case <-this.Quit:
+			case <-this.Quit.Done():
+				common.MinerLoger.Debug("submit service exit")
 				return
 			case str = <-this.SubmitStr:
 				if str == "" {
-					atomic.AddUint64(&this.StaleShares, 1)
+					this.StaleShares++
 					continue
 				}
 				var err error
@@ -217,13 +211,13 @@ func (this *QitmeerRobot) SubmitWork() {
 				if err != nil {
 					if err != ErrSameWork || err == ErrSameWork {
 						if err == ErrStratumStaleWork {
-							atomic.AddUint64(&this.StaleShares, 1)
+							this.StaleShares++
 						} else {
-							atomic.AddUint64(&this.InvalidShares, 1)
+							this.InvalidShares++
 						}
 					}
 				} else {
-					atomic.AddUint64(&this.ValidShares, 1)
+					this.ValidShares++
 					if !this.Pool {
 						count, _ = strconv.Atoi(txCount)
 						this.AllTransactionsCount += int64(count)
@@ -246,20 +240,21 @@ func (this *QitmeerRobot) Status() {
 	var valid, rejected, staleShares uint64
 	for {
 		select {
-		case <-this.Quit:
+		case <-this.Quit.Done():
+			common.MinerLoger.Debug("global stats service exit")
 			return
 		default:
 			if this.Work.stra == nil && this.Work.Block == nil {
 				common.Usleep(20)
 				continue
 			}
-			valid = atomic.LoadUint64(&this.ValidShares)
-			rejected = atomic.LoadUint64(&this.InvalidShares)
-			staleShares = atomic.LoadUint64(&this.StaleShares)
+			valid = this.ValidShares
+			rejected = this.InvalidShares
+			staleShares = this.StaleShares
 			if this.Pool {
-				valid = atomic.LoadUint64(&this.Stratu.ValidShares)
-				rejected = atomic.LoadUint64(&this.Stratu.InvalidShares)
-				staleShares = atomic.LoadUint64(&this.Stratu.StaleShares)
+				valid = this.Stratu.ValidShares
+				rejected = this.Stratu.InvalidShares
+				staleShares = this.Stratu.StaleShares
 			}
 			this.Cfg.OptionConfig.Accept = int(valid)
 			this.Cfg.OptionConfig.Reject = int(rejected)

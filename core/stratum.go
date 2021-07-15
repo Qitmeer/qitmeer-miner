@@ -2,6 +2,7 @@ package core
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 	"github.com/Qitmeer/qitmeer-miner/common"
@@ -38,6 +39,7 @@ type Stratum struct {
 	SubID         uint64
 	AuthID        uint64
 	PowType       pow.PowType
+	Quit          context.Context
 }
 
 func GetPowType(powName string) pow.PowType {
@@ -64,7 +66,7 @@ func GetPowType(powName string) pow.PowType {
 
 // StratumConn starts the initial connection to a stratum pool and sets defaults
 // in the pool object.
-func (this *Stratum) StratumConn(cfg *common.GlobalConfig) error {
+func (this *Stratum) StratumConn(cfg *common.GlobalConfig, ctx context.Context) error {
 	this.Cfg = cfg
 	pool := cfg.PoolConfig.Pool
 	common.MinerLoger.Debug("[Connect pool]", "address", pool)
@@ -77,6 +79,7 @@ func (this *Stratum) StratumConn(cfg *common.GlobalConfig) error {
 	}
 	this.Cfg.PoolConfig.Pool = pool
 	this.ID = 1
+	this.Quit = ctx
 	this.PowType = GetPowType(cfg.NecessaryConfig.Pow)
 	this.ConnectRetry()
 	return nil
@@ -101,6 +104,12 @@ func (this *Stratum) Listen(handle func(data string)) {
 	var err error
 	// start := time.Now().Unix()
 	for {
+		select {
+		case <-this.Quit.Done():
+			common.MinerLoger.Info("pool service exit")
+			return
+		default:
+		}
 		if this.Reader != nil {
 			data, err = this.Reader.ReadString('\n')
 			if err != nil {

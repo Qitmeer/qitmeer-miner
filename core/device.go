@@ -5,10 +5,10 @@ james
 package core
 
 import (
+	"context"
 	"fmt"
 	"github.com/Qitmeer/qitmeer-miner/common"
 	"math"
-	"os"
 	"sync"
 	"time"
 )
@@ -50,7 +50,7 @@ type Device struct {
 	Started          int64
 	GlobalItemSize   int
 	CurrentWorkID    uint64
-	Quit             chan os.Signal //must init
+	Quit             context.Context //must init
 	sync.Mutex
 	Wg           sync.WaitGroup
 	Pool         bool        //must init
@@ -63,7 +63,7 @@ type Device struct {
 	IsRunning    bool
 }
 
-func (this *Device) Init(i int, pool bool, q chan os.Signal, cfg *common.GlobalConfig) {
+func (this *Device) Init(i int, pool bool, ctx context.Context, cfg *common.GlobalConfig) {
 	this.MinerId = uint32(i)
 	this.NewWork = make(chan BaseWork, 1)
 	this.Cfg = cfg
@@ -73,7 +73,7 @@ func (this *Device) Init(i int, pool bool, q chan os.Signal, cfg *common.GlobalC
 	this.Pool = pool
 	this.SubmitData = make(chan string, 1)
 	this.GlobalItemSize = int(math.Exp2(float64(this.Cfg.OptionConfig.Intensity)))
-	this.Quit = q
+	this.Quit = ctx
 	this.AllDiffOneShares = 0
 	this.StopTaskChan = make(chan bool, 1)
 }
@@ -170,7 +170,8 @@ func (this *Device) Status(wg *sync.WaitGroup) {
 	defer wg.Done()
 	for {
 		select {
-		case <-this.Quit:
+		case <-this.Quit.Done():
+			common.MinerLoger.Info("device stats service exit")
 			return
 		case <-t.C:
 			if !this.IsValid {
@@ -191,7 +192,7 @@ func (this *Device) Status(wg *sync.WaitGroup) {
 			}
 			//recent stats 95% percent
 			this.AverageHashRate = (this.AverageHashRate*50 + averageHashRate*950) / 1000
-			unit := " H/s"
+			unit := "H/s"
 			if this.GetMinerType() != "blake2bd" && this.GetMinerType() != "keccak256" && this.GetMinerType() != "meer_crypto" {
 				unit = " GPS"
 			}
@@ -206,7 +207,7 @@ func (this *Device) SubmitShare(substr chan string) {
 	}
 	for {
 		select {
-		case <-this.Quit:
+		case <-this.Quit.Done():
 			return
 		case str := <-this.SubmitData:
 			if this.HasNewWork {
