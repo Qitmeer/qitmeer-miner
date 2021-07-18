@@ -186,6 +186,7 @@ func (this *QitmeerRobot) SubmitWork() {
 		for {
 			select {
 			case <-this.Quit.Done():
+				close(this.SubmitStr)
 				common.MinerLoger.Debug("submit service exit")
 				return
 			case str = <-this.SubmitStr:
