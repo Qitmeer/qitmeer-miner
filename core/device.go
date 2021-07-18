@@ -207,11 +207,10 @@ func (this *Device) SubmitShare(substr chan string) {
 	defer func() {
 		// recover from panic caused by writing to a closed channel
 		if r := recover(); r != nil {
-			err := fmt.Errorf("%v", r)
-			common.MinerLoger.Debug(fmt.Sprintf("write: error writing on channel: %v", err))
+			common.MinerLoger.Debug("submit exit")
 			return
 		}
-		common.MinerLoger.Debug(fmt.Sprintf("write: error writing on channel"))
+		common.MinerLoger.Debug("submit exit")
 	}()
 	for {
 		select {

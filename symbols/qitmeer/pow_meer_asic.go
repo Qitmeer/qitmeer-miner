@@ -79,6 +79,14 @@ type Work struct {
 type MiningResult map[uint64]MiningResultItem
 
 func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
+	defer func() {
+		// recover from panic caused by writing to a closed channel
+		if r := recover(); r != nil {
+			common.MinerLoger.Debug("miner exit")
+			return
+		}
+		common.MinerLoger.Debug("miner exit")
+	}()
 	defer wg.Done()
 	defer this.Release()
 	nonceBytes := make([]byte, 8) // nonce bytes
