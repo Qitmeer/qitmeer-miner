@@ -61,6 +61,7 @@ bool get_nonce(int fd, uint8_t *nonce, uint8_t *chip_id, uint8_t* job_id)
     rd_ret = uart_gets(fd, pbuf, size);
 
     if(rd_ret > 0) {
+
         printf("return:");
         for(int i=0;i<nonce_packet_size;i++) {
             printf("%02x", buffer[i]);

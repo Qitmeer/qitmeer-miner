@@ -51,6 +51,8 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 	defer wg.Done()
 	defer this.Release()
 	var w core.BaseWork
+	this.Started = time.Now().Unix()
+	this.AllDiffOneShares = 0
 	for {
 		select {
 		case w = <-this.NewWork:
@@ -73,8 +75,6 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 		if len(this.Work.PoolWork.WorkData) <= 0 && this.Work.Block.Height <= 0 {
 			continue
 		}
-		this.Started = time.Now().Unix()
-		this.AllDiffOneShares = 0
 		this.HasNewWork = false
 		this.CurrentWorkID = 0
 		this.header = MinerBlockData{
@@ -97,7 +97,6 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 				break
 			}
 			this.Update()
-			this.AllDiffOneShares++
 			hData := make([]byte, 128)
 			copy(hData[0:types.MaxBlockHeaderPayload-pow.PROOFDATA_LENGTH], this.header.HeaderBlock.BlockData())
 			nonce++
@@ -127,8 +126,54 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 				} else {
 					subm += "-" + this.header.JobID + "-" + this.header.Exnonce2
 				}
+				this.AllDiffOneShares++
 				this.SubmitData <- subm
 			}
+		}
+	}
+}
+
+func (this *MeerCrypto) GetDiff() float64 {
+	s := fmt.Sprintf("%064x", this.header.TargetDiff)
+	diff := float64(1)
+	for i := 0; i < 64; i++ {
+		if strings.ToLower(s[i:i+1]) == "f" {
+			break
+		}
+		a, _ := strconv.ParseInt(s[i:i+1], 16, 64)
+		diff *= 16 / float64(a+1)
+	}
+	common.MinerLoger.Debug("[current target]", "value", s, "diff", diff/1e9)
+	return diff
+}
+func (this *MeerCrypto) Status(wg *sync.WaitGroup) {
+	common.MinerLoger.Info("start listen hashrate")
+	t := time.NewTicker(time.Second * 10)
+	defer t.Stop()
+	defer wg.Done()
+	for {
+		select {
+		case <-this.Quit.Done():
+			common.MinerLoger.Debug("device stats service exit")
+			return
+		case <-t.C:
+			if !this.IsValid {
+				return
+			}
+			secondsElapsed := time.Now().Unix() - this.Started
+			if this.AllDiffOneShares <= 0 || secondsElapsed <= 0 {
+				continue
+			}
+			diff := this.GetDiff()
+			hashrate := float64(this.AllDiffOneShares) / float64(secondsElapsed) * diff
+			// diff
+			unit := "H/s"
+			start := time.Unix(this.Started, 0)
+			common.MinerLoger.Info(fmt.Sprintf("Start time: %s  Diff: %s All Shares: %d HashRate: %s",
+				start.Format(time.RFC3339),
+				common.FormatHashRate(diff, unit),
+				this.AllDiffOneShares,
+				common.FormatHashRate(hashrate, unit)))
 		}
 	}
 }

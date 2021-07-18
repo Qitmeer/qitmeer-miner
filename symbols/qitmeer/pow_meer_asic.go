@@ -26,7 +26,6 @@ import (
 	"github.com/Qitmeer/qitmeer-miner/common"
 	"github.com/Qitmeer/qitmeer-miner/core"
 	"github.com/Qitmeer/qitmeer/common/hash"
-	"github.com/Qitmeer/qitmeer/core/types"
 	"github.com/Qitmeer/qitmeer/core/types/pow"
 	"math/big"
 	"strconv"
@@ -43,7 +42,6 @@ type MeerCrypto struct {
 }
 
 func (this *MeerCrypto) InitDevice() {
-	this.Started = time.Now().Unix()
 	common.MinerLoger.Debug("==============Mining MeerCrypto ==============", "chips num", this.Cfg.OptionConfig.NumOfChips)
 }
 
@@ -65,10 +63,24 @@ func (this *MeerCrypto) Update() {
 	}
 }
 
+type MiningResultItem struct {
+	Nonce  uint64
+	JobId  byte
+	ChipId byte
+}
+
+type Work struct {
+	ChipId    byte
+	Header    []byte
+	Target    *big.Int
+	SubmitStr string
+}
+
+type MiningResult map[uint64]MiningResultItem
+
 func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 	defer wg.Done()
 	defer this.Release()
-	hData := make([]byte, 117)    // header
 	nonceBytes := make([]byte, 8) // nonce bytes
 	start := false
 	fd := 0
@@ -79,7 +91,6 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 		}
 	}()
 	this.Started = time.Now().Unix()
-	this.AllDiffOneShares = 0
 	for {
 		select {
 		case w = <-this.NewWork:
@@ -111,90 +122,109 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 			TargetDiff:   &big.Int{},
 			JobID:        "",
 		}
-		hData = make([]byte, 117) // header
-		nonceBytes = make([]byte, 8)
-		for {
+		for !this.HasNewWork && !this.ForceStop {
 			// if has new work ,current calc stop
-			if this.HasNewWork || this.ForceStop { // end sig
-				break
-			}
 			select {
 			case <-this.Quit.Done():
 				common.MinerLoger.Debug("mining service exit")
 				return
 			default:
-				this.Update()
-				copy(hData[0:types.MaxBlockHeaderPayload-pow.PROOFDATA_LENGTH], this.header.HeaderBlock.BlockData())
 				if !start && fd == 0 {
 					// init chips
 					start = true
-					copy(hData[0:types.MaxBlockHeaderPayload-pow.PROOFDATA_LENGTH], this.header.HeaderBlock.BlockData())
 					fd = int(C.init_drv((C.int)(this.Cfg.OptionConfig.NumOfChips)))
 				}
-				nonces := make([]uint64, 0)
+				nonces := MiningResult{}
+				works := map[byte]Work{}
+				for j := 1; j <= this.Cfg.OptionConfig.NumOfChips; j++ {
+					this.Update()
+					works[byte(j)] = Work{
+						ChipId:    byte(j),
+						Header:    make([]byte, 117),
+						Target:    this.header.TargetDiff,
+						SubmitStr: this.GetSubmitStr(),
+					}
+					copy(works[byte(j)].Header[0:117], this.header.HeaderBlock.BlockData())
+					C.set_work(
+						(C.int)(fd),
+						(*C.uchar)(unsafe.Pointer(&works[byte(j)].Header[0])),
+						(C.int)(len(works[byte(j)].Header)),
+						(*C.uchar)(unsafe.Pointer(&this.header.Target2[0])),
+						(C.int)(j))
+				}
 				// set work
-				C.set_work(
-					(C.int)(fd),
-					(*C.uchar)(unsafe.Pointer(&hData[0])),
-					(C.int)(len(hData)),
-					(*C.uchar)(unsafe.Pointer(&this.header.Target2[0])),
-					(C.int)(this.Cfg.OptionConfig.NumOfChips))
-				chipId := make([]byte, 1)
-				jobId := make([]byte, 1)
-				interval := 0
-				for {
+				start := time.Now().Unix()
+				// 10 mill second next task
+				for time.Now().Unix()-start < int64(this.Cfg.OptionConfig.Timeout) && !this.HasNewWork && !this.ForceStop {
 					select {
 					case <-this.Quit.Done():
 						common.MinerLoger.Debug("mining service exit")
 						return
 					default:
 					}
-					if this.HasNewWork || this.ForceStop || interval > INTERVAL_GAP/10 { // end
-						break
-					}
+
+					chipId := make([]byte, 1)
+					jobId := make([]byte, 1)
+					nonceBytes = make([]byte, 8)
 					if fd != 0 && C.get_nonce((C.int)(fd),
 						(*C.uchar)(unsafe.Pointer(&nonceBytes[0])),
 						(*C.uchar)(unsafe.Pointer(&chipId[0])),
 						(*C.uchar)(unsafe.Pointer(&jobId[0])),
 					) {
-						lastNonce := binary.LittleEndian.Uint64(nonceBytes)
-						if !InUint64Array(lastNonce, nonces) {
-							nonces = append(nonces, lastNonce)
-							h := hash.HashMeerXKeccakV1(hData[:117])
-							common.MinerLoger.Debug(fmt.Sprintf("ChipId #%d JobId #%d Found hash : %s nonce:%d target:%064x",
-								chipId[0], jobId[0], h,
-								lastNonce, this.header.TargetDiff))
-							copy(hData[NONCESTART:NONCEEND], nonceBytes)
-							if HashToBig(&h).Cmp(this.header.TargetDiff) <= 0 {
-								this.AllDiffOneShares++
-								headerData := BlockDataWithProof(this.header.HeaderBlock)
-								copy(headerData[0:117], hData[0:117])
-								subm := hex.EncodeToString(headerData)
-								if !this.Pool {
-									subm += common.Int2varinthex(int64(len(this.header.Parents)))
-									for j := 0; j < len(this.header.Parents); j++ {
-										subm += this.header.Parents[j].Data
-									}
-									txCount := len(this.header.Transactions) //real transaction count except coinbase
-									subm += common.Int2varinthex(int64(txCount))
-
-									for j := 0; j < txCount; j++ {
-										subm += this.header.Transactions[j].Data
-									}
-									subm += "-" + fmt.Sprintf("%d", txCount) + "-" + fmt.Sprintf("%d", this.Work.Block.Height)
-								} else {
-									subm += "-" + this.header.JobID + "-" + this.header.Exnonce2
-								}
-								this.SubmitData <- subm
-							}
+						if chipId[0] < 1 || chipId[0] > byte(this.Cfg.OptionConfig.NumOfChips) {
+							time.Sleep(10 * time.Millisecond)
+							continue
 						}
-						time.Sleep(10 * time.Microsecond)
-						interval++
+						cwork := works[chipId[0]]
+						lastNonce := binary.LittleEndian.Uint64(nonceBytes)
+						if _, ok := nonces[lastNonce]; !ok {
+							nonces[lastNonce] = MiningResultItem{
+								Nonce:  lastNonce,
+								JobId:  jobId[0],
+								ChipId: chipId[0],
+							}
+							copy(cwork.Header[NONCESTART:NONCEEND], nonceBytes)
+							h := hash.HashMeerXKeccakV1(cwork.Header[:117])
+							common.MinerLoger.Debug(fmt.Sprintf("ChipId #%d JobId #%d Found hash : %s nonce:%s target:%064x",
+								chipId[0], jobId[0], h,
+								hex.EncodeToString(nonceBytes), cwork.Target))
+							if HashToBig(&h).Cmp(cwork.Target) <= 0 {
+								this.AllDiffOneShares++
+								this.SubmitData <- cwork.ReplaceNonce(nonceBytes)
+							}
+						} else {
+							common.MinerLoger.Debug(fmt.Sprintf("[DUP Shares]ChipId #%d JobId #%d nonce:%d  Last ChipId: %d Last JobId :%d ",
+								chipId[0], jobId[0],
+								lastNonce,
+								nonces[lastNonce].ChipId, nonces[lastNonce].JobId))
+						}
+						time.Sleep(10 * time.Millisecond)
 					}
 				}
 			}
 		}
 	}
+}
+
+func (this *MeerCrypto) GetSubmitStr() string {
+	headerData := BlockDataWithProof(this.header.HeaderBlock)
+	subm := hex.EncodeToString(headerData)
+	if !this.Pool {
+		subm += common.Int2varinthex(int64(len(this.header.Parents)))
+		for j := 0; j < len(this.header.Parents); j++ {
+			subm += this.header.Parents[j].Data
+		}
+		txCount := len(this.header.Transactions) //real transaction count except coinbase
+		subm += common.Int2varinthex(int64(txCount))
+
+		for j := 0; j < txCount; j++ {
+			subm += this.header.Transactions[j].Data
+		}
+		subm += "-" + fmt.Sprintf("%d", txCount) + "-" + fmt.Sprintf("%d", this.Work.Block.Height)
+	} else {
+		subm += "-" + this.header.JobID + "-" + this.header.Exnonce2
+	}
+	return subm
 }
 
 func (this *MeerCrypto) Status(wg *sync.WaitGroup) {
@@ -215,32 +245,42 @@ func (this *MeerCrypto) Status(wg *sync.WaitGroup) {
 			if this.AllDiffOneShares <= 0 || secondsElapsed <= 0 {
 				continue
 			}
-			hashrate := float64(this.AllDiffOneShares) / float64(secondsElapsed) * this.GetDiff()
+			diff := this.GetDiff()
+			hashrate := float64(this.AllDiffOneShares) / float64(secondsElapsed) * diff
 			// diff
 			unit := "H/s"
-			common.MinerLoger.Info(fmt.Sprintf("HashRate: %s", common.FormatHashRate(hashrate, unit)))
+			start := time.Unix(this.Started, 0)
+			common.MinerLoger.Info(fmt.Sprintf("Start time: %s  Diff: %s All Shares: %d HashRate: %s",
+				start.Format(time.RFC3339),
+				common.FormatHashRate(diff, unit),
+				this.AllDiffOneShares,
+				common.FormatHashRate(hashrate, unit)))
 		}
 	}
 }
 
 func (this *MeerCrypto) GetDiff() float64 {
-	s := hex.EncodeToString(this.header.Target2)
+	s := fmt.Sprintf("%064x", this.header.TargetDiff)
 	diff := float64(1)
-	for i := 63; i >= 0; i-- {
+	for i := 0; i < 64; i++ {
 		if strings.ToLower(s[i:i+1]) == "f" {
 			break
 		}
 		a, _ := strconv.ParseInt(s[i:i+1], 16, 64)
-		diff *= float64(16 - a)
+		diff *= 16 / float64(a+1)
 	}
+	common.MinerLoger.Debug("[current target]", "value", s, "diff", diff/1e9)
 	return diff
 }
 
-func InUint64Array(a uint64, arr []uint64) bool {
-	for _, v := range arr {
-		if a == v {
-			return true
-		}
+func (this *Work) ReplaceNonce(nonce []byte) string {
+	arr := strings.Split(this.SubmitStr, "-")
+	b, err := hex.DecodeString(arr[0])
+	if err != nil {
+		return this.SubmitStr
 	}
-	return false
+	copy(b[0:117], this.Header)
+	copy(b[NONCESTART:NONCEEND], nonce)
+	arr[0] = hex.EncodeToString(b)
+	return strings.Join(arr, "-")
 }

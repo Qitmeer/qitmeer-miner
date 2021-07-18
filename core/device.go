@@ -106,7 +106,6 @@ func (this *Device) SetForceUpdate(force bool) {
 		return
 	}
 	this.ForceStop = force
-	this.AllDiffOneShares = 0
 }
 
 func (this *Device) GetMinerType() string {

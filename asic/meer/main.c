@@ -78,14 +78,22 @@ int init_drv(int num_of_chips)
 
 	meer_drv_set_freq(fd, 100);
 	usleep(500000);
-	/*meer_drv_set_freq(fd, 200);
+	meer_drv_set_freq(fd, 150);
+	usleep(500000);
+	meer_drv_set_freq(fd, 200);
+	usleep(500000);
+	meer_drv_set_freq(fd, 250);
 	usleep(500000);
 	meer_drv_set_freq(fd, 300);
 	usleep(500000);
+	meer_drv_set_freq(fd, 350);
+	usleep(500000);
 	meer_drv_set_freq(fd, 400);
 	usleep(500000);
+	meer_drv_set_freq(fd, 450);
+	usleep(500000);
 	meer_drv_set_freq(fd, 500);
-	usleep(500000);*/
+	usleep(500000);
 
 
 	uart_write_register(fd,0x90,0x00,0x00,0xff,0x00);   //门控
@@ -108,10 +116,10 @@ int init_drv(int num_of_chips)
 }
 
 //测试主程序
-void set_work(int fd,uint8_t* header,int pheader_len,uint8_t* target,int num_of_chips)
+void set_work(int fd,uint8_t* header,int pheader_len,uint8_t* target,int chipId)
 {
 	struct work work_temp;
 	memcpy(work_temp.target, target, 32); // 难度目标配置
 	memcpy(work_temp.header, header, pheader_len); // meer区块头
-	meer_drv_set_work(fd, &work_temp, num_of_chips); // 对算力板下任务
+	meer_drv_set_work(fd, &work_temp, chipId); // 对算力板下任务
 }

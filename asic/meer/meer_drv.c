@@ -293,12 +293,12 @@ void meer_drv_softreset(int fd)
 //给芯片下任务
 //参数work: 要计算的任务
 //参数num_chips: 给多少颗芯片下任务
-bool meer_drv_set_work(int fd, struct work *work, int num_chips)
+bool meer_drv_set_work_old(int fd, struct work *work, int num_chips)
 {
     uint8_t chip_id = 1;
     uint64_t index = 0;
-    uint64_t max = 0xffffffffffffffff;
-    uint64_t unit = max/DEF_CHIP_MAX_GROUPS/num_chips;
+    uint64_t unit = 0xffffffffffffff; // 7个字节
+
     for(;chip_id<=num_chips;chip_id++) {
         unsigned char midstate[256]={0};
         int midstate_len = 0;
@@ -306,9 +306,8 @@ bool meer_drv_set_work(int fd, struct work *work, int num_chips)
         unsigned int force_start = 0;
         unsigned char* pstart = (unsigned char*)(&force_start);
         int bpos = 0;
-        uint8_t jobid = 0;
         uint8_t group_id = 0;
-        
+        uint8_t jobid = 0;
        
         memcpy(bin, "\x44\x01\x00\x00", 4);
         bpos = 4;
@@ -359,10 +358,75 @@ bool meer_drv_set_work(int fd, struct work *work, int num_chips)
             }            
             pstart[1] += (jobid<<4);    
         	uart_write_register(fd,0x44,0x00,chip_id,0x41,force_start); //group1
-            printf("%s, chip %d, group %d, job %d nonce start %llu \n", __func__, chip_id, group_id, jobid,step);
+            printf("\n%s, chip %d, group %d, job %d nonce start %llu \n", __func__, chip_id, group_id, jobid,step);
             jobid++;            
         }
     }
 #endif    
+}
+
+//给芯片下任务
+//参数work: 要计算的任务
+//参数num_chips: 给多少颗芯片下任务
+bool meer_drv_set_work(int fd, struct work *work, int chip_id)
+{
+	    unsigned char midstate[256]={0};
+	    int midstate_len = 0;
+	    unsigned char bin[256]={0};
+	    unsigned int force_start = 0;
+	    unsigned char* pstart = (unsigned char*)(&force_start);
+	    int bpos = 0;
+	    uint8_t group_id = 0;
+	    uint8_t jobid = 0;
+
+	    memcpy(bin, "\x44\x01\x00\x00", 4);
+	    bpos = 4;
+
+	    memcpy(bin + bpos, &(work->target[24]), 8);
+	    bpos += 8;
+
+	    midstate_len = meer_calc_midstate(midstate, work->header); //midstate, 区块头头算出的中间结果
+	    memcpy(bin + bpos, midstate, midstate_len);
+	    bpos += midstate_len;
+
+	    memcpy(bin + bpos, &(work->header[72]), 36+9);
+	    bpos += 48;
+
+	    bin[1] = (bpos-4)/4-1; //data size
+	    bin[2] = chip_id; //chip id
+	    for(group_id = 0; group_id < DEF_CHIP_MAX_GROUPS; group_id++) {
+            if(1 == group_id) {
+                memcpy(&(bin[bpos-8]), "\x55\x55\x55\x55\x55\x55\x55\x55", 8); //init nonce range 1
+            } else if(2 == group_id) {
+                memcpy(&(bin[bpos-8]), "\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa", 8); //init nonce range 2
+            } else {
+                memcpy(&(bin[bpos-8]), "\x00\x00\x00\x00\x00\x00\x00\x00", 8); //init nonce range 0
+            }
+            uart_write(fd, bin, bpos);
+
+            uart_write_register(fd,0x44,0x00,chip_id,0x40, 0xf1818001);
+            uart_write_register(fd,0x44,0x00,chip_id,0x42, 1<<group_id);
+
+        #if CHIP_CORE_TEST
+                static bool g_core_test = false;
+                if(!g_core_test) {
+                    g_core_test = true;
+                    uart_write_register(fd, 0x90, 0x00, 0x00, 0x41, 0x00010fc0);
+                }
+        #else
+
+            force_start = 0;
+
+            if(group_id < 2) {
+                pstart[0] = 1<<(group_id+6);
+            } else {
+                pstart[1] = 1<<(group_id-2);
+            }
+            pstart[1] += (jobid<<4);
+            uart_write_register(fd,0x44,0x00,chip_id,0x41,force_start); //group1
+            //printf("\n%s, chip %d, group %d, job %d \n", __func__, chip_id, group_id, jobid);
+            jobid++;
+        #endif
+    }
 }
 

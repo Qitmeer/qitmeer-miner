@@ -87,14 +87,16 @@ int main(int argc, char* argv[])
 
     meer_drv_set_freq(fd, 100);
     usleep(500000);
-    /*meer_drv_set_freq(fd, 200);
+    meer_drv_set_freq(fd, 150);
+    usleep(500000);
+    meer_drv_set_freq(fd, 200);
+    usleep(500000);
+    meer_drv_set_freq(fd, 250);
     usleep(500000);
     meer_drv_set_freq(fd, 300);
     usleep(500000);
-    meer_drv_set_freq(fd, 400);
+    meer_drv_set_freq(fd, 350);
     usleep(500000);
-    meer_drv_set_freq(fd, 500);
-    usleep(500000);*/
 
 
     uart_write_register(fd,0x90,0x00,0x00,0xff,0x00);   //门控
@@ -114,7 +116,7 @@ int main(int argc, char* argv[])
     uart_read_register(fd, 0x01, 0x59);
 
     
-    char * ptarget_str = "0000000000000000000000000000000000000000000000000000ffff00000000"; //diff 1
+    char * ptarget_str = "0000000000000000000000000000000000000000000000000000fff000000000"; //diff 1
     hex2bin(target, ptarget_str, sizeof(target));
     memcpy(work_temp.target, target, 32); //难度目标配置
     
@@ -137,31 +139,40 @@ int main(int argc, char* argv[])
         while(interval < DEF_WORK_INTERVAL/10) {
             bool matched = false;
             if(get_nonce(fd, nonce, &chip_id, &job_id)) {	//读取nonce
-                if (1/*(chip_id >= 1) && (chip_id <= NUM_OF_CHIPS)*/) {                
+                if ((chip_id >= 1) && (chip_id <= NUM_OF_CHIPS)) {
                     uint8_t hash_out[32]={0};
                     for(int i=0;i<8;i++) {
                         work_temp.header[109+i] = nonce[i];
                     }
-                    printf("header in:\n");
-                    for(int i=0;i<117;i++) {
-                        printf("%02x", work_temp.header[i]);
-                    }
-                    printf("\n");
                     meer_hash(hash_out, (uint8_t*)(work_temp.header));	//计算返回nonce hash值
-                    printf("target cmp:\n");
-                    for(int i=0;i<32;i++) {
-                        printf("%02x", target[i]);
-                    }
-                    printf("\n");
-                    for(int i=0;i<32;i++) {
-                        printf("%02x", hash_out[i]);
-                    }
-                    printf("\n");
                     for(int i=0;i<32;i++) {
                         if(hash_out[31-i] < target[31-i]) {
                             accepts++;
                             matched = true;
-                            printf("target matched!");
+                            printf("*******************************target matched!\n");
+                            /*
+                            printf("\n**********header in:\n");
+                            for(int i=0;i<117;i++) {
+                                 printf("%02x", work_temp.header[i]);
+                            }
+                            printf("\n");
+                            printf("*********target cmp:\n");
+                            for(int i=0;i<32;i++) {
+                                 printf("%02x", target[i]);
+                            } */
+                            printf("\n");
+                            for(int i=0;i<32;i++) {
+                                printf("%02x", hash_out[i]);
+                            }
+                            printf("\n");
+                            break;
+                        }
+                        if(hash_out[31-i] >target[31-i]){
+                             printf("\n");
+                             for(int i=0;i<32;i++) {
+                                 printf("%02x", hash_out[i]);
+                             }
+                             printf("\n");
                             break;
                         }
                     }
@@ -170,13 +181,13 @@ int main(int argc, char* argv[])
                     }
                     struct timeval time_now;
                     gettimeofday(&time_now, NULL);
-                    int64_t diffone = 0x00000000FFFFFFFF;
+                    int64_t diffone = 0x000000000FFFFFFF;
                     float diffone_f = (float)diffone;
                     int duration = time_now.tv_sec - time_prev.tv_sec;
                     if(duration <= 0) {
                         duration = 1;
                     }
-                    printf("Running %d Seconds, accept %d, reject %d, MHS %.2f GH/S, Reject rate %0.2f\n", duration, accepts, rejects, accepts*1.0f*diffone_f/duration/1000000000, ((float)rejects)/((float)(accepts+rejects)));
+                    printf("\n***********************Running %d Seconds, accept %d, reject %d, MHS %.2f GH/S, Reject rate %0.2f\n", duration, accepts, rejects, accepts*1.0f*diffone_f/duration/1000000000, ((float)rejects)/((float)(accepts+rejects)));
                 }
             }
             usleep(10000);

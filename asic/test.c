@@ -5,7 +5,7 @@
 int main(int argc, char* argv[])
 {
     uint64_t max = 0xffffffffffffffff;
-    int num = 50;
+    int num = 14;
     int group = 3;
     uint64_t unit = max/group/num;
     uint64_t index = 0;

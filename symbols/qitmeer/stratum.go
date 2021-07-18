@@ -463,6 +463,7 @@ func (s *QitmeerStratum) Unmarshal(blob []byte) (interface{}, error) {
 		var param []string
 		param = append(param, diffStr)
 		nres.Params = param
+		s.PoolWork.Clean = true // clean task
 		common.MinerLoger.Debug("[pool reply]Stratum difficulty set to ", "value", difficulty)
 		return nres, nil
 	default:
@@ -542,12 +543,9 @@ func (s *QitmeerStratum) PrepSubmit(data []byte, jobID string, ExtraNonce2 strin
 	if len(workArr) > 1 {
 		workId = workArr[1]
 	}
-	userAddr := workId
 	// every 100 shares 1 author  1% fee
-	if s.ValidShares%100 == 0 {
-		userAddr = "XmnsdQkQYWHih65kMyZPo5bFzRpEyGc3N9x"
-	}
-	sub.Params = []string{userAddr, jobID, ExtraNonce2, timestampStr, nonceStr, hex.EncodeToString(data[113:282])}
-	common.MinerLoger.Debug("[submit]{PoolUser, jobID, ExtraNonce2, timestampStr,nonceStr}:", "params", sub.Params[:4])
+	sub.Params = []string{workId, jobID, ExtraNonce2, timestampStr, nonceStr, hex.EncodeToString(data[117:282])}
+	common.MinerLoger.Debug("[submit]:", "{PoolUser, jobID, ExtraNonce2, timestampStr,nonceStr}",
+		[]string{workId, jobID, ExtraNonce2, timestampStr, nonceStr})
 	return sub, nil
 }
