@@ -156,7 +156,7 @@ func (this *MeerCrypto) Status(wg *sync.WaitGroup) {
 	for {
 		select {
 		case <-this.Quit.Done():
-			common.MinerLoger.Debug(this.MinerId, "# device stats service exit")
+			common.MinerLoger.Debug(fmt.Sprintf("# %d device stats service exit", this.MinerId))
 			return
 		case <-t.C:
 			if !this.IsValid {
