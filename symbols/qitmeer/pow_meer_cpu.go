@@ -111,7 +111,6 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 				copy(headerData[0:117], hData[0:117])
 				common.MinerLoger.Debug(fmt.Sprintf("device #%d found hash : %s nonce:%d target:%064x", this.MinerId, h, nonce, this.header.TargetDiff))
 				subm := hex.EncodeToString(headerData)
-				// fmt.Println("subm", subm[:226])
 				if !this.Pool {
 					subm += common.Int2varinthex(int64(len(this.header.Parents)))
 					for j := 0; j < len(this.header.Parents); j++ {

@@ -207,6 +207,7 @@ func (this *Device) SubmitShare(substr chan string) {
 	for {
 		select {
 		case <-this.Quit.Done():
+			<-this.SubmitData
 			return
 		case str := <-this.SubmitData:
 			if this.HasNewWork {
