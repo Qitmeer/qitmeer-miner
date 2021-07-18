@@ -205,6 +205,7 @@ func (this *Device) SubmitShare(substr chan string) {
 		return
 	}
 	defer func() {
+		close(this.SubmitData)
 		// recover from panic caused by writing to a closed channel
 		if r := recover(); r != nil {
 			common.MinerLoger.Debug("submit exit")
@@ -215,7 +216,6 @@ func (this *Device) SubmitShare(substr chan string) {
 	for {
 		select {
 		case <-this.Quit.Done():
-			close(this.SubmitData)
 			return
 		case str := <-this.SubmitData:
 			if this.HasNewWork {
