@@ -205,6 +205,9 @@ func (this *Device) SubmitShare(substr chan string) {
 		return
 	}
 	for {
+		if substr == nil {
+			return
+		}
 		select {
 		case <-this.Quit.Done():
 			close(this.SubmitData)

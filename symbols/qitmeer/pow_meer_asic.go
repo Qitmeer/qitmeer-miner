@@ -190,6 +190,9 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 								hex.EncodeToString(nonceBytes), cwork.Target))
 							if HashToBig(&h).Cmp(cwork.Target) <= 0 {
 								this.AllDiffOneShares++
+								if this.SubmitData == nil {
+									return
+								}
 								this.SubmitData <- cwork.ReplaceNonce(nonceBytes)
 							}
 						} else {
