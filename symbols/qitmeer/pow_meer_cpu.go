@@ -53,10 +53,10 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 	defer func() {
 		// recover from panic caused by writing to a closed channel
 		if r := recover(); r != nil {
-			common.MinerLoger.Debug("miner exit")
+			common.MinerLoger.Debug(fmt.Sprintf("# %d miner service exit", this.MinerId))
 			return
 		}
-		common.MinerLoger.Debug("miner exit")
+		common.MinerLoger.Debug(fmt.Sprintf("# %d miner service exit", this.MinerId))
 	}()
 	defer wg.Done()
 	defer this.Release()

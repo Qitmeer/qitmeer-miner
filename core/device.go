@@ -208,10 +208,10 @@ func (this *Device) SubmitShare(substr chan string) {
 		close(this.SubmitData)
 		// recover from panic caused by writing to a closed channel
 		if r := recover(); r != nil {
-			common.MinerLoger.Debug("submit exit")
+			common.MinerLoger.Debug(fmt.Sprintf("# %d submit service exit", this.MinerId))
 			return
 		}
-		common.MinerLoger.Debug("submit exit")
+		common.MinerLoger.Debug(fmt.Sprintf("# %d submit service exit", this.MinerId))
 	}()
 	for {
 		select {
