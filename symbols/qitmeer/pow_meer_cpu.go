@@ -62,7 +62,7 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 		case <-this.Quit.Done():
 			common.MinerLoger.Debug("mining service exit")
 			return
-
+		default:
 		}
 		if !this.IsValid {
 			return
@@ -156,7 +156,7 @@ func (this *MeerCrypto) Status(wg *sync.WaitGroup) {
 	for {
 		select {
 		case <-this.Quit.Done():
-			common.MinerLoger.Debug("device stats service exit")
+			common.MinerLoger.Debugf("# %d device stats service exit", this.MinerId)
 			return
 		case <-t.C:
 			if !this.IsValid {
@@ -171,7 +171,8 @@ func (this *MeerCrypto) Status(wg *sync.WaitGroup) {
 			// diff
 			unit := "H/s"
 			start := time.Unix(this.Started, 0)
-			common.MinerLoger.Info(fmt.Sprintf("Start time: %s  Diff: %s All Shares: %d HashRate: %s",
+			common.MinerLoger.Info(fmt.Sprintf("# %d Start time: %s  Diff: %s All Shares: %d HashRate: %s",
+				this.MinerId,
 				start.Format(time.RFC3339),
 				common.FormatHashRate(diff, unit),
 				this.AllDiffOneShares,

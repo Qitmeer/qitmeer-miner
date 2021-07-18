@@ -121,7 +121,6 @@ func (this *QitmeerRobot) Run(ctx context.Context) {
 			stats_server.HandleRouter(this.Cfg, this.Devices)
 		}()
 	}
-
 	this.Wg.Wait()
 }
 
