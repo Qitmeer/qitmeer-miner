@@ -204,10 +204,16 @@ func (this *Device) SubmitShare(substr chan string) {
 	if !this.GetIsValid() {
 		return
 	}
-	for {
-		if substr == nil {
+	defer func() {
+		// recover from panic caused by writing to a closed channel
+		if r := recover(); r != nil {
+			err := fmt.Errorf("%v", r)
+			common.MinerLoger.Debug(fmt.Sprintf("write: error writing on channel: %v", err))
 			return
 		}
+		common.MinerLoger.Debug(fmt.Sprintf("write: error writing on channel"))
+	}()
+	for {
 		select {
 		case <-this.Quit.Done():
 			close(this.SubmitData)

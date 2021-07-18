@@ -128,9 +128,6 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 					subm += "-" + this.header.JobID + "-" + this.header.Exnonce2
 				}
 				this.AllDiffOneShares++
-				if this.SubmitData == nil {
-					return
-				}
 				this.SubmitData <- subm
 			}
 		}
