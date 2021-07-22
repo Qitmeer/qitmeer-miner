@@ -146,10 +146,23 @@ static uint32_t get_freq_reg_data(uint32_t freq)
 {
     for(int i=0; i<sizeof(miner_freqs)/sizeof(struct miner_freq); i++) {
         if(miner_freqs[i].freq >= freq) {
+            printf("\n -------- find %d -------",i);
             return miner_freqs[i].reg_value;
         }        
     }
     return 0x00742D01;  //300M
+}
+
+uint32_t get_last_freq_reg_data(uint32_t freq)
+{
+    uint32_t last = 100;
+    for(int i=0; i<sizeof(miner_freqs)/sizeof(struct miner_freq); i++) {
+        if(miner_freqs[i].freq >= freq) {
+            break;
+        }
+        last = miner_freqs[i].freq;
+    }
+    return last;  //100
 }
 
 static void meer_drv_send_cmds(int fd, const unsigned char *cmds[])
@@ -270,10 +283,24 @@ void meer_drv_deinit(int fd)
 
 void meer_drv_set_freq(int fd, uint32_t freq)
 {
+    printf("\n********************set freq %d\n",freq);
     uart_write_register(fd, 0x90, 0, 0, 0xf3, 0x2f);
     uart_write_register(fd, 0x90, 0, 0, 0xf0, 0x00);
     uart_write_register(fd, 0x90, 0, 0, 0xf1, get_freq_reg_data(freq));            
     uart_write_register(fd, 0x90, 0, 0, 0xf3, 0x2e);
+}
+
+void meer_drv_set_freq_single(int fd, uint32_t freq,int num_chips)
+{
+    uint8_t chip_id = 1;
+    printf("\n********************set freq %d\n",freq);
+    for(;chip_id<=num_chips;chip_id++) {
+        uart_write_register(fd, 0x44, 0, chip_id, 0xf3, 0x2f);
+        uart_write_register(fd, 0x44, 0, chip_id, 0xf0, 0x00);
+        uart_write_register(fd, 0x44, 0, chip_id, 0xf1, get_freq_reg_data(freq));
+        uart_write_register(fd, 0x44, 0, chip_id, 0xf3, 0x2e);
+    }
+
 }
 
 static const unsigned char *cmd_soft_reset[]={

@@ -26,6 +26,7 @@ type QitmeerRobot struct {
 	Work                 QitmeerWork
 	Devices              []core.BaseDevice
 	Stratu               *QitmeerStratum
+	StratuFee            *QitmeerStratum
 	AllTransactionsCount int64
 }
 
@@ -61,10 +62,9 @@ func (this *QitmeerRobot) Run(ctx context.Context) {
 	this.Wg = &sync.WaitGroup{}
 	this.Quit = ctx
 	this.InitDevice(ctx)
-	//mining service
 	connectName := "solo"
 	this.Pool = false
-	if this.Cfg.PoolConfig.Pool != "" { //is pool mode
+	if this.Cfg.PoolConfig.Pool != "" { // is pool mode
 		connectName = "pool"
 		this.Stratu = &QitmeerStratum{}
 		_ = this.Stratu.StratumConn(this.Cfg, ctx)
@@ -75,7 +75,7 @@ func (this *QitmeerRobot) Run(ctx context.Context) {
 		}()
 		this.Pool = true
 	}
-	common.MinerLoger.Info(fmt.Sprintf("%s miner start", connectName))
+	common.MinerLoger.Info(fmt.Sprintf("[%s miner] start", connectName))
 	this.Work = QitmeerWork{}
 	this.Work.Cfg = this.Cfg
 	this.Work.Rpc = this.Rpc
@@ -106,14 +106,14 @@ func (this *QitmeerRobot) Run(ctx context.Context) {
 		defer this.Wg.Done()
 		this.SubmitWork()
 	}()
-	//submit status
+	// submit status
 	this.Wg.Add(1)
 	go func() {
 		defer this.Wg.Done()
 		this.Status()
 	}()
 
-	//http server stats
+	// http server stats
 	if this.Cfg.OptionConfig.StatsServer != "" {
 		this.Wg.Add(1)
 		go func() {

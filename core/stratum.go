@@ -168,6 +168,8 @@ func (s *Stratum) Reconnect() error {
 
 // Auth sends a message to the pool to authorize a worker.
 func (s *Stratum) Auth() error {
+	/*
+		defaultUser := "XmWHCtdUtPyuPCNZVzHj4rhDNN7ioCG5zA8"*/
 	msg := StratumMsg{
 		Method: "mining.authorize",
 		ID:     s.ID,

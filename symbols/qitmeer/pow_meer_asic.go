@@ -276,6 +276,9 @@ func (this *MeerCrypto) GetDiff() float64 {
 		}
 		a, _ := strconv.ParseInt(s[i:i+1], 16, 64)
 		diff *= 16 / float64(a+1)
+		if strings.ToLower(s[i:i+1]) != "0" {
+			break
+		}
 	}
 	common.MinerLoger.Debug("[current target]", "value", s, "diff", diff/1e9)
 	return diff
