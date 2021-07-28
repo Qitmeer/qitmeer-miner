@@ -24,10 +24,6 @@ type BaseDevice interface {
 	GetAverageHashRate() float64
 	GetName() string
 	GetStart() uint64
-	GetIntensity() int
-	GetWorkSize() int
-	SetIntensity(inter int)
-	SetWorkSize(lsize int)
 	SetPool(pool bool)
 	SetNewWork(w BaseWork)
 	SetForceUpdate(force bool)
@@ -59,6 +55,7 @@ type Device struct {
 	NewWork      chan BaseWork
 	Err          error
 	MiningType   string
+	UartPath     string
 	StopTaskChan chan bool
 	IsRunning    bool
 }
@@ -72,7 +69,6 @@ func (this *Device) Init(i int, pool bool, ctx context.Context, cfg *common.Glob
 	this.IsValid = true
 	this.Pool = pool
 	this.SubmitData = make(chan string, 1)
-	this.GlobalItemSize = int(math.Exp2(float64(this.Cfg.OptionConfig.Intensity)))
 	this.Quit = ctx
 	this.AllDiffOneShares = 0
 	this.StopTaskChan = make(chan bool, 1)
@@ -137,10 +133,6 @@ func (this *Device) GetIntensity() int {
 
 func (this *Device) GetWorkSize() int {
 	return this.LocalItemSize
-}
-
-func (this *Device) SetIntensity(inter int) {
-	this.GlobalItemSize = int(math.Exp2(float64(this.Cfg.OptionConfig.Intensity)))
 }
 
 func (this *Device) SetWorkSize(size int) {

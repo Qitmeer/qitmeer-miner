@@ -9,7 +9,6 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	qitmeer "github.com/Qitmeer/qitmeer/common/hash"
 	"github.com/Qitmeer/qitmeer/core/types/pow"
 	"log"
 	"math"
@@ -18,31 +17,10 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
-	"sync"
-	"time"
 	"unicode"
 )
-
-func SliceContains(s []uint64, e uint64) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
-}
-func SliceRemove(s []uint64, e uint64) []uint64 {
-	for i, a := range s {
-		if a == e {
-			return append(s[:i], s[i+1:]...)
-		}
-	}
-
-	return s
-}
 
 func BlockBitsToTarget(bits string, width int) []byte {
 	nbits, err := hex.DecodeString(bits[0:2])
@@ -152,28 +130,6 @@ func DiffToTarget(diff float64, powLimit *big.Int, powType pow.PowType) (*big.In
 	return target, nil
 }
 
-// Uint32EndiannessSwap swaps the endianness of a uint32.
-func Uint32EndiannessSwap(v uint32) uint32 {
-	return (v&0x000000FF)<<24 | (v&0x0000FF00)<<8 |
-		(v&0x00FF0000)>>8 | (v&0xFF000000)>>24
-}
-
-// RolloverExtraNonce rolls over the extraNonce if it goes over 0x00FFFFFF many
-// hashes, since the first byte is reserved for the ID.
-func RolloverExtraNonce(v *uint32) {
-	if *v&0x00FFFFFF == 0x00FFFFFF {
-		*v = *v & 0xFF000000
-	} else {
-		*v++
-	}
-}
-
-func ConvertHashToString(hash qitmeer.Hash) string {
-	newB := make([]byte, 32)
-	copy(newB[:], hash[:])
-	return hex.EncodeToString(newB)
-}
-
 // appDataDir returns an operating system specific directory to be used for
 // storing application data for an application.  See AppDataDir for more
 // details.  This unexported version takes an operating system argument
@@ -240,46 +196,6 @@ func appDataDir(goos, appName string, roaming bool) string {
 	return "."
 }
 
-// AppDataDir returns an operating system specific directory to be used for
-// storing application data for an application.
-//
-// The appName parameter is the name of the application the data directory is
-// being requested for.  This function will prepend a period to the appName for
-// POSIX style operating systems since that is standard practice.  An empty
-// appName or one with a single dot is treated as requesting the current
-// directory so only "." will be returned.  Further, the first character
-// of appName will be made lowercase for POSIX style operating systems and
-// uppercase for Mac and Windows since that is standard practice.
-//
-// The roaming parameter only applies to Windows where it specifies the roaming
-// application data profile (%APPDATA%) should be used instead of the local one
-// (%LOCALAPPDATA%) that is used by default.
-//
-// Example results:
-//  dir := AppDataDir("myapp", false)
-//   POSIX (Linux/BSD): ~/.myapp
-//   Mac OS: $HOME/Library/Application Support/Myapp
-//   Windows: %LOCALAPPDATA%\Myapp
-//   Plan 9: $home/myapp
-func AppDataDir(appName string, roaming bool) string {
-	return appDataDir(runtime.GOOS, appName, roaming)
-}
-
-func Target2BlockBits(target string) []byte {
-	// 8
-	d, _ := hex.DecodeString(target[0:16])
-	return Reverse(d)
-}
-
-func HexMustDecode(hexStr string) []byte {
-	b, err := hex.DecodeString(hexStr)
-	if err != nil {
-
-		panic(err)
-	}
-	return b
-}
-
 func GetCurrentDir() string {
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
@@ -290,14 +206,6 @@ func GetCurrentDir() string {
 
 func RandUint64() uint64 {
 	return rand.Uint64()
-}
-
-func RandUint32() (uint32, error) {
-	var b [4]byte
-	if _, err := rand.Read(b[:]); err != nil {
-		return 0, err
-	}
-	return uint32(binary.LittleEndian.Uint32(b[:])), nil
 }
 
 func InArray(val interface{}, arr interface{}) bool {
@@ -319,50 +227,6 @@ func InArray(val interface{}, arr interface{}) bool {
 	return false
 }
 
-func Timeout(timeout time.Duration, runFunc func()) bool {
-	var wg = new(sync.WaitGroup)
-	c := make(chan interface{})
-	wg.Add(1)
-	go func() {
-		defer close(c)
-		wg.Wait()
-	}()
-	go func() {
-		runFunc()
-		c <- nil
-		wg.Done()
-	}()
-	select {
-	case <-c:
-		return false
-	case <-time.After(timeout):
-		return true
-	}
-}
-
-func TimeoutRun(timeout time.Duration, runFunc, afterFun func()) bool {
-	var wg = new(sync.WaitGroup)
-	c := make(chan interface{})
-	wg.Add(1)
-	go func() {
-		defer close(c)
-		wg.Wait()
-	}()
-	go func() {
-		runFunc()
-		c <- nil
-		wg.Done()
-	}()
-	select {
-	case <-c:
-		return false
-	case <-time.After(timeout):
-		Timeout(1, func() {
-			afterFun()
-		})
-		return true
-	}
-}
 func GetNeedHashTimesByTarget(target string) *big.Int {
 	times := big.NewInt(1)
 	for i := 0; i < len(target)-1; i++ {

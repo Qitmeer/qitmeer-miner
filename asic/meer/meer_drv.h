@@ -13,10 +13,10 @@ struct work {
     unsigned char header[117];	//区块头
 };
 
-bool meer_drv_init(int *fd, int num_chips); //算力板初始化
+bool meer_drv_init(int *fd, int num_chips,char *path); //算力板初始化
 extern void meer_drv_deinit(int fd);
 
-void meer_drv_set_freq(int fd, uint32_t freq);	//配置算力芯片频率
+extern void meer_drv_set_freq(int fd, uint32_t freq);	//配置算力芯片频率
 bool meer_drv_set_work(int fd, struct work *work, int num_chips); //对算力芯片下计算任务
 
 void meer_drv_reset_pin(uint8_t value, bool reset); //算力板复位

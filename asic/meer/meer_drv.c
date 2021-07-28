@@ -231,18 +231,20 @@ void meer_drv_reset_pin(uint8_t value, bool reset)
     }
 }
 
-bool meer_drv_init(int *fd, int num_chips)
+bool meer_drv_init(int *fd, int num_chips,char *path)
 {
     int fdtemp;
     meer_drv_reset_pin(0, true);
     
-    fdtemp = uart_open(DEFAULT_UART, DEFAULT_BAUDRATE);
+    fdtemp = uart_open(path, DEFAULT_BAUDRATE);
     *fd = fdtemp;
     if(*fd < 0) {
         return false;
     }
 
-    uart_write_register(fdtemp,0x90,0x00,0x00,0x81,0x00);	//进入配芯片ID模式, 次序不能动
+    if (!uart_write_register(fdtemp,0x90,0x00,0x00,0x81,0x00)){
+        return false;
+    }	//进入配芯片ID模式, 次序不能动
     usleep(100000);
     meer_drv_send_cmds(fdtemp, cmd_auto_address);			//配芯片ID, 次序不能动
     usleep(500000);

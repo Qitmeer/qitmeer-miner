@@ -30,11 +30,12 @@ type QitmeerRobot struct {
 	AllTransactionsCount int64
 }
 
-func (this *QitmeerRobot) GetPow(i int, ctx context.Context) core.BaseDevice {
+func (this *QitmeerRobot) GetPow(i int, ctx context.Context, uart_path string) core.BaseDevice {
 	switch this.Cfg.NecessaryConfig.Pow {
 	case POW_MEER_CRYPTO:
 		deviceMiner := &MeerCrypto{}
 		deviceMiner.MiningType = "meer_crypto"
+		deviceMiner.UartPath = uart_path
 		deviceMiner.Init(i, this.Pool, ctx, this.Cfg)
 		this.Devices = append(this.Devices, deviceMiner)
 		return deviceMiner
@@ -49,10 +50,16 @@ func (this *QitmeerRobot) InitDevice(ctx context.Context) {
 	this.MinerRobot.InitDevice()
 	if this.Cfg.OptionConfig.CPUMiner {
 		for i := 0; i < this.Cfg.OptionConfig.CpuWorkers; i++ {
-			this.GetPow(i, ctx)
+			this.GetPow(i, ctx, "")
 		}
 	} else {
-		this.GetPow(0, ctx)
+		uartPaths := strings.Split(this.Cfg.OptionConfig.UartPath, ",")
+		for i := 0; i < len(uartPaths); i++ {
+			if uartPaths[0] == "" {
+				continue
+			}
+			this.GetPow(i, ctx, uartPaths[0])
+		}
 	}
 
 }

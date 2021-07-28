@@ -15,7 +15,7 @@
 
 #define UART_DBG_ENABLE     1
 
-#define DEFAULT_UART "/dev/ttyS1"
+#define DEFAULT_UART "/dev/ttyS3"
 #define DEFAULT_BAUDRATE  B1000000
 
 int uart_open(char *devname, speed_t baud);

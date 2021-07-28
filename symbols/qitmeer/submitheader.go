@@ -59,16 +59,6 @@ func (this *MinerBlockData) PackagePoolHeader(work *QitmeerWork, powType pow.Pow
 	this.Height = uint64(work.PoolWork.Height)
 }
 
-//the pool work submit structure
-func (this *MinerBlockData) PackagePoolHeaderByNonce(work *QitmeerWork, nonce uint64) {
-	this.HeaderData = BlockComputePoolData(work.PoolWork.WorkData)
-	this.TargetDiff = work.stra.Target
-	nbitesBy := make([]byte, 8)
-	binary.LittleEndian.PutUint64(nbitesBy, nonce)
-	copy(this.HeaderData[NONCESTART:NONCEEND], nbitesBy[:])
-	this.JobID = work.PoolWork.JobID
-}
-
 //the solo work submit structure
 func (this *MinerBlockData) PackageRpcHeader(work *QitmeerWork, txs []Transactions) {
 	bitesBy, _ := hex.DecodeString(work.Block.Target)

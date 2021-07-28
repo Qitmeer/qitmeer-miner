@@ -88,6 +88,12 @@ func (this *Stratum) StratumConn(cfg *common.GlobalConfig, ctx context.Context) 
 func (this *Stratum) ConnectRetry() {
 	var err error
 	for {
+		select {
+		case <-this.Quit.Done():
+			common.MinerLoger.Info("pool service exit")
+			return
+		default:
+		}
 		common.Usleep(2)
 		err = this.Reconnect()
 		if err != nil {

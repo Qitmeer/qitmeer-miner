@@ -27,25 +27,14 @@ var CurrentHeight = uint64(0)
 var JobID = ""
 
 var (
-	minerHomeDir         = GetCurrentDir()
-	defaultConfigFile    = filepath.Join(minerHomeDir, defaultConfigFilename)
-	defaultRPCServer     = "127.0.0.1"
-	defaultIntensity     = 24
-	defaultTrimmerCount  = 15
-	defaultWorkSize      = 256
-	minIntensity         = 1
-	maxIntensity         = 31
-	maxWorkSize          = uint32(0xFFFFFFFF - 255)
-	defaultPow           = "cuckaroo"
-	defaultSymbol        = "PMEER"
-	defaultTimeout       = 60
-	defaultMaxTxCount    = 1000
-	defaultMaxSigCount   = 4000
-	defaultStatsServer   = ""
-	defaultLocalSize     = 4096
-	defaultWorkGroupSize = 256
-	defaultEdgeBits      = 24
-	version              = "0.3.5"
+	minerHomeDir       = GetCurrentDir()
+	defaultRPCServer   = "127.0.0.1"
+	defaultPow         = "cuckaroo"
+	defaultSymbol      = "PMEER"
+	defaultTimeout     = 60
+	defaultMaxTxCount  = 1000
+	defaultMaxSigCount = 4000
+	defaultStatsServer = ""
 )
 
 type CommandConfig struct {
@@ -61,44 +50,29 @@ type FileConfig struct {
 
 type OptionalConfig struct {
 	// Config / log options
-	CPUMiner            bool   `long:"cpuminer" description:"CPUMiner" default-mask:"false"`
-	CpuWorkers          int    `long:"cpuworkers" description:"CPUWorkers" default-mask:"1"`
-	Proxy               string `long:"proxy" description:"Connect via SOCKS5 proxy (eg. 127.0.0.1:9050)"`
-	ProxyUser           string `long:"proxyuser" description:"Username for proxy server"`
-	ProxyPass           string `long:"proxypass" default-mask:"-" description:"Password for proxy server"`
-	TrimmerCount        int    `long:"trimmerTimes" description:"the cuckaroo trimmer times"`
-	Intensity           int    `long:"intensity" description:"Intensities (the work size is 2^intensity) per device. Single global value or a comma separated list."`
-	WorkSize            int    `long:"worksize" description:"The explicitly declared sizes of the work to do per device (overrides intensity). Single global value or a comma separated list."`
-	Timeout             int    `long:"timeout" description:"rpc timeout." default-mask:"60"`
-	UseDevices          string `long:"use_devices" description:"all gpu devices,you can use ./qitmeer-miner -l to see. examples:0,1 use the #0 device and #1 device"`
-	MaxTxCount          int    `long:"max_tx_count" description:"max pack tx count" default-mask:"1000"`
-	MaxSigCount         int    `long:"max_sig_count" description:"max sign tx count" default-mask:"4000"`
-	LogLevel            string `long:"log_level" description:"info|debug|error|warn|trace" default-mask:"info"`
-	StatsServer         string `long:"stats_server" description:"stats web server" default-mask:"127.0.0.1:1235"`
-	Restart             int    ` description:"restart server" default-mask:"0"`
-	Accept              int    ` description:"Accept count" default-mask:"0"`
-	Reject              int    ` description:"Reject count" default-mask:"0"`
-	Stale               int    ` description:"Stale count" default-mask:"0"`
-	Target              string ` description:"Target"`
-	EdgeBits            int    `long:"edge_bits" description:"edge bits" default-mask:"24"`
-	NumOfChips          int    `long:"num_of_chips" description:"num of chips" default-mask:"1"`
-	LocalSize           int    `long:"local_size" description:"local size" default-mask:"4096"`
-	GroupSize           int    `long:"group_size" description:"work group size" default-mask:"256"`
-	Cuda                bool   `long:"cuda" description:"is cuda" default-mask:"false"`
-	TaskInterval        int    `long:"task_interval" description:"get blocktemplate interval" default-mask:"2"`
-	TaskForceStop       bool   `long:"task_force_stop" description:"force stop the current task when miner fail to get blocktemplate from the qitmeer full node." default-mask:"true"`
-	MiningSyncMode      bool   `long:"mining_sync_mode" description:"force stop the current task when new task come." default-mask:"true"`
-	ForceSolo           bool   `long:"force_solo" description:"force solo mining" default-mask:"false"`
-	BigGraphStartHeight int    `long:"big_graph_start_height" description:"big graph start main height, how many days later,the r29 will be the main pow" default-mask:"45"`
-	Expand              int    `long:"expand" description:"expand enum 0,1,2" default-mask:"0"`
-	Ntrims              int    `long:"ntrims" description:"trim times " default-mask:"50"`
-	Genablocks          int    `long:"genablocks" description:"genablocks" default-mask:"4096"`
-	Genatpb             int    `long:"genatpb" description:"genatpb" default-mask:"256"`
-	Genbtpb             int    `long:"genbtpb" description:"genbtpb" default-mask:"256"`
-	Trimtpb             int    `long:"trimtpb" description:"genbtpb" default-mask:"64"`
-	Tailtpb             int    `long:"tailtpb" description:"tailtpb" default-mask:"1024"`
-	Recoverblocks       int    `long:"recoverblocks" description:"recoverblocks" default-mask:"1024"`
-	Recovertpb          int    `long:"recovertpb" description:"recovertpb" default-mask:"1024"`
+	CPUMiner      bool   `long:"cpuminer" description:"CPUMiner" default-mask:"false"`
+	CpuWorkers    int    `long:"cpuworkers" description:"CPUWorkers" default-mask:"1"`
+	Proxy         string `long:"proxy" description:"Connect via SOCKS5 proxy (eg. 127.0.0.1:9050)"`
+	ProxyUser     string `long:"proxyuser" description:"Username for proxy server"`
+	ProxyPass     string `long:"proxypass" default-mask:"-" description:"Password for proxy server"`
+	Timeout       int    `long:"timeout" description:"rpc timeout." default-mask:"60"`
+	UseDevices    string `long:"use_devices" description:"all gpu devices,you can use ./qitmeer-miner -l to see. examples:0,1 use the #0 device and #1 device"`
+	MaxTxCount    int    `long:"max_tx_count" description:"max pack tx count" default-mask:"1000"`
+	MaxSigCount   int    `long:"max_sig_count" description:"max sign tx count" default-mask:"4000"`
+	LogLevel      string `long:"log_level" description:"info|debug|error|warn|trace" default-mask:"info"`
+	StatsServer   string `long:"stats_server" description:"stats web server" default-mask:"127.0.0.1:1235"`
+	Restart       int    ` description:"restart server" default-mask:"0"`
+	Accept        int    ` description:"Accept count" default-mask:"0"`
+	Reject        int    ` description:"Reject count" default-mask:"0"`
+	Stale         int    ` description:"Stale count" default-mask:"0"`
+	Target        string ` description:"Target"`
+	NumOfChips    int    `long:"num_of_chips" description:"num of chips" default-mask:"1"`
+	TaskInterval  int    `long:"task_interval" description:"get blocktemplate interval" default-mask:"2"`
+	TaskForceStop bool   `long:"task_force_stop" description:"force stop the current task when miner fail to get blocktemplate from the qitmeer full node." default-mask:"true"`
+	ForceSolo     bool   `long:"force_solo" description:"force solo mining" default-mask:"false"`
+	Freqs         string `long:"freqs" description:"freq settings" default-mask:"1000,200|"`
+	BaseDiff      uint   `long:"base_diff" description:"base_diff settings,default 4G" default-mask:"224"`
+	UartPath      string `long:"uart_path" description:"uarts path split with ," default-mask:"/dev/ttyS1"`
 }
 
 type PoolConfig struct {
@@ -215,24 +189,16 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 		NetWork: "testnet",
 	}
 	optionalCfg := OptionalConfig{
-		Intensity:           defaultIntensity,
-		WorkSize:            defaultWorkSize,
-		TrimmerCount:        defaultTrimmerCount,
-		CPUMiner:            false,
-		Timeout:             defaultTimeout,
-		UseDevices:          "",
-		MaxTxCount:          defaultMaxTxCount,
-		MaxSigCount:         defaultMaxSigCount,
-		StatsServer:         defaultStatsServer,
-		LocalSize:           defaultLocalSize,
-		GroupSize:           defaultWorkGroupSize,
-		EdgeBits:            defaultEdgeBits,
-		TaskInterval:        2,
-		TaskForceStop:       true,
-		MiningSyncMode:      true,
-		ForceSolo:           false,
-		BigGraphStartHeight: 29,
-		NumOfChips:          1,
+		CPUMiner:      false,
+		Timeout:       defaultTimeout,
+		UseDevices:    "",
+		MaxTxCount:    defaultMaxTxCount,
+		MaxSigCount:   defaultMaxSigCount,
+		StatsServer:   defaultStatsServer,
+		TaskInterval:  2,
+		TaskForceStop: true,
+		ForceSolo:     false,
+		NumOfChips:    1,
 	}
 
 	// Create the home directory if it doesn't already exist.
@@ -336,15 +302,6 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 	}
 
 	// Show the version and exit if the version flag was specified.
-
-	if optionalCfg.Intensity < minIntensity || optionalCfg.Intensity > maxIntensity {
-		optionalCfg.Intensity = defaultIntensity
-	}
-
-	// Check the work size if the user is setting that.
-	if optionalCfg.WorkSize > int(maxWorkSize) {
-		optionalCfg.WorkSize = defaultWorkSize
-	}
 
 	// Handle environment variable expansion in the RPC certificate path.
 	soloCfg.RPCCert = cleanAndExpandPath(soloCfg.RPCCert)

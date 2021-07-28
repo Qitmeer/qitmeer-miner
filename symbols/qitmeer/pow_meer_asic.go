@@ -42,10 +42,8 @@ type MeerCrypto struct {
 }
 
 func (this *MeerCrypto) InitDevice() {
-	common.MinerLoger.Debug("==============Mining MeerCrypto ==============", "chips num", this.Cfg.OptionConfig.NumOfChips)
+	common.MinerLoger.Debug("==============Mining MeerCrypto ==============", "chips num", this.Cfg.OptionConfig.NumOfChips, "UART", this.UartPath)
 }
-
-const INTERVAL_GAP = 2049630
 
 func (this *MeerCrypto) Update() {
 	//update coinbase tx hash
@@ -79,26 +77,27 @@ type Work struct {
 type MiningResult map[uint64]MiningResultItem
 
 func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
+	start := false
+	fd := 0
+	uartPath := C.CString(this.UartPath)
+
 	defer func() {
 		// recover from panic caused by writing to a closed channel
 		if r := recover(); r != nil {
 			common.MinerLoger.Debug(fmt.Sprintf("# %d miner service exit", this.MinerId))
 			return
 		}
-		common.MinerLoger.Debug(fmt.Sprintf("# %d miner service exit", this.MinerId))
-	}()
-	defer wg.Done()
-	defer this.Release()
-	nonceBytes := make([]byte, 8) // nonce bytes
-	start := false
-	fd := 0
-	var w core.BaseWork
-	defer func() {
 		if fd > 0 {
+			common.MinerLoger.Info(fmt.Sprintf("[%s][meer_drv_deinit] miner chips exit", this.UartPath))
 			C.meer_drv_deinit((C.int)(fd))
+			C.free(unsafe.Pointer(uartPath))
 		}
+
+		wg.Done()
+		this.Release()
 	}()
-	this.Started = time.Now().Unix()
+	nonceBytes := make([]byte, 8) // nonce bytes
+	var w core.BaseWork
 	for {
 		select {
 		case w = <-this.NewWork:
@@ -139,8 +138,33 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 			default:
 				if !start && fd == 0 {
 					// init chips
+					fd = int(C.init_drv((C.int)(this.Cfg.OptionConfig.NumOfChips), uartPath))
+					if fd <= 0 {
+						this.SetIsValid(false)
+						return
+					}
 					start = true
-					fd = int(C.init_drv((C.int)(this.Cfg.OptionConfig.NumOfChips)))
+					// set freqs
+					freqsArr := strings.Split(this.Cfg.OptionConfig.Freqs, "|")
+					for k := 0; k < len(freqsArr); k++ {
+						arr := strings.Split(freqsArr[k], ",")
+						if len(arr) != 2 {
+							continue
+						}
+						microTime, err := strconv.Atoi(arr[0])
+						if err != nil {
+							common.MinerLoger.Error("freqs setting error", "value", freqsArr[k])
+							return
+						}
+						freqVal, err := strconv.Atoi(arr[1])
+						if err != nil {
+							common.MinerLoger.Error("freqs setting error", "value", freqsArr[k])
+							return
+						}
+						C.meer_drv_set_freq((C.int)(fd), (C.uint)(freqVal))
+						time.Sleep(time.Duration(microTime) * time.Millisecond)
+					}
+					this.Started = time.Now().Unix()
 				}
 				nonces := MiningResult{}
 				works := map[byte]Work{}
@@ -193,7 +217,8 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 							}
 							copy(cwork.Header[NONCESTART:NONCEEND], nonceBytes)
 							h := hash.HashMeerXKeccakV1(cwork.Header[:117])
-							common.MinerLoger.Debug(fmt.Sprintf("ChipId #%d JobId #%d Found hash : %s nonce:%s target:%064x",
+							common.MinerLoger.Debug(fmt.Sprintf("[%s]ChipId #%d JobId #%d Found hash : %s nonce:%s target:%064x",
+								this.UartPath,
 								chipId[0], jobId[0], h,
 								hex.EncodeToString(nonceBytes), cwork.Target))
 							if HashToBig(&h).Cmp(cwork.Target) <= 0 {
@@ -201,7 +226,8 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 								this.SubmitData <- cwork.ReplaceNonce(nonceBytes)
 							}
 						} else {
-							common.MinerLoger.Debug(fmt.Sprintf("[DUP Shares]ChipId #%d JobId #%d nonce:%d  Last ChipId: %d Last JobId :%d ",
+							common.MinerLoger.Debug(fmt.Sprintf("[%s][DUP Shares]ChipId #%d JobId #%d nonce:%d  Last ChipId: %d Last JobId :%d ",
+								this.UartPath,
 								chipId[0], jobId[0],
 								lastNonce,
 								nonces[lastNonce].ChipId, nonces[lastNonce].JobId))
@@ -258,8 +284,9 @@ func (this *MeerCrypto) Status(wg *sync.WaitGroup) {
 			// diff
 			unit := "H/s"
 			start := time.Unix(this.Started, 0)
-			common.MinerLoger.Info(fmt.Sprintf("Start time: %s  Diff: %s All Shares: %d HashRate: %s",
-				start.Format(time.RFC3339),
+			common.MinerLoger.Info(fmt.Sprintf("[%s]Start time: %s  Diff: %s All Shares: %d HashRate: %s",
+				this.UartPath,
+				start.Format("2006-01-02 15:04:05"),
 				common.FormatHashRate(diff, unit),
 				this.AllDiffOneShares,
 				common.FormatHashRate(hashrate, unit)))

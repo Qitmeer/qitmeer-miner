@@ -124,7 +124,7 @@ type QitmeerStratum struct {
 func (s *QitmeerStratum) CalcBasePowLimit() *big.Int {
 	switch s.PowType {
 	case pow.MEERXKECCAKV1:
-		return new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 224), big.NewInt(1))
+		return new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), s.Cfg.OptionConfig.BaseDiff), big.NewInt(1))
 	}
 	return params.MainNetParams.PowConfig.Blake2bdPowLimit
 }

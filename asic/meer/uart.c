@@ -132,7 +132,7 @@ unsigned int uart_write_register(int fd, uint32_t writemode,uint32_t burst_cn, u
 	read_reg_cmd[6] = (value>>16)&0xff;
 	read_reg_cmd[7] = (value>>24)&0xff;
 	
-	uart_write(fd, read_reg_cmd, 8);
+	ret = uart_write(fd, read_reg_cmd, 8);
 
 	return  ret;
 }

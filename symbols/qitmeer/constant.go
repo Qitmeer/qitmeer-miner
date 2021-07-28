@@ -1,9 +1,5 @@
 package qitmeer
 
-import (
-	"github.com/Qitmeer/qitmeer/core/types/pow"
-)
-
 const (
 	//every mode position
 	POWTYPE_START = 108
@@ -24,18 +20,3 @@ const (
 	VERSIONSTART  = 0
 	VERSIONEND    = 4
 )
-
-func CuckarooGraphWeight(mheight, targetHeight int64, edge_bits uint) uint64 {
-	//45 days
-
-	scale := (2 << (edge_bits - pow.MIN_CUCKAROOEDGEBITS)) * uint64(edge_bits)
-	if scale <= 0 {
-		scale = 1
-	}
-	return scale
-}
-
-func CuckatooGraphWeight(mheight, targetHeight int64, edge_bits uint) uint64 {
-	//45 days
-	return (2 << (edge_bits - pow.MIN_CUCKAROOEDGEBITS)) * uint64(edge_bits)
-}
