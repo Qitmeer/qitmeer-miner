@@ -18,7 +18,7 @@ replace (
 	golang.org/x/exp => github.com/golang/exp v0.0.0-20190125153040-c74c464bbbf2
 	golang.org/x/net => github.com/golang/net v0.0.0-20190404232315-eb5bcb51f2a3
 	golang.org/x/sync => github.com/golang/sync v0.0.0-20180314180146-1d60e4601c6f
-	golang.org/x/sys => github.com/golang/sys v0.0.0-20190222072716-a9d3bda3a223
+	golang.org/x/sys => github.com/golang/sys v0.0.0-20200930185726-fdedc70b468f
 	golang.org/x/text => github.com/golang/text v0.3.0
 	golang.org/x/tools => github.com/golang/tools v0.0.0-20190511041617-99f201b6807e
 	gonum.org/v1/gonum => github.com/gonum/gonum v0.0.0-20190608115022-c5f01565d866
