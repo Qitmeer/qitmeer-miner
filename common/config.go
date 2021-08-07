@@ -84,13 +84,15 @@ type PoolConfig struct {
 
 type SoloConfig struct {
 	// RPC connection options
-	MinerAddr   string `short:"M" long:"mineraddress" description:"Miner Address" default-mask:""`
-	RPCServer   string `short:"s" long:"rpcserver" description:"RPC server to connect to"`
-	RPCUser     string `short:"u" long:"rpcuser" description:"RPC username"`
-	RPCPassword string `short:"p" long:"rpcpass" default-mask:"-" description:"RPC password"`
-	RandStr     string `long:"randstr" description:"Rand String,Your Unique Marking." default-mask:"Come from Qitmeer!"`
-	NoTLS       bool   `long:"notls" description:"Do not verify tls certificates" default-mask:"true"`
-	RPCCert     string `long:"rpccert" description:"RPC server certificate chain for validation"`
+	MinerAddr        string `short:"M" long:"mineraddress" description:"Miner Address" default-mask:""`
+	RPCServer        string `short:"s" long:"rpcserver" description:"RPC server to connect to"`
+	RPCUser          string `short:"u" long:"rpcuser" description:"RPC username"`
+	RPCPassword      string `short:"p" long:"rpcpass" default-mask:"-" description:"RPC password"`
+	RandStr          string `long:"randstr" description:"Rand String,Your Unique Marking." default-mask:""`
+	NoTLS            bool   `long:"notls" description:"Do not verify tls certificates" default-mask:"true"`
+	RPCCert          string `long:"rpccert" description:"RPC server certificate chain for validation"`
+	ConfirmHeight    uint64 `long:"confirmheight" description:"min confirm height" default-mask:"5"`
+	NotConfirmHeight uint64 `long:"notconfirmheight" description:"min confirm height" default-mask:"50"`
 }
 
 type NecessaryConfig struct {

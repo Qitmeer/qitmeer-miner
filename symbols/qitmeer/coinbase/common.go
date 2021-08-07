@@ -5,7 +5,6 @@ import (
 	"github.com/Qitmeer/qitmeer/core/types"
 	"github.com/Qitmeer/qitmeer/engine/txscript"
 	"github.com/Qitmeer/qitmeer/params"
-	"github.com/google/uuid"
 )
 
 // standardCoinbaseOpReturn creates a standard OP_RETURN output to insert into
@@ -22,9 +21,8 @@ func standardCoinbaseOpReturn(enData []byte) ([]byte, error) {
 }
 
 func standardCoinbaseScript(randStr string, nextBlockHeight uint64, extraNonce uint64) ([]byte, error) {
-	uniqueStr := uuid.New()
 	return txscript.NewScriptBuilder().AddInt64(int64(nextBlockHeight)).
-		AddInt64(int64(extraNonce)).AddData([]byte(randStr)).AddData([]byte(uniqueStr.String())).
+		AddInt64(int64(extraNonce)).AddData([]byte(randStr)).
 		Script()
 }
 

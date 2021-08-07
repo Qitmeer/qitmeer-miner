@@ -57,6 +57,7 @@ func GetRobot(cfg *common.GlobalConfig) core.Robot {
 		r.Started = uint32(time.Now().Unix())
 		r.Rpc = &common.RpcClient{Cfg: cfg}
 		r.SubmitStr = make(chan string)
+		r.PendingBlocks = map[string]qitmeer.PendingBlock{}
 		return r
 	default:
 

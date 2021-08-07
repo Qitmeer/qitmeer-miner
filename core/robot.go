@@ -25,6 +25,7 @@ type Robot interface {
 type MinerRobot struct {
 	Cfg              *common.GlobalConfig //config
 	ValidShares      uint64
+	PendingShares    uint64
 	StaleShares      uint64
 	InvalidShares    uint64
 	AllDiffOneShares uint64

@@ -212,9 +212,9 @@ static inline int common_cmd(int cmd, char *node, char *value){
     return -1;
 }
 
-void meer_drv_reset_pin(uint8_t value, bool reset)
+void meer_drv_reset_pin(uint8_t value, bool reset,char *gpio)
 {
-    char *rst_val[4] = {RST0_VAL};
+    char *rst_val[4] = {gpio};
 	
     if(reset) {
         //TODO:
@@ -231,10 +231,10 @@ void meer_drv_reset_pin(uint8_t value, bool reset)
     }
 }
 
-bool meer_drv_init(int *fd, int num_chips,char *path)
+bool meer_drv_init(int *fd, int num_chips,char *path,char *gpio)
 {
     int fdtemp;
-    meer_drv_reset_pin(0, true);
+    meer_drv_reset_pin(0, true,gpio);
     
     fdtemp = uart_open(path, DEFAULT_BAUDRATE);
     *fd = fdtemp;
@@ -264,10 +264,10 @@ bool meer_drv_init(int *fd, int num_chips,char *path)
     
     return true;
 }
-void meer_drv_deinit(int fd)
+void meer_drv_deinit(int fd,char *gpio)
 {    
     close(fd);
-    meer_drv_reset_pin(0, false);    
+    meer_drv_reset_pin(0, false,gpio);
 }
 
 void meer_drv_set_freq(int fd, uint32_t freq)

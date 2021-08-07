@@ -54,7 +54,11 @@ func (this *MeerCrypto) Update() {
 		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepQitmeerWork()
 		this.header.PackagePoolHeader(this.Work, pow.MEERXKECCAKV1)
 	} else {
-		randStr := fmt.Sprintf("%s%d%d", this.Cfg.SoloConfig.RandStr, this.MinerId, this.CurrentWorkID)
+		if this.Cfg.SoloConfig.RandStr == "" {
+			this.Cfg.SoloConfig.RandStr = this.Work.Block.NodeInfo
+		}
+		arr := strings.Split(this.Cfg.SoloConfig.RandStr, ":")
+		randStr := fmt.Sprintf("%s%d%d", arr[1], this.MinerId)
 		txHash, txs := this.Work.Block.CalcCoinBase(this.Cfg, randStr, this.CurrentWorkID, this.Cfg.SoloConfig.MinerAddr)
 		this.header.PackageRpcHeader(this.Work, txs)
 		this.header.HeaderBlock.TxRoot = *txHash
@@ -79,7 +83,9 @@ type MiningResult map[uint64]MiningResultItem
 func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 	start := false
 	fd := 0
-	uartPath := C.CString(this.UartPath)
+	arr := strings.Split(this.UartPath, ":")
+	uartPath := C.CString(arr[0])
+	gpio := C.CString(arr[1])
 
 	defer func() {
 		// recover from panic caused by writing to a closed channel
@@ -89,8 +95,9 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 		}
 		if fd > 0 {
 			common.MinerLoger.Info(fmt.Sprintf("[%s][meer_drv_deinit] miner chips exit", this.UartPath))
-			C.meer_drv_deinit((C.int)(fd))
+			C.meer_drv_deinit((C.int)(fd), gpio)
 			C.free(unsafe.Pointer(uartPath))
+			C.free(unsafe.Pointer(gpio))
 		}
 
 		wg.Done()
@@ -105,7 +112,6 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 		case <-this.Quit.Done():
 			common.MinerLoger.Debug("mining service exit")
 			return
-		default:
 		}
 		if !this.IsValid {
 			return
@@ -138,7 +144,7 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 			default:
 				if !start && fd == 0 {
 					// init chips
-					fd = int(C.init_drv((C.int)(this.Cfg.OptionConfig.NumOfChips), uartPath))
+					fd = int(C.init_drv((C.int)(this.Cfg.OptionConfig.NumOfChips), uartPath, gpio))
 					if fd <= 0 {
 						this.SetIsValid(false)
 						return

@@ -13,13 +13,13 @@ struct work {
     unsigned char header[117];	//区块头
 };
 
-bool meer_drv_init(int *fd, int num_chips,char *path); //算力板初始化
-extern void meer_drv_deinit(int fd);
+bool meer_drv_init(int *fd, int num_chips,char *path,char *gpio); //算力板初始化
+extern void meer_drv_deinit(int fd,char *gpio);
 
 extern void meer_drv_set_freq(int fd, uint32_t freq);	//配置算力芯片频率
 bool meer_drv_set_work(int fd, struct work *work, int num_chips); //对算力芯片下计算任务
 
-void meer_drv_reset_pin(uint8_t value, bool reset); //算力板复位
+void meer_drv_reset_pin(uint8_t value, bool reset,char *gpio); //算力板复位
 
 /*指令格式
 注: 串口默认使用1Mbps波特率

@@ -5,10 +5,15 @@ package qitmeer
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"github.com/Qitmeer/qitmeer-miner/common"
 	"github.com/Qitmeer/qitmeer-miner/core"
 	"github.com/Qitmeer/qitmeer-miner/stats_server"
+	"github.com/Qitmeer/qitmeer/core/types"
+	"github.com/Qitmeer/qitmeer/rpc/client"
+	"github.com/Qitmeer/qitmeer/rpc/client/cmds"
+	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -21,6 +26,12 @@ const (
 	POW_MEER_CRYPTO = "meer_crypto"
 )
 
+type PendingBlock struct {
+	CoinbaseHash string
+	Height       uint64
+	BlockHash    string
+}
+
 type QitmeerRobot struct {
 	core.MinerRobot
 	Work                 QitmeerWork
@@ -28,6 +39,9 @@ type QitmeerRobot struct {
 	Stratu               *QitmeerStratum
 	StratuFee            *QitmeerStratum
 	AllTransactionsCount int64
+	PendingBlocks        map[string]PendingBlock
+	PendingLock          sync.Mutex
+	WsClient             *client.Client
 }
 
 func (this *QitmeerRobot) GetPow(i int, ctx context.Context, uart_path string) core.BaseDevice {
@@ -55,10 +69,10 @@ func (this *QitmeerRobot) InitDevice(ctx context.Context) {
 	} else {
 		uartPaths := strings.Split(this.Cfg.OptionConfig.UartPath, ",")
 		for i := 0; i < len(uartPaths); i++ {
-			if uartPaths[0] == "" {
+			if uartPaths[i] == "" {
 				continue
 			}
-			this.GetPow(i, ctx, uartPaths[0])
+			this.GetPow(i, ctx, uartPaths[i])
 		}
 	}
 
@@ -87,6 +101,7 @@ func (this *QitmeerRobot) Run(ctx context.Context) {
 	this.Work.Cfg = this.Cfg
 	this.Work.Rpc = this.Rpc
 	this.Work.stra = this.Stratu
+	this.Work.Quit = this.Quit
 	// Device Miner
 	for _, dev := range this.Devices {
 		dev.SetIsValid(true)
@@ -119,6 +134,13 @@ func (this *QitmeerRobot) Run(ctx context.Context) {
 		defer this.Wg.Done()
 		this.Status()
 	}()
+	if this.Cfg.PoolConfig.Pool == "" {
+		this.Wg.Add(1)
+		go func() {
+			defer this.Wg.Done()
+			this.HandlePendingBlocks()
+		}()
+	}
 
 	// http server stats
 	if this.Cfg.OptionConfig.StatsServer != "" {
@@ -184,6 +206,7 @@ func (this *QitmeerRobot) ListenWork() {
 func (this *QitmeerRobot) SubmitWork() {
 	common.MinerLoger.Info("listen submit block server")
 	this.Wg.Add(1)
+	lock := sync.Mutex{}
 	go func() {
 		defer this.Wg.Done()
 		str := ""
@@ -224,13 +247,65 @@ func (this *QitmeerRobot) SubmitWork() {
 						}
 					}
 				} else {
-					this.ValidShares++
-					if !this.Pool {
+					if !this.Pool { // solo
+						lock.Lock()
+						serializedBlock, err := hex.DecodeString(block)
+						if err != nil {
+							common.MinerLoger.Error(err.Error())
+							continue
+						}
+						block, err := types.NewBlockFromBytes(serializedBlock)
+						if err != nil {
+							common.MinerLoger.Error(err.Error())
+							continue
+						}
+						hei, _ := strconv.Atoi(height)
+						this.PendingLock.Lock()
+						this.PendingBlocks[block.Block().Transactions[0].TxHash().String()] = PendingBlock{
+							Height:       uint64(hei),
+							BlockHash:    block.Block().BlockHash().String(),
+							CoinbaseHash: block.Block().Transactions[0].TxHash().String(),
+						}
+						this.PendingShares++
+						common.Timeout(func() {
+							err = this.WsClient.NotifyTxsConfirmed([]cmds.TxConfirm{
+								{
+									Txid:          block.Block().Transactions[0].TxHash().String(),
+									Confirmations: int32(this.Cfg.SoloConfig.ConfirmHeight),
+								},
+							})
+							if err != nil {
+								common.MinerLoger.Error(err.Error())
+							}
+						}, 10, func() {
+							this.WsClient.Shutdown()
+							this.WsConnect()
+							txes := make([]cmds.TxConfirm, 0)
+							txes = append(txes, cmds.TxConfirm{
+								Txid:          block.Block().Transactions[0].TxHash().String(),
+								Confirmations: int32(this.Cfg.SoloConfig.ConfirmHeight),
+							})
+							for _, v := range this.PendingBlocks {
+								txes = append(txes, cmds.TxConfirm{
+									Txid:          v.CoinbaseHash,
+									Confirmations: int32(this.Cfg.SoloConfig.ConfirmHeight),
+								})
+							}
+							err = this.WsClient.NotifyTxsConfirmed(txes)
+							if err != nil {
+								common.MinerLoger.Error(err.Error())
+							}
+						})
+						this.PendingLock.Unlock()
 						count, _ = strconv.Atoi(txCount)
 						this.AllTransactionsCount += int64(count)
-						logContent = fmt.Sprintf("receive block, block height = %s,Including %s transactions; Received Total transactions = %d\n",
+						logContent = fmt.Sprintf("receive block, block hash= %s, block height = %s,Including %s transactions; Received Total transactions = %d\n",
+							block.Block().BlockHash().String(),
 							height, txCount, this.AllTransactionsCount)
-						common.MinerLoger.Info(logContent)
+						common.MinerLoger.Debug(logContent)
+						lock.Unlock()
+					} else {
+						this.ValidShares++
 					}
 				}
 			}
@@ -245,15 +320,28 @@ func (this *QitmeerRobot) SubmitWork() {
 // stats the submit result
 func (this *QitmeerRobot) Status() {
 	var valid, rejected, staleShares uint64
+	t := time.NewTicker(10 * time.Second)
+	defer t.Stop()
 	for {
 		select {
 		case <-this.Quit.Done():
 			common.MinerLoger.Debug("global stats service exit")
 			return
-		default:
+		case <-t.C:
 			if this.Work.stra == nil && this.Work.Block == nil {
-				common.Usleep(20)
 				continue
+			}
+			if this.Cfg.PoolConfig.Pool == "" {
+				this.PendingLock.Lock()
+				for i, v := range this.PendingBlocks {
+					if this.Work.Block.Height > v.Height+this.Cfg.SoloConfig.NotConfirmHeight {
+						common.MinerLoger.Info("[Invalid Blocks]", "block hash", v.BlockHash, "coinbase hash", v.CoinbaseHash, "height", v.Height)
+						this.InvalidShares++
+						this.PendingShares--
+						delete(this.PendingBlocks, i)
+					}
+				}
+				this.PendingLock.Unlock()
 			}
 			valid = this.ValidShares
 			rejected = this.InvalidShares
@@ -266,14 +354,90 @@ func (this *QitmeerRobot) Status() {
 			this.Cfg.OptionConfig.Accept = int(valid)
 			this.Cfg.OptionConfig.Reject = int(rejected)
 			this.Cfg.OptionConfig.Stale = int(staleShares)
-			total := valid + rejected + staleShares
-			common.MinerLoger.Info(fmt.Sprintf("Global stats: Accepted: %v,Stale: %v, Rejected: %v, Total: %v",
+			total := valid + rejected + staleShares + this.PendingShares
+			common.MinerLoger.Info(fmt.Sprintf("Global stats: Accepted: %v,Pending: %v,Stale: %v, Rejected: %v, Total: %v",
 				valid,
+				this.PendingShares,
 				staleShares,
 				rejected,
 				total,
 			))
-			common.Usleep(20)
 		}
+	}
+}
+
+// stats the submit result
+func (this *QitmeerRobot) HandlePendingBlocks() {
+	this.WsConnect()
+	for {
+		select {
+		case <-this.Quit.Done():
+			common.MinerLoger.Debug("Exit Websocket")
+			if this.WsClient != nil && !this.WsClient.Disconnected() {
+				this.WsClient.Shutdown()
+			}
+			return
+		}
+	}
+}
+
+func (this *QitmeerRobot) WsConnect() {
+	var err error
+	ntfnHandlers := client.NotificationHandlers{
+		OnTxConfirm: func(txConfirm *cmds.TxConfirmResult) {
+			this.PendingLock.Lock()
+			common.MinerLoger.Debug("OnTxConfirm", "tx", txConfirm.Tx, "confirms", txConfirm.Confirms, "order", txConfirm.Order)
+			if _, ok := this.PendingBlocks[txConfirm.Tx]; ok && txConfirm.Confirms >= this.Cfg.SoloConfig.ConfirmHeight {
+				//
+				this.PendingShares--
+				this.ValidShares++
+				delete(this.PendingBlocks, txConfirm.Tx)
+			}
+			this.PendingLock.Unlock()
+		},
+		OnNodeExit: func(p *cmds.NodeExitNtfn) {
+			common.MinerLoger.Debug("OnNodeExit")
+		},
+	}
+	protocol := "ws"
+	if !this.Cfg.SoloConfig.NoTLS {
+		protocol = "wss"
+	}
+	url := this.Cfg.SoloConfig.RPCServer
+	noTls := this.Cfg.SoloConfig.NoTLS
+	if strings.Contains(this.Cfg.SoloConfig.RPCServer, "://") {
+		arr := strings.Split(url, "://")
+		url = arr[1]
+		protocol = "ws"
+		if arr[0] == "https" {
+			noTls = false
+			arr[0] = "wss"
+		}
+	}
+	connCfg := &client.ConnConfig{
+		Host:       url,
+		Endpoint:   protocol,
+		User:       this.Cfg.SoloConfig.RPCUser,
+		Pass:       this.Cfg.SoloConfig.RPCPassword,
+		DisableTLS: noTls,
+	}
+	if !connCfg.DisableTLS {
+		certs, err := ioutil.ReadFile(this.Cfg.SoloConfig.RPCCert)
+		if err != nil {
+			common.MinerLoger.Error(err.Error())
+			return
+		}
+		connCfg.Certificates = certs
+	}
+
+	this.WsClient, err = client.New(connCfg, &ntfnHandlers)
+	if err != nil {
+		common.MinerLoger.Error(err.Error())
+		return
+	}
+	// Register for block connect and disconnect notifications.
+	if err := this.WsClient.NotifyBlocks(); err != nil {
+		common.MinerLoger.Error(err.Error())
+		return
 	}
 }

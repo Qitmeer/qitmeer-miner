@@ -42,7 +42,11 @@ func (this *MeerCrypto) Update() {
 		this.Work.PoolWork.WorkData = this.Work.PoolWork.PrepQitmeerWork()
 		this.header.PackagePoolHeader(this.Work, pow.MEERXKECCAKV1)
 	} else {
-		randStr := fmt.Sprintf("%s%d%d", this.Cfg.SoloConfig.RandStr, this.MinerId, this.CurrentWorkID)
+		if this.Cfg.SoloConfig.RandStr == "" {
+			this.Cfg.SoloConfig.RandStr = this.Work.Block.NodeInfo
+		}
+		arr := strings.Split(this.Cfg.SoloConfig.RandStr, ":")
+		randStr := fmt.Sprintf("%s%d%d", arr[1], this.MinerId)
 		txHash, txs := this.Work.Block.CalcCoinBase(this.Cfg, randStr, this.CurrentWorkID, this.Cfg.SoloConfig.MinerAddr)
 		this.header.PackageRpcHeader(this.Work, txs)
 		this.header.HeaderBlock.TxRoot = *txHash
@@ -70,7 +74,6 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 		case <-this.Quit.Done():
 			common.MinerLoger.Debug("mining service exit")
 			return
-		default:
 		}
 		if !this.IsValid {
 			return

@@ -13,12 +13,12 @@
 
 
 //测试主程序
-int init_drv(int num_of_chips,char *path)
+int init_drv(int num_of_chips,char *path,char *gpio)
 {
 	int fd;
 	printf("\n********************************Meer Driver %s - UART PATH:%s\n", MEER_DRV_VERSION,path);
 	//初始化算力板
-	if(meer_drv_init(&fd, num_of_chips,path)) {
+	if(meer_drv_init(&fd, num_of_chips,path,gpio)) {
 		return -1;
 	}
 

@@ -60,6 +60,7 @@ func (this *QitmeerWork) CopyNew() QitmeerWork {
 		newWork.Block = &w
 		newWork.Block.SetTxs(this.Block.transactions)
 		newWork.Block.Pow = this.Block.Pow
+		newWork.Block.NodeInfo = this.Block.NodeInfo
 		newWork.Block.ParentRoot = this.Block.ParentRoot
 		newWork.Block.Parents = this.Block.Parents
 		newWork.Block.Transactions = this.Block.Transactions
@@ -95,7 +96,11 @@ func (this *QitmeerWork) Get() bool {
 	if err != nil {
 		var r map[string]interface{}
 		_ = json.Unmarshal(body, &r)
-		common.MinerLoger.Debug("[getBlockTemplate error]", "result", string(body))
+		if strings.Contains(string(body), "download") {
+			common.MinerLoger.Warn("[getBlockTemplate warn]", "result", string(body))
+		} else {
+			common.MinerLoger.Debug("[getBlockTemplate error]", "result", string(body))
+		}
 		if this.Cfg.OptionConfig.TaskForceStop {
 			this.ForceUpdate = true
 		}
@@ -142,6 +147,13 @@ func (this *QitmeerWork) Submit(subm string) error {
 	var res getSubmitResponseJson
 	startTime := time.Now().Unix()
 	for {
+		select {
+		case <-this.Quit.Done():
+			common.MinerLoger.Debug("exit submit")
+			return nil
+		default:
+
+		}
 		// if the reason of submit error is network failed
 		// to keep the work
 		// then retry submit

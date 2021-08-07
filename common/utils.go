@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 )
 
@@ -244,4 +245,22 @@ func GetNeedHashTimesByTarget(target string) *big.Int {
 		}
 	}
 	return times
+}
+
+func Timeout(fun func(), t int64, callBack func()) {
+	tim := time.NewTicker(time.Duration(t) * time.Second)
+	defer tim.Stop()
+	complete := make(chan int)
+	go func() {
+		fun()
+		complete <- 1
+	}()
+	select {
+	case <-complete:
+		return
+	case <-tim.C:
+		callBack()
+		MinerLoger.Warn("timeout!!!")
+		return
+	}
 }
