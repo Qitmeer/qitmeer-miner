@@ -97,7 +97,7 @@ func (this *QitmeerWork) Get() bool {
 		var r map[string]interface{}
 		_ = json.Unmarshal(body, &r)
 		if strings.Contains(string(body), "download") {
-			common.MinerLoger.Warn("[getBlockTemplate warn]", "result", string(body))
+			common.MinerLoger.Warn(fmt.Sprintf("[getBlockTemplate warn] %s ", string(body)))
 		} else {
 			common.MinerLoger.Debug("[getBlockTemplate error]", "result", string(body))
 		}
