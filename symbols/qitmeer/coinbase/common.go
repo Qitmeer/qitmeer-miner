@@ -1,11 +1,10 @@
 package coinbase
 
 import (
-	`github.com/Qitmeer/qitmeer/common/hash`
-	`github.com/Qitmeer/qitmeer/core/types`
-	`github.com/Qitmeer/qitmeer/engine/txscript`
-	`github.com/Qitmeer/qitmeer/params`
-	"github.com/google/uuid"
+	"github.com/Qitmeer/qitmeer/common/hash"
+	"github.com/Qitmeer/qitmeer/core/types"
+	"github.com/Qitmeer/qitmeer/engine/txscript"
+	"github.com/Qitmeer/qitmeer/params"
 )
 
 // standardCoinbaseOpReturn creates a standard OP_RETURN output to insert into
@@ -22,9 +21,8 @@ func standardCoinbaseOpReturn(enData []byte) ([]byte, error) {
 }
 
 func standardCoinbaseScript(randStr string, nextBlockHeight uint64, extraNonce uint64) ([]byte, error) {
-	uniqueStr := uuid.New()
 	return txscript.NewScriptBuilder().AddInt64(int64(nextBlockHeight)).
-		AddInt64(int64(extraNonce)).AddData([]byte(randStr)).AddData([]byte(uniqueStr.String())).
+		AddInt64(int64(extraNonce)).AddData([]byte(randStr)).
 		Script()
 }
 
@@ -69,7 +67,7 @@ func createCoinbaseTx(subsidy uint64, coinbaseScript []byte, opReturnPkScript []
 		Sequence:   types.MaxTxInSequenceNum,
 		SignScript: coinbaseScript,
 	})
-	
+
 	hasTax := false
 	if params.BlockTaxProportion > 0 &&
 		len(params.OrganizationPkScript) > 0 {
@@ -101,21 +99,30 @@ func createCoinbaseTx(subsidy uint64, coinbaseScript []byte, opReturnPkScript []
 	}
 	// Subsidy paid to miner.
 	tx.AddTxOut(&types.TxOutput{
-		Amount:   subsidy,
+		Amount: types.Amount{
+			Id:    types.MEERID,
+			Value: int64(subsidy),
+		},
 		PkScript: pksSubsidy,
 	})
-	
+
 	// Tax output.
 	if hasTax {
 		tx.AddTxOut(&types.TxOutput{
-			Amount:   uint64(tax),
+			Amount: types.Amount{
+				Id:    types.MEERID,
+				Value: int64(tax),
+			},
 			PkScript: params.OrganizationPkScript,
 		})
 	}
 	// nulldata.
 	if opReturnPkScript != nil {
 		tx.AddTxOut(&types.TxOutput{
-			Amount:   0,
+			Amount: types.Amount{
+				Id:    types.MEERID,
+				Value: int64(tax),
+			},
 			PkScript: opReturnPkScript,
 		})
 	}

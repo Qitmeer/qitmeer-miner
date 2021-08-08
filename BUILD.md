@@ -68,7 +68,8 @@ $ sh installLibrary.sh
 //# mac
 $ go build --tags opencl
 //# linux apt install musl-tools g++ -y
-$ CGO_ENABLED=1 CC=musl-gcc CXX=g++ GOOS=linux go build -tags cuda -o linux-miner main.go
+$ apt-get install gcc-arm*
+$ CGO_ENABLED=1 GOOS=linux GOARCH=arm CC=arm-linux-gnueabihf-gcc go build -a --tags asic
 //# windows 
 $ CGO_ENABLED=1 GOOS=windows GOARCH=amd64 go build -tags cuda -o win-miner.exe main.go
 ```

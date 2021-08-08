@@ -4,98 +4,53 @@
 package qitmeer
 
 import (
+	"context"
+	"encoding/hex"
 	"fmt"
-	"github.com/Qitmeer/go-opencl/cl"
 	"github.com/Qitmeer/qitmeer-miner/common"
 	"github.com/Qitmeer/qitmeer-miner/core"
 	"github.com/Qitmeer/qitmeer-miner/stats_server"
+	"github.com/Qitmeer/qitmeer/core/types"
+	"github.com/Qitmeer/qitmeer/rpc/client"
+	"github.com/Qitmeer/qitmeer/rpc/client/cmds"
+	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
 const (
-	POW_DOUBLE_BLAKE2B    = "blake2bd"
-	POW_CUCKROO           = "cuckaroo"
-	POW_CUCKROOM          = "cuckaroom"
-	POW_CUCKROO29         = "cuckaroo29"
-	POW_CUCKTOO           = "cuckatoo"
-	POW_X8R16             = "x8r16"
-	POW_X16RV3            = "x16rv3"
-	POW_QITMEER_KECCAK256 = "qitmeer_keccak256"
+	POW_MEER_CRYPTO = "meer_crypto"
 )
+
+type PendingBlock struct {
+	CoinbaseHash string
+	Height       uint64
+	BlockHash    string
+}
 
 type QitmeerRobot struct {
 	core.MinerRobot
 	Work                 QitmeerWork
 	Devices              []core.BaseDevice
 	Stratu               *QitmeerStratum
+	StratuFee            *QitmeerStratum
 	AllTransactionsCount int64
+	PendingBlocks        map[string]PendingBlock
+	PendingLock          sync.Mutex
+	WsClient             *client.Client
 }
 
-func (this *QitmeerRobot) GetPow(i int, device *cl.Device) core.BaseDevice {
+func (this *QitmeerRobot) GetPow(i int, ctx context.Context, uart_path string) core.BaseDevice {
 	switch this.Cfg.NecessaryConfig.Pow {
-	case POW_CUCKROOM:
-		if !this.Cfg.OptionConfig.Cuda {
-			deviceMiner := &Cuckaroo{}
-			deviceMiner.MiningType = "cuckaroom"
-			deviceMiner.Init(i, device, this.Pool, this.Quit, this.Cfg)
-			this.Devices = append(this.Devices, deviceMiner)
-			return deviceMiner
-		} else {
-			deviceMiner := &CudaCuckaroom{}
-			deviceMiner.MiningType = "cuckaroom"
-			deviceMiner.Init(i, device, this.Pool, this.Quit, this.Cfg)
-			this.Devices = append(this.Devices, deviceMiner)
-			return deviceMiner
-		}
-	case POW_CUCKROO:
-		if !this.Cfg.OptionConfig.Cuda {
-			deviceMiner := &Cuckaroo{}
-			deviceMiner.MiningType = "cuckaroo"
-			deviceMiner.Init(i, device, this.Pool, this.Quit, this.Cfg)
-			this.Devices = append(this.Devices, deviceMiner)
-			return deviceMiner
-		} else {
-			deviceMiner := &CudaCuckaroo{}
-			deviceMiner.MiningType = "cuckaroo"
-			deviceMiner.Init(i, device, this.Pool, this.Quit, this.Cfg)
-			this.Devices = append(this.Devices, deviceMiner)
-			return deviceMiner
-		}
-
-	case POW_CUCKTOO:
-		deviceMiner := &Cuckatoo{}
-		deviceMiner.MiningType = "cuckatoo"
-		deviceMiner.Init(i, device, this.Pool, this.Quit, this.Cfg)
-		this.Devices = append(this.Devices, deviceMiner)
-		return deviceMiner
-	case POW_DOUBLE_BLAKE2B:
-		deviceMiner := &Blake2bD{}
-		deviceMiner.MiningType = "blake2bd"
-		deviceMiner.Init(i, device, this.Pool, this.Quit, this.Cfg)
-		this.Devices = append(this.Devices, deviceMiner)
-		return deviceMiner
-	case POW_X8R16:
-		deviceMiner := &X8r16{}
-		deviceMiner.MiningType = "x8r16"
-		deviceMiner.Init(i, device, this.Pool, this.Quit, this.Cfg)
-		this.Devices = append(this.Devices, deviceMiner)
-		return deviceMiner
-	case POW_X16RV3:
-		deviceMiner := &X16rv3{}
-		deviceMiner.MiningType = "x16rv3"
-		deviceMiner.Init(i, device, this.Pool, this.Quit, this.Cfg)
-		this.Devices = append(this.Devices, deviceMiner)
-		return deviceMiner
-	case POW_QITMEER_KECCAK256:
-		deviceMiner := &OpenCLKeccak256{}
-		deviceMiner.MiningType = "keccak256"
-		deviceMiner.Init(i, device, this.Pool, this.Quit, this.Cfg)
+	case POW_MEER_CRYPTO:
+		deviceMiner := &MeerCrypto{}
+		deviceMiner.MiningType = "meer_crypto"
+		deviceMiner.UartPath = uart_path
+		deviceMiner.Init(i, this.Pool, ctx, this.Cfg)
 		this.Devices = append(this.Devices, deviceMiner)
 		return deviceMiner
 
@@ -105,27 +60,35 @@ func (this *QitmeerRobot) GetPow(i int, device *cl.Device) core.BaseDevice {
 	return nil
 }
 
-func (this *QitmeerRobot) InitDevice() {
+func (this *QitmeerRobot) InitDevice(ctx context.Context) {
 	this.MinerRobot.InitDevice()
-	for i, device := range this.ClDevices {
-		deviceMiner := this.GetPow(i, device)
-		if deviceMiner == nil {
-			return
+	if this.Cfg.OptionConfig.CPUMiner {
+		for i := 0; i < this.Cfg.OptionConfig.CpuWorkers; i++ {
+			this.GetPow(i, ctx, "")
+		}
+	} else {
+		uartPaths := strings.Split(this.Cfg.OptionConfig.UartPath, ",")
+		for i := 0; i < len(uartPaths); i++ {
+			if uartPaths[i] == "" {
+				continue
+			}
+			this.GetPow(i, ctx, uartPaths[i])
 		}
 	}
+
 }
 
 // runing
-func (this *QitmeerRobot) Run() {
+func (this *QitmeerRobot) Run(ctx context.Context) {
 	this.Wg = &sync.WaitGroup{}
-	this.InitDevice()
-	//mining service
+	this.Quit = ctx
+	this.InitDevice(ctx)
 	connectName := "solo"
 	this.Pool = false
-	if this.Cfg.PoolConfig.Pool != "" { //is pool mode
+	if this.Cfg.PoolConfig.Pool != "" { // is pool mode
 		connectName = "pool"
 		this.Stratu = &QitmeerStratum{}
-		_ = this.Stratu.StratumConn(this.Cfg)
+		_ = this.Stratu.StratumConn(this.Cfg, ctx)
 		this.Wg.Add(1)
 		go func() {
 			defer this.Wg.Done()
@@ -133,11 +96,12 @@ func (this *QitmeerRobot) Run() {
 		}()
 		this.Pool = true
 	}
-	common.MinerLoger.Info(fmt.Sprintf("%s miner start", connectName))
+	common.MinerLoger.Info(fmt.Sprintf("[%s miner] start", connectName))
 	this.Work = QitmeerWork{}
 	this.Work.Cfg = this.Cfg
 	this.Work.Rpc = this.Rpc
 	this.Work.stra = this.Stratu
+	this.Work.Quit = this.Quit
 	// Device Miner
 	for _, dev := range this.Devices {
 		dev.SetIsValid(true)
@@ -164,14 +128,21 @@ func (this *QitmeerRobot) Run() {
 		defer this.Wg.Done()
 		this.SubmitWork()
 	}()
-	//submit status
+	// submit status
 	this.Wg.Add(1)
 	go func() {
 		defer this.Wg.Done()
 		this.Status()
 	}()
+	if this.Cfg.PoolConfig.Pool == "" {
+		this.Wg.Add(1)
+		go func() {
+			defer this.Wg.Done()
+			this.HandlePendingBlocks()
+		}()
+	}
 
-	//http server stats
+	// http server stats
 	if this.Cfg.OptionConfig.StatsServer != "" {
 		this.Wg.Add(1)
 		go func() {
@@ -179,7 +150,6 @@ func (this *QitmeerRobot) Run() {
 			stats_server.HandleRouter(this.Cfg, this.Devices)
 		}()
 	}
-
 	this.Wg.Wait()
 }
 
@@ -192,7 +162,8 @@ func (this *QitmeerRobot) ListenWork() {
 	r := false
 	for {
 		select {
-		case <-this.Quit:
+		case <-this.Quit.Done():
+			common.MinerLoger.Debug("listen new work service exit")
 			return
 		case <-t.C:
 			r = false
@@ -202,7 +173,7 @@ func (this *QitmeerRobot) ListenWork() {
 				r = this.Work.Get() // get new work
 			}
 			if r {
-				common.MinerLoger.Debug("new task started")
+				common.MinerLoger.Debug("New task coming")
 				validDeviceCount := 0
 				for _, dev := range this.Devices {
 					if !dev.GetIsValid() {
@@ -222,7 +193,7 @@ func (this *QitmeerRobot) ListenWork() {
 				}
 			} else if this.Work.ForceUpdate {
 				for _, dev := range this.Devices {
-					common.MinerLoger.Debug("task stopped by force")
+					common.MinerLoger.Debug("Task stopped by force")
 					dev.SetNewWork(&this.Work)
 					dev.SetForceUpdate(true)
 				}
@@ -235,6 +206,7 @@ func (this *QitmeerRobot) ListenWork() {
 func (this *QitmeerRobot) SubmitWork() {
 	common.MinerLoger.Info("listen submit block server")
 	this.Wg.Add(1)
+	lock := sync.Mutex{}
 	go func() {
 		defer this.Wg.Done()
 		str := ""
@@ -242,13 +214,14 @@ func (this *QitmeerRobot) SubmitWork() {
 		var count int
 		var arr []string
 		for {
-			common.MinerLoger.Debug("===============================Listen Submit=====================")
 			select {
-			case <-this.Quit:
+			case <-this.Quit.Done():
+				close(this.SubmitStr)
+				common.MinerLoger.Debug("submit service exit")
 				return
 			case str = <-this.SubmitStr:
 				if str == "" {
-					atomic.AddUint64(&this.StaleShares, 1)
+					this.StaleShares++
 					continue
 				}
 				var err error
@@ -268,19 +241,71 @@ func (this *QitmeerRobot) SubmitWork() {
 				if err != nil {
 					if err != ErrSameWork || err == ErrSameWork {
 						if err == ErrStratumStaleWork {
-							atomic.AddUint64(&this.StaleShares, 1)
+							this.StaleShares++
 						} else {
-							atomic.AddUint64(&this.InvalidShares, 1)
+							this.InvalidShares++
 						}
 					}
 				} else {
-					atomic.AddUint64(&this.ValidShares, 1)
-					if !this.Pool {
+					if !this.Pool { // solo
+						lock.Lock()
+						serializedBlock, err := hex.DecodeString(block)
+						if err != nil {
+							common.MinerLoger.Error(err.Error())
+							continue
+						}
+						block, err := types.NewBlockFromBytes(serializedBlock)
+						if err != nil {
+							common.MinerLoger.Error(err.Error())
+							continue
+						}
+						hei, _ := strconv.Atoi(height)
+						this.PendingLock.Lock()
+						this.PendingBlocks[block.Block().Transactions[0].TxHash().String()] = PendingBlock{
+							Height:       uint64(hei),
+							BlockHash:    block.Block().BlockHash().String(),
+							CoinbaseHash: block.Block().Transactions[0].TxHash().String(),
+						}
+						this.PendingShares++
+						common.Timeout(func() {
+							err = this.WsClient.NotifyTxsConfirmed([]cmds.TxConfirm{
+								{
+									Txid:          block.Block().Transactions[0].TxHash().String(),
+									Confirmations: int32(this.Cfg.SoloConfig.ConfirmHeight),
+								},
+							})
+							if err != nil {
+								common.MinerLoger.Error(err.Error())
+							}
+						}, 10, func() {
+							this.WsClient.Shutdown()
+							this.WsConnect()
+							txes := make([]cmds.TxConfirm, 0)
+							txes = append(txes, cmds.TxConfirm{
+								Txid:          block.Block().Transactions[0].TxHash().String(),
+								Confirmations: int32(this.Cfg.SoloConfig.ConfirmHeight),
+							})
+							for _, v := range this.PendingBlocks {
+								txes = append(txes, cmds.TxConfirm{
+									Txid:          v.CoinbaseHash,
+									Confirmations: int32(this.Cfg.SoloConfig.ConfirmHeight),
+								})
+							}
+							err = this.WsClient.NotifyTxsConfirmed(txes)
+							if err != nil {
+								common.MinerLoger.Error(err.Error())
+							}
+						})
+						this.PendingLock.Unlock()
 						count, _ = strconv.Atoi(txCount)
 						this.AllTransactionsCount += int64(count)
-						logContent = fmt.Sprintf("receive block, block height = %s,Including %s transactions; Received Total transactions = %d\n",
+						logContent = fmt.Sprintf("receive block, block hash= %s, block height = %s,Including %s transactions; Received Total transactions = %d\n",
+							block.Block().BlockHash().String(),
 							height, txCount, this.AllTransactionsCount)
-						common.MinerLoger.Info(logContent)
+						common.MinerLoger.Debug(logContent)
+						lock.Unlock()
+					} else {
+						this.ValidShares++
 					}
 				}
 			}
@@ -295,34 +320,124 @@ func (this *QitmeerRobot) SubmitWork() {
 // stats the submit result
 func (this *QitmeerRobot) Status() {
 	var valid, rejected, staleShares uint64
+	t := time.NewTicker(10 * time.Second)
+	defer t.Stop()
 	for {
 		select {
-		case <-this.Quit:
+		case <-this.Quit.Done():
+			common.MinerLoger.Debug("global stats service exit")
 			return
-		default:
+		case <-t.C:
 			if this.Work.stra == nil && this.Work.Block == nil {
-				common.Usleep(20 * 1000)
 				continue
 			}
-			valid = atomic.LoadUint64(&this.ValidShares)
-			rejected = atomic.LoadUint64(&this.InvalidShares)
-			staleShares = atomic.LoadUint64(&this.StaleShares)
+			if this.Cfg.PoolConfig.Pool == "" {
+				this.PendingLock.Lock()
+				for i, v := range this.PendingBlocks {
+					if this.Work.Block.Height > v.Height+this.Cfg.SoloConfig.NotConfirmHeight {
+						common.MinerLoger.Info("[Invalid Blocks]", "block hash", v.BlockHash, "coinbase hash", v.CoinbaseHash, "height", v.Height)
+						this.InvalidShares++
+						this.PendingShares--
+						delete(this.PendingBlocks, i)
+					}
+				}
+				this.PendingLock.Unlock()
+			}
+			valid = this.ValidShares
+			rejected = this.InvalidShares
+			staleShares = this.StaleShares
 			if this.Pool {
-				valid = atomic.LoadUint64(&this.Stratu.ValidShares)
-				rejected = atomic.LoadUint64(&this.Stratu.InvalidShares)
-				staleShares = atomic.LoadUint64(&this.Stratu.StaleShares)
+				valid = this.Stratu.ValidShares
+				rejected = this.Stratu.InvalidShares
+				staleShares = this.Stratu.StaleShares
 			}
 			this.Cfg.OptionConfig.Accept = int(valid)
 			this.Cfg.OptionConfig.Reject = int(rejected)
 			this.Cfg.OptionConfig.Stale = int(staleShares)
-			total := valid + rejected + staleShares
-			common.MinerLoger.Info(fmt.Sprintf("Global stats: Accepted: %v,Stale: %v, Rejected: %v, Total: %v",
+			total := valid + rejected + staleShares + this.PendingShares
+			common.MinerLoger.Info(fmt.Sprintf("Global stats: Accepted: %v,Pending: %v,Stale: %v, Rejected: %v, Total: %v",
 				valid,
+				this.PendingShares,
 				staleShares,
 				rejected,
 				total,
 			))
-			common.Usleep(20 * 1000)
 		}
+	}
+}
+
+// stats the submit result
+func (this *QitmeerRobot) HandlePendingBlocks() {
+	this.WsConnect()
+	for {
+		select {
+		case <-this.Quit.Done():
+			common.MinerLoger.Debug("Exit Websocket")
+			if this.WsClient != nil && !this.WsClient.Disconnected() {
+				this.WsClient.Shutdown()
+			}
+			return
+		}
+	}
+}
+
+func (this *QitmeerRobot) WsConnect() {
+	var err error
+	ntfnHandlers := client.NotificationHandlers{
+		OnTxConfirm: func(txConfirm *cmds.TxConfirmResult) {
+			this.PendingLock.Lock()
+			common.MinerLoger.Debug("OnTxConfirm", "tx", txConfirm.Tx, "confirms", txConfirm.Confirms, "order", txConfirm.Order)
+			if _, ok := this.PendingBlocks[txConfirm.Tx]; ok && txConfirm.Confirms >= this.Cfg.SoloConfig.ConfirmHeight {
+				//
+				this.PendingShares--
+				this.ValidShares++
+				delete(this.PendingBlocks, txConfirm.Tx)
+			}
+			this.PendingLock.Unlock()
+		},
+		OnNodeExit: func(p *cmds.NodeExitNtfn) {
+			common.MinerLoger.Debug("OnNodeExit")
+		},
+	}
+	protocol := "ws"
+	if !this.Cfg.SoloConfig.NoTLS {
+		protocol = "wss"
+	}
+	url := this.Cfg.SoloConfig.RPCServer
+	noTls := this.Cfg.SoloConfig.NoTLS
+	if strings.Contains(this.Cfg.SoloConfig.RPCServer, "://") {
+		arr := strings.Split(url, "://")
+		url = arr[1]
+		protocol = "ws"
+		if arr[0] == "https" {
+			noTls = false
+			arr[0] = "wss"
+		}
+	}
+	connCfg := &client.ConnConfig{
+		Host:       url,
+		Endpoint:   protocol,
+		User:       this.Cfg.SoloConfig.RPCUser,
+		Pass:       this.Cfg.SoloConfig.RPCPassword,
+		DisableTLS: noTls,
+	}
+	if !connCfg.DisableTLS {
+		certs, err := ioutil.ReadFile(this.Cfg.SoloConfig.RPCCert)
+		if err != nil {
+			common.MinerLoger.Error(err.Error())
+			return
+		}
+		connCfg.Certificates = certs
+	}
+
+	this.WsClient, err = client.New(connCfg, &ntfnHandlers)
+	if err != nil {
+		common.MinerLoger.Error(err.Error())
+		return
+	}
+	// Register for block connect and disconnect notifications.
+	if err := this.WsClient.NotifyBlocks(); err != nil {
+		common.MinerLoger.Error(err.Error())
+		return
 	}
 }

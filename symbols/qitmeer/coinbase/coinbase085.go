@@ -1,7 +1,7 @@
 package coinbase
 
 import (
-	`github.com/Qitmeer/qitmeer/core/types`
+	"github.com/Qitmeer/qitmeer/core/types"
 )
 
 type Coinbase085 struct {
@@ -15,10 +15,9 @@ func (this *Coinbase085) GetCoinbaseTx() *types.Tx {
 	subsidy := this.CoinbaseValue
 	subsidy -= this.TotalFee
 	coinbaseTx := this.CalcCoinbaseTx(subsidy)
-	if coinbaseTx == nil{
+	if coinbaseTx == nil {
 		return nil
 	}
-	coinbaseTx.Tx.TxOut[0].Amount += uint64(this.PackTxTotalFee)
+	coinbaseTx.Tx.TxOut[0].Amount.Value += int64(this.PackTxTotalFee)
 	return coinbaseTx
 }
-

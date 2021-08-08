@@ -60,6 +60,7 @@ func (this *QitmeerWork) CopyNew() QitmeerWork {
 		newWork.Block = &w
 		newWork.Block.SetTxs(this.Block.transactions)
 		newWork.Block.Pow = this.Block.Pow
+		newWork.Block.NodeInfo = this.Block.NodeInfo
 		newWork.Block.ParentRoot = this.Block.ParentRoot
 		newWork.Block.Parents = this.Block.Parents
 		newWork.Block.Transactions = this.Block.Transactions
@@ -71,10 +72,19 @@ func (this *QitmeerWork) CopyNew() QitmeerWork {
 	return newWork
 }
 
+func (this *QitmeerWork) GetPowType() pow.PowType {
+	switch this.Cfg.NecessaryConfig.Pow {
+	case POW_MEER_CRYPTO:
+		return pow.MEERXKECCAKV1
+	default:
+		return pow.BLAKE2BD
+	}
+}
+
 //GetBlockTemplate
 func (this *QitmeerWork) Get() bool {
 	this.ForceUpdate = false
-	body := this.Rpc.RpcResult("getBlockTemplate", []interface{}{[]string{}})
+	body := this.Rpc.RpcResult("getBlockTemplate", []interface{}{[]string{}, this.GetPowType()})
 	if body == nil {
 		if this.Cfg.OptionConfig.TaskForceStop {
 			this.ForceUpdate = true
@@ -86,13 +96,16 @@ func (this *QitmeerWork) Get() bool {
 	if err != nil {
 		var r map[string]interface{}
 		_ = json.Unmarshal(body, &r)
-		common.MinerLoger.Debug("[getBlockTemplate error]", "result", string(body))
+		if strings.Contains(string(body), "download") {
+			common.MinerLoger.Warn(fmt.Sprintf("[getBlockTemplate warn] %s ", string(body)))
+		} else {
+			common.MinerLoger.Debug("[getBlockTemplate error]", "result", string(body))
+		}
 		if this.Cfg.OptionConfig.TaskForceStop {
 			this.ForceUpdate = true
 		}
 		return false
 	}
-
 	if this.Block != nil && this.Block.Height == blockTemplate.Result.Height &&
 		(time.Now().Unix()-this.GetWorkTime) < int64(this.Cfg.OptionConfig.Timeout)*10 {
 		//not has new work
@@ -102,54 +115,12 @@ func (this *QitmeerWork) Get() bool {
 	target := ""
 	n := new(big.Int)
 	switch this.Cfg.NecessaryConfig.Pow {
-	case POW_DOUBLE_BLAKE2B:
-		blockTemplate.Result.Pow = pow.GetInstance(pow.BLAKE2BD, 0, []byte{})
-		target = blockTemplate.Result.PowDiffReference.Blake2bTarget
+	case POW_MEER_CRYPTO:
+		blockTemplate.Result.Pow = pow.GetInstance(pow.MEERXKECCAKV1, 0, []byte{})
+		target = blockTemplate.Result.PowDiffReference.Target
 		n, _ = n.SetString(target, 16)
 		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
 		blockTemplate.Result.Target = target
-	case POW_X8R16:
-		blockTemplate.Result.Pow = pow.GetInstance(pow.X8R16, 0, []byte{})
-		target = blockTemplate.Result.PowDiffReference.X8r16Target
-		n, _ = n.SetString(target, 16)
-		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
-		blockTemplate.Result.Target = target
-	case POW_QITMEER_KECCAK256:
-		blockTemplate.Result.Pow = pow.GetInstance(pow.QITMEERKECCAK256, 0, []byte{})
-		target = blockTemplate.Result.PowDiffReference.QitmeerKeccak256Target
-		n, _ = n.SetString(target, 16)
-		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
-		blockTemplate.Result.Target = target
-	case POW_X16RV3:
-		blockTemplate.Result.Pow = pow.GetInstance(pow.X16RV3, 0, []byte{})
-		target = blockTemplate.Result.PowDiffReference.X16rv3Target
-		n, _ = n.SetString(target, 16)
-		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
-		blockTemplate.Result.Target = target
-	case POW_CUCKROO:
-		fallthrough
-	case POW_CUCKROO29:
-		blockTemplate.Result.Pow = pow.GetInstance(pow.CUCKAROO, 0, []byte{})
-		powStruct := blockTemplate.Result.Pow.(*pow.Cuckaroo)
-		powStruct.SetEdgeBits(24)
-		n.SetUint64(blockTemplate.Result.PowDiffReference.CuckarooMinDiff)
-		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
-		target = fmt.Sprintf("min difficulty %d", blockTemplate.Result.PowDiffReference.CuckarooMinDiff)
-		blockTemplate.Result.Target = fmt.Sprintf("%064x", blockTemplate.Result.PowDiffReference.CuckarooMinDiff)
-	case POW_CUCKROOM:
-		blockTemplate.Result.Pow = pow.GetInstance(pow.CUCKAROOM, 0, []byte{})
-		n.SetUint64(blockTemplate.Result.PowDiffReference.CuckaroomMinDiff)
-		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
-		target = fmt.Sprintf("min difficulty %d", blockTemplate.Result.PowDiffReference.CuckaroomMinDiff)
-		blockTemplate.Result.Target = fmt.Sprintf("%064x", blockTemplate.Result.PowDiffReference.CuckaroomMinDiff)
-	case POW_CUCKTOO:
-		blockTemplate.Result.Pow = pow.GetInstance(pow.CUCKATOO, 0, []byte{})
-		powStruct := blockTemplate.Result.Pow.(*pow.Cuckatoo)
-		powStruct.SetEdgeBits(29)
-		n.SetUint64(blockTemplate.Result.PowDiffReference.CuckatooMinDiff)
-		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
-		target = fmt.Sprintf("min difficulty %d", blockTemplate.Result.PowDiffReference.CuckatooMinDiff)
-		blockTemplate.Result.Target = fmt.Sprintf("%064x", blockTemplate.Result.PowDiffReference.CuckatooMinDiff)
 	}
 
 	blockTemplate.Result.HasCoinbasePack = false
@@ -176,6 +147,13 @@ func (this *QitmeerWork) Submit(subm string) error {
 	var res getSubmitResponseJson
 	startTime := time.Now().Unix()
 	for {
+		select {
+		case <-this.Quit.Done():
+			common.MinerLoger.Debug("exit submit")
+			return nil
+		default:
+
+		}
 		// if the reason of submit error is network failed
 		// to keep the work
 		// then retry submit
@@ -187,7 +165,7 @@ func (this *QitmeerWork) Submit(subm string) error {
 				break
 			}
 			common.MinerLoger.Error(fmt.Sprintf("[submit error]" + string(body) + err.Error()))
-			common.Usleep(1000)
+			common.Usleep(1)
 			continue
 		}
 		break

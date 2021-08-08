@@ -6,12 +6,12 @@ package qitmeer
 import (
 	"fmt"
 	"github.com/Qitmeer/qitmeer-miner/common"
-	`github.com/Qitmeer/qitmeer-miner/symbols/qitmeer/coinbase`
+	"github.com/Qitmeer/qitmeer-miner/symbols/qitmeer/coinbase"
 	"github.com/Qitmeer/qitmeer/common/hash"
+	"github.com/Qitmeer/qitmeer/core/blockchain"
 	"github.com/Qitmeer/qitmeer/core/types"
 	"sort"
 )
-
 
 //calc coinbase
 func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig, coinbaseStr string, extraNonce uint64, payAddressS string) (*hash.Hash, []Transactions) {
@@ -57,13 +57,23 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig, coinbaseStr string,
 			totalTxFee += h.Transactions[i].Fee
 		}
 	}
-	instance := coinbase.GetNewCoinbaseInstance(int(h.Version),cfg.NecessaryConfig.Param,payAddressS,coinbaseStr,extraNonce,h.Height,h.TotalFee,uint64(h.Coinbasevalue),totalTxFee)
+	instance := coinbase.GetNewCoinbaseInstance(int(h.Version), cfg.NecessaryConfig.Param, payAddressS, coinbaseStr, extraNonce, h.Height, h.TotalFee, uint64(h.Coinbasevalue), totalTxFee)
 	// miner get tx tax
 	coinbaseTx := instance.GetCoinbaseTx()
-	if coinbaseTx == nil{
+	if coinbaseTx == nil {
 		return nil, []Transactions{}
 	}
 	h.AddCoinbaseTx(coinbaseTx)
+	blockFeesMap := types.AmountMap{}
+	for cid, val := range h.BlockFeesMap {
+		blockFeesMap[types.CoinID(cid)] = val
+	}
+	err := fillOutputsToCoinBase(coinbaseTx, blockFeesMap, nil)
+	if err != nil {
+		context := "Failed to fillOutputsToCoinBase"
+		common.MinerLoger.Error(context)
+		return nil, []Transactions{}
+	}
 	coinbaseTx = fillWitnessToCoinBase(h.transactions)
 	txBuf, err := coinbaseTx.Tx.Serialize()
 	if err != nil {
@@ -104,4 +114,23 @@ func fillWitnessToCoinBase(blockTxns []*types.Tx) *types.Tx {
 	blockTxns[0].Tx.TxIn[0].PreviousOut.Hash = witnessCommitment
 	blockTxns[0].RefreshHash()
 	return blockTxns[0]
+}
+
+func fillOutputsToCoinBase(coinbaseTx *types.Tx, blockFeesMap types.AmountMap, taxOutput *types.TxOutput) error {
+	if len(coinbaseTx.Tx.TxOut) != blockchain.CoinbaseOutput_subsidy+1 {
+		return fmt.Errorf("coinbase output error")
+	}
+	for k, v := range blockFeesMap {
+		if v <= 0 || k == types.MEERID {
+			continue
+		}
+		coinbaseTx.Tx.AddTxOut(&types.TxOutput{
+			Amount:   types.Amount{Value: 0, Id: k},
+			PkScript: coinbaseTx.Tx.TxOut[0].GetPkScript(),
+		})
+	}
+	if taxOutput != nil {
+		coinbaseTx.Tx.AddTxOut(taxOutput)
+	}
+	return nil
 }

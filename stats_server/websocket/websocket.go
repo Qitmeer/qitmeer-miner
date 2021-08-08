@@ -2,16 +2,16 @@ package websocket
 
 import (
 	"encoding/json"
+	"github.com/Qitmeer/qitmeer-miner/common"
+	"github.com/Qitmeer/qitmeer-miner/core"
 	"github.com/gorilla/websocket"
 	"github.com/twinj/uuid"
 	"math/big"
 	"net/http"
-	"github.com/Qitmeer/qitmeer-miner/common"
-	"github.com/Qitmeer/qitmeer-miner/core"
 )
 
 type StatsData struct {
-	Cfg *common.GlobalConfig
+	Cfg     *common.GlobalConfig
 	Devices []core.BaseDevice
 }
 
@@ -101,33 +101,33 @@ func (c *Client) write(data *StatsData) {
 	configD := map[string]interface{}{}
 	devStats := map[int]interface{}{}
 	allHashrate := 0.00
-	var needCalcTimes,canCalcTimes *big.Float
+	var needCalcTimes, canCalcTimes *big.Float
 	var bj []byte
 	var dev core.BaseDevice
 	for {
 		select {
 		default:
-			common.Usleep(5000)
+			common.Usleep(5)
 			allHashrate = 0.00
 			configD["config"] = *data.Cfg
 			needCalcTimes = new(big.Float).SetInt(common.GetNeedHashTimesByTarget(data.Cfg.OptionConfig.Target))
-			for _,dev = range data.Devices{
+			for _, dev = range data.Devices {
 				devStats[dev.GetMinerId()] = map[string]interface{}{
-					"hashrate":dev.GetAverageHashRate(),
-					"id":dev.GetMinerId(),
-					"name":dev.GetName(),
+					"hashrate": dev.GetAverageHashRate(),
+					"id":       dev.GetMinerId(),
+					"name":     dev.GetName(),
 				}
 				allHashrate += dev.GetAverageHashRate()
 			}
 			configD["needSec"] = 0
 			configD["blockTime"] = data.Cfg.NecessaryConfig.Param.TargetTimePerBlock
 			canCalcTimes = big.NewFloat(allHashrate)
-			if allHashrate > 0 && needCalcTimes.Cmp(big.NewFloat(0)) > 0{
-				needCalcTimes.Quo(needCalcTimes,canCalcTimes) //need seconds
+			if allHashrate > 0 && needCalcTimes.Cmp(big.NewFloat(0)) > 0 {
+				needCalcTimes.Quo(needCalcTimes, canCalcTimes) //need seconds
 				configD["needSec"] = needCalcTimes
 			}
 			configD["devices"] = devStats
-			bj , _ = json.Marshal(configD)
+			bj, _ = json.Marshal(configD)
 			_ = c.socket.WriteMessage(websocket.TextMessage, bj)
 		case message, ok := <-c.send:
 			if !ok {
@@ -139,7 +139,7 @@ func (c *Client) write(data *StatsData) {
 	}
 }
 
-func WsPage(res http.ResponseWriter, req *http.Request,statsData *StatsData) {
+func WsPage(res http.ResponseWriter, req *http.Request, statsData *StatsData) {
 	conn, err := (&websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}).Upgrade(res, req, nil)
 	if err != nil {
 		http.NotFound(res, req)

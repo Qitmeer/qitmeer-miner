@@ -2,6 +2,7 @@ package core
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 	"github.com/Qitmeer/qitmeer-miner/common"
@@ -38,6 +39,7 @@ type Stratum struct {
 	SubID         uint64
 	AuthID        uint64
 	PowType       pow.PowType
+	Quit          context.Context
 }
 
 func GetPowType(powName string) pow.PowType {
@@ -56,13 +58,15 @@ func GetPowType(powName string) pow.PowType {
 		return pow.CUCKAROOM
 	case "cuckatoo":
 		return pow.CUCKATOO
+	case "meer_crypto":
+		return pow.MEERXKECCAKV1
 	}
 	return pow.BLAKE2BD
 }
 
 // StratumConn starts the initial connection to a stratum pool and sets defaults
 // in the pool object.
-func (this *Stratum) StratumConn(cfg *common.GlobalConfig) error {
+func (this *Stratum) StratumConn(cfg *common.GlobalConfig, ctx context.Context) error {
 	this.Cfg = cfg
 	pool := cfg.PoolConfig.Pool
 	common.MinerLoger.Debug("[Connect pool]", "address", pool)
@@ -75,6 +79,7 @@ func (this *Stratum) StratumConn(cfg *common.GlobalConfig) error {
 	}
 	this.Cfg.PoolConfig.Pool = pool
 	this.ID = 1
+	this.Quit = ctx
 	this.PowType = GetPowType(cfg.NecessaryConfig.Pow)
 	this.ConnectRetry()
 	return nil
@@ -83,7 +88,13 @@ func (this *Stratum) StratumConn(cfg *common.GlobalConfig) error {
 func (this *Stratum) ConnectRetry() {
 	var err error
 	for {
-		common.Usleep(2000)
+		select {
+		case <-this.Quit.Done():
+			common.MinerLoger.Info("pool service exit")
+			return
+		default:
+		}
+		common.Usleep(2)
 		err = this.Reconnect()
 		if err != nil {
 			common.MinerLoger.Debug("[Connect error , It will reconnect after 2s].", "error", err.Error())
@@ -99,6 +110,12 @@ func (this *Stratum) Listen(handle func(data string)) {
 	var err error
 	// start := time.Now().Unix()
 	for {
+		select {
+		case <-this.Quit.Done():
+			common.MinerLoger.Info("pool service exit")
+			return
+		default:
+		}
 		if this.Reader != nil {
 			data, err = this.Reader.ReadString('\n')
 			if err != nil {
@@ -157,6 +174,8 @@ func (s *Stratum) Reconnect() error {
 
 // Auth sends a message to the pool to authorize a worker.
 func (s *Stratum) Auth() error {
+	/*
+		defaultUser := "XmWHCtdUtPyuPCNZVzHj4rhDNN7ioCG5zA8"*/
 	msg := StratumMsg{
 		Method: "mining.authorize",
 		ID:     s.ID,

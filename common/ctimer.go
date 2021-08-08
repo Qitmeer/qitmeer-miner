@@ -1,12 +1,9 @@
 package common
 
+import (
+	"time"
+)
 
-// #include <unistd.h>
-// //#include <errno.h>
-// //int usleep(useconds_t usec);
-import "C"
-
-func Usleep(sec int)  {
-	second := 1000*sec
-	C.usleep((C.uint)(second))
+func Usleep(sec int) {
+	time.Sleep(time.Second * time.Duration(sec))
 }

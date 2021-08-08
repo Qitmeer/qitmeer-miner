@@ -4,9 +4,9 @@
 package core
 
 import (
+	"context"
 	"github.com/Qitmeer/qitmeer-miner/common"
 	"sync"
-	"os"
 )
 
 type BaseWork interface {
@@ -18,12 +18,12 @@ type BaseWork interface {
 
 //standard work template
 type Work struct {
-	Cfg *common.GlobalConfig
-	Rpc *common.RpcClient
+	Cfg   *common.GlobalConfig
+	Rpc   *common.RpcClient
 	Clean bool
 	sync.Mutex
-	Quit chan os.Signal
-	Started uint32
+	Quit        context.Context
+	Started     uint32
 	GetWorkTime int64
-	LastSub string //last submit string
+	LastSub     string //last submit string
 }

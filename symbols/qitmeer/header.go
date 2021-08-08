@@ -47,6 +47,8 @@ type BlockHeader struct {
 	HasCoinbasePack bool
 	TotalFee        uint64
 	transactions    []*types.Tx
+	BlockFeesMap    map[int]int64 `json:"block_fees_map"`
+	NodeInfo        string        `json:"nodeinfo"`
 }
 
 func (h *BlockHeader) SetTxs(transactions []*types.Tx) {
