@@ -302,7 +302,7 @@ func (this *QitmeerRobot) SubmitWork() {
 						logContent = fmt.Sprintf("receive block, block hash= %s, block height = %s,Including %s transactions; Received Total transactions = %d\n",
 							block.Block().BlockHash().String(),
 							height, txCount, this.AllTransactionsCount)
-						common.MinerLoger.Debug(logContent)
+						common.MinerLoger.Info(logContent)
 						lock.Unlock()
 					} else {
 						this.ValidShares++

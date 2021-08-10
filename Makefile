@@ -5,11 +5,7 @@ RELEASE=release
 LDFLAG_DEV = -X github.com/Qitmeer/github.com/Qitmeer/qitmeer-miner/version.Build=$(DEV)-$(GITVERSION)
 LDFLAG_RELEASE = -X github.com/Qitmeer/github.com/Qitmeer/qitmeer-miner/version.Build=$(RELEASE)-$(GITVERSION)
 GOFLAGS_DEV = -ldflags "$(LDFLAG_DEV)"
-TAGS=cuda
-UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S),Darwin)
-   TAGS=opencl
-endif
+TAGS=cpu
 GOFLAGS_RELEASE = -ldflags "$(LDFLAG_RELEASE)"
 VERSION=$(shell ./build/bin/qitmeer-miner --version | grep ^qitmeer-miner | cut -d' ' -f3|cut -d'+' -f1)
 GOBIN = ./build/bin
