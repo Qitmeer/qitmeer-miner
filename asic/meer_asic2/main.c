@@ -9,7 +9,7 @@
 #include "meer.h"
 
 #define MEER_DRV_VERSION	"0.2asic"
-#define NUM_OF_CHIPS    1
+#define NUM_OF_CHIPS    14
 #define DEF_WORK_INTERVAL   60000 //ms
 
 int testwork(int fd,int sec);
