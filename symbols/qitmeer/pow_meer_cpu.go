@@ -116,6 +116,7 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 			hData := make([]byte, 128)
 			copy(hData[0:types.MaxBlockHeaderPayload-pow.PROOFDATA_LENGTH], this.header.HeaderBlock.BlockData())
 			nonce++
+			this.AllDiffOneShares++
 			b := make([]byte, 8)
 			binary.LittleEndian.PutUint64(b, nonce)
 			copy(hData[NONCESTART:NONCEEND], b)
@@ -144,7 +145,6 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 				} else {
 					subm += "-" + this.header.JobID + "-" + this.header.Exnonce2
 				}
-				this.AllDiffOneShares++
 				this.SubmitData <- subm
 				hasSubmit = true
 			}
