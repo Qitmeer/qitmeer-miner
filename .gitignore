@@ -6,7 +6,6 @@ qitmeer-miner.exe
 re
 qitmeer.conf
 CA.cert
-go.sum
 start.sh
 lib/cuckoo/target
 lib/cuckoo/target
