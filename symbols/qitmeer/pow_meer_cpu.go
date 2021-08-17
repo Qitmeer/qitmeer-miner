@@ -188,14 +188,16 @@ func (this *MeerCrypto) Status(wg *sync.WaitGroup) {
 			}
 			diff := this.GetDiff()
 			hashrate := float64(this.AllDiffOneShares) / float64(secondsElapsed)
+			mayBlockTime := diff / hashrate // sec
+			hour := mayBlockTime / 3600     // hour
 			// diff
 			unit := "H/s"
 			start := time.Unix(this.Started, 0)
-			common.MinerLoger.Info(fmt.Sprintf("# %d Start time: %s  Diff: %s HashRate: %s",
+			common.MinerLoger.Info(fmt.Sprintf("# %d Start time: %s  Diff: %s HashRate: %s maybe can calc a block per %.2f hour",
 				this.MinerId,
 				start.Format(time.RFC3339),
 				common.FormatHashRate(diff, unit),
-				common.FormatHashRate(hashrate, unit)))
+				common.FormatHashRate(hashrate, unit)), hour)
 		}
 	}
 }
