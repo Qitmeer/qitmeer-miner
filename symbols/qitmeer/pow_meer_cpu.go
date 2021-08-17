@@ -193,7 +193,7 @@ func (this *MeerCrypto) Status(wg *sync.WaitGroup) {
 			// diff
 			unit := "H/s"
 			start := time.Unix(this.Started, 0)
-			common.MinerLoger.Info(fmt.Sprintf("# %d Start time: %s  Diff: %s HashRate: %s maybe can calc a block per %.2f hour",
+			common.MinerLoger.Info(fmt.Sprintf("# %d Start time: %s  Diff: %s HashRate: %s may-block-out-per %.2f hour",
 				this.MinerId,
 				start.Format(time.RFC3339),
 				common.FormatHashRate(diff, unit),
