@@ -197,7 +197,7 @@ func (this *MeerCrypto) Status(wg *sync.WaitGroup) {
 				this.MinerId,
 				start.Format(time.RFC3339),
 				common.FormatHashRate(diff, unit),
-				common.FormatHashRate(hashrate, unit)), hour)
+				common.FormatHashRate(hashrate, unit), hour))
 		}
 	}
 }
