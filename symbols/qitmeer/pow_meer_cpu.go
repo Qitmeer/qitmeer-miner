@@ -88,6 +88,8 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 		if len(this.Work.PoolWork.WorkData) <= 0 && this.Work.Block.Height <= 0 {
 			continue
 		}
+		this.Started = time.Now().Unix()
+		this.AllDiffOneShares = 0
 		this.HasNewWork = false
 		this.CurrentWorkID = 0
 		this.header = MinerBlockData{
@@ -98,6 +100,7 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 			JobID:        "",
 		}
 		nonce := uint64(0)
+		hasSubmit := false
 		for {
 			select {
 			case <-this.Quit.Done():
@@ -113,6 +116,7 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 			hData := make([]byte, 128)
 			copy(hData[0:types.MaxBlockHeaderPayload-pow.PROOFDATA_LENGTH], this.header.HeaderBlock.BlockData())
 			nonce++
+			this.AllDiffOneShares++
 			b := make([]byte, 8)
 			binary.LittleEndian.PutUint64(b, nonce)
 			copy(hData[NONCESTART:NONCEEND], b)
@@ -129,6 +133,9 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 					}
 
 					txCount := len(this.header.Transactions) //real transaction count except coinbase
+					if txCount > 1 && hasSubmit {            // empty block just can submit once
+						break
+					}
 					subm += common.Int2varinthex(int64(txCount))
 
 					for j := 0; j < txCount; j++ {
@@ -138,8 +145,8 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 				} else {
 					subm += "-" + this.header.JobID + "-" + this.header.Exnonce2
 				}
-				this.AllDiffOneShares++
 				this.SubmitData <- subm
+				hasSubmit = true
 			}
 		}
 	}
@@ -180,16 +187,17 @@ func (this *MeerCrypto) Status(wg *sync.WaitGroup) {
 				continue
 			}
 			diff := this.GetDiff()
-			hashrate := float64(this.AllDiffOneShares) / float64(secondsElapsed) * diff
+			hashrate := float64(this.AllDiffOneShares) / float64(secondsElapsed)
+			mayBlockTime := diff / hashrate // sec
+			hour := mayBlockTime / 3600     // hour
 			// diff
 			unit := "H/s"
 			start := time.Unix(this.Started, 0)
-			common.MinerLoger.Info(fmt.Sprintf("# %d Start time: %s  Diff: %s All Shares: %d HashRate: %s",
+			common.MinerLoger.Info(fmt.Sprintf("# %d Start time: %s  Diff: %s HashRate: %s may-block-out-per %.2f hour",
 				this.MinerId,
 				start.Format(time.RFC3339),
 				common.FormatHashRate(diff, unit),
-				this.AllDiffOneShares,
-				common.FormatHashRate(hashrate, unit)))
+				common.FormatHashRate(hashrate, unit), hour))
 		}
 	}
 }

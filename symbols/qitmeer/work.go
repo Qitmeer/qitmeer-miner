@@ -97,12 +97,12 @@ func (this *QitmeerWork) Get() bool {
 		var r map[string]interface{}
 		_ = json.Unmarshal(body, &r)
 		if strings.Contains(string(body), "download") {
-			common.MinerLoger.Warn(fmt.Sprintf("[getBlockTemplate warn] %s ", string(body)))
+			common.MinerLoger.Warn(fmt.Sprintf("[getBlockTemplate warn] wait for newest task"))
 		} else {
 			common.MinerLoger.Debug("[getBlockTemplate error]", "result", string(body))
-		}
-		if this.Cfg.OptionConfig.TaskForceStop {
-			this.ForceUpdate = true
+			if this.Cfg.OptionConfig.TaskForceStop {
+				this.ForceUpdate = true
+			}
 		}
 		return false
 	}
