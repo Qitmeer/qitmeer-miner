@@ -91,8 +91,8 @@ type SoloConfig struct {
 	RandStr          string `long:"randstr" description:"Rand String,Your Unique Marking." default-mask:""`
 	NoTLS            bool   `long:"notls" description:"Do not verify tls certificates" default-mask:"true"`
 	RPCCert          string `long:"rpccert" description:"RPC server certificate chain for validation"`
-	ConfirmHeight    uint64 `long:"confirmheight" description:"min confirm height" default-mask:"5"`
-	NotConfirmHeight uint64 `long:"notconfirmheight" description:"min confirm height" default-mask:"50"`
+	ConfirmHeight    uint64 `long:"confirmheight" description:"min confirm height" default-mask:"3"`
+	NotConfirmHeight uint64 `long:"notconfirmheight" description:"min confirm height" default-mask:"50000000"`
 }
 
 type NecessaryConfig struct {
