@@ -98,6 +98,7 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 			JobID:        "",
 		}
 		nonce := uint64(0)
+		hasSubmit := false
 		for {
 			select {
 			case <-this.Quit.Done():
@@ -129,6 +130,9 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 					}
 
 					txCount := len(this.header.Transactions) //real transaction count except coinbase
+					if txCount > 1 && hasSubmit {            // empty block just can submit once
+						break
+					}
 					subm += common.Int2varinthex(int64(txCount))
 
 					for j := 0; j < txCount; j++ {
@@ -140,6 +144,7 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 				}
 				this.AllDiffOneShares++
 				this.SubmitData <- subm
+				hasSubmit = true
 			}
 		}
 	}
