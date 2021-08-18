@@ -268,6 +268,9 @@ func (this *QitmeerRobot) SubmitWork() {
 						}
 						this.PendingShares++
 						common.Timeout(func() {
+							if this.WsClient == nil || this.WsClient.Disconnected() {
+								return
+							}
 							err = this.WsClient.NotifyTxsConfirmed([]cmds.TxConfirm{
 								{
 									Txid:          block.Block().Transactions[0].TxHash().String(),
@@ -280,6 +283,9 @@ func (this *QitmeerRobot) SubmitWork() {
 						}, 10, func() {
 							this.WsClient.Shutdown()
 							this.WsConnect()
+							if this.WsClient == nil || this.WsClient.Disconnected() {
+								return
+							}
 							txes := make([]cmds.TxConfirm, 0)
 							txes = append(txes, cmds.TxConfirm{
 								Txid:          block.Block().Transactions[0].TxHash().String(),

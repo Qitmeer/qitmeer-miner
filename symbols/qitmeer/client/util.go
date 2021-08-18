@@ -39,7 +39,7 @@ const (
 
 	// connectionRetryInterval is the amount of time to wait in between
 	// retries when automatically reconnecting to an RPC server.
-	connectionRetryInterval = time.Second * 5
+	connectionRetryInterval = time.Second * 1
 )
 
 type sendPostDetails struct {
