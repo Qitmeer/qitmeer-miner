@@ -836,6 +836,9 @@ out:
 				if scaledDuration > time.Minute {
 					scaledDuration = time.Minute
 				}
+				if c.retryCount >= 3 {
+					break out
+				}
 				log.Info(fmt.Sprintf("Retrying connection to %s in "+
 					"%s", c.config.Host, scaledDuration))
 				time.Sleep(scaledDuration)
