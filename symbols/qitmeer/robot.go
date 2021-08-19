@@ -267,41 +267,24 @@ func (this *QitmeerRobot) SubmitWork() {
 							CoinbaseHash: block.Block().Transactions[0].TxHash().String(),
 						}
 						this.PendingShares++
-						common.Timeout(func() {
-							if this.WsClient == nil || this.WsClient.Disconnected() {
-								return
-							}
-							err = this.WsClient.NotifyTxsConfirmed([]cmds.TxConfirm{
-								{
-									Txid:          block.Block().Transactions[0].TxHash().String(),
-									Confirmations: int32(this.Cfg.SoloConfig.ConfirmHeight),
-								},
-							})
-							if err != nil {
-								common.MinerLoger.Error(err.Error())
-							}
-						}, 10, func() {
-							this.WsClient.Shutdown()
-							this.WsConnect()
-							if this.WsClient == nil || this.WsClient.Disconnected() {
-								return
-							}
-							txes := make([]cmds.TxConfirm, 0)
+						if this.WsClient == nil || this.WsClient.Disconnected() {
+							return
+						}
+						txes := make([]cmds.TxConfirm, 0)
+						txes = append(txes, cmds.TxConfirm{
+							Txid:          block.Block().Transactions[0].TxHash().String(),
+							Confirmations: int32(this.Cfg.SoloConfig.ConfirmHeight),
+						})
+						for _, v := range this.PendingBlocks {
 							txes = append(txes, cmds.TxConfirm{
-								Txid:          block.Block().Transactions[0].TxHash().String(),
+								Txid:          v.CoinbaseHash,
 								Confirmations: int32(this.Cfg.SoloConfig.ConfirmHeight),
 							})
-							for _, v := range this.PendingBlocks {
-								txes = append(txes, cmds.TxConfirm{
-									Txid:          v.CoinbaseHash,
-									Confirmations: int32(this.Cfg.SoloConfig.ConfirmHeight),
-								})
-							}
-							err = this.WsClient.NotifyTxsConfirmed(txes)
-							if err != nil {
-								common.MinerLoger.Error(err.Error())
-							}
-						})
+						}
+						err = this.WsClient.NotifyTxsConfirmed(txes)
+						if err != nil {
+							common.MinerLoger.Error(err.Error())
+						}
 						this.PendingLock.Unlock()
 						count, _ = strconv.Atoi(txCount)
 						this.AllTransactionsCount += int64(count)
