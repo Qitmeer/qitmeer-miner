@@ -46,7 +46,7 @@ func (this *MeerCrypto) Update() {
 			this.Cfg.SoloConfig.RandStr = this.Work.Block.NodeInfo
 		}
 		arr := strings.Split(this.Cfg.SoloConfig.RandStr, ":")
-		randStr := fmt.Sprintf("%d%s", this.MinerId, arr[1])
+		randStr := fmt.Sprintf("%d%s%s", this.MinerId, this.Work.Block.CoinbaseVersion, arr[1])
 		txHash, txs := this.Work.Block.CalcCoinBase(this.Cfg, randStr, this.CurrentWorkID, this.Cfg.SoloConfig.MinerAddr)
 		this.header.PackageRpcHeader(this.Work, txs)
 		this.header.HeaderBlock.TxRoot = *txHash
@@ -133,7 +133,7 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 					}
 
 					txCount := len(this.header.Transactions) //real transaction count except coinbase
-					if txCount > 1 && hasSubmit {            // empty block just can submit once
+					if txCount <= 1 && hasSubmit {           // empty block just can submit once
 						break
 					}
 					subm += common.Int2varinthex(int64(txCount))

@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"github.com/Qitmeer/qitmeer-miner/common"
 	"github.com/Qitmeer/qitmeer-miner/core"
-	"github.com/Qitmeer/qitmeer-miner/stats_server"
 	"github.com/Qitmeer/qitmeer-miner/symbols/qitmeer/client"
 	"github.com/Qitmeer/qitmeer-miner/symbols/qitmeer/client/cmds"
 	"github.com/Qitmeer/qitmeer/core/types"
@@ -142,14 +141,6 @@ func (this *QitmeerRobot) Run(ctx context.Context) {
 		}()
 	}
 
-	// http server stats
-	if this.Cfg.OptionConfig.StatsServer != "" {
-		this.Wg.Add(1)
-		go func() {
-			defer this.Wg.Done()
-			stats_server.HandleRouter(this.Cfg, this.Devices)
-		}()
-	}
 	this.Wg.Wait()
 }
 
@@ -281,10 +272,15 @@ func (this *QitmeerRobot) SubmitWork() {
 								Confirmations: int32(this.Cfg.SoloConfig.ConfirmHeight),
 							})
 						}
-						err = this.WsClient.NotifyTxsConfirmed(txes)
-						if err != nil {
-							common.MinerLoger.Error(err.Error())
-						}
+						common.Timeout(func() {
+							err = this.WsClient.NotifyTxsConfirmed(txes)
+							if err != nil {
+								common.MinerLoger.Error(err.Error())
+							}
+							common.MinerLoger.Info("ws block success")
+						}, 2, func() {
+
+						})
 						this.PendingLock.Unlock()
 						count, _ = strconv.Atoi(txCount)
 						this.AllTransactionsCount += int64(count)
@@ -375,7 +371,7 @@ func (this *QitmeerRobot) WsConnect() {
 	ntfnHandlers := client.NotificationHandlers{
 		OnTxConfirm: func(txConfirm *cmds.TxConfirmResult) {
 			this.PendingLock.Lock()
-			common.MinerLoger.Debug("OnTxConfirm", "tx", txConfirm.Tx, "confirms", txConfirm.Confirms, "order", txConfirm.Order)
+			common.MinerLoger.Info("OnTxConfirm", "tx", txConfirm.Tx, "confirms", txConfirm.Confirms, "order", txConfirm.Order)
 			if _, ok := this.PendingBlocks[txConfirm.Tx]; ok && txConfirm.Confirms >= this.Cfg.SoloConfig.ConfirmHeight {
 				//
 				this.PendingShares--
@@ -422,6 +418,9 @@ func (this *QitmeerRobot) WsConnect() {
 	this.WsClient, err = client.New(connCfg, &ntfnHandlers)
 	if err != nil {
 		common.MinerLoger.Error(err.Error())
+		for _, dev := range this.Devices {
+			dev.SetIsValid(false)
+		}
 		return
 	}
 	// Register for block connect and disconnect notifications.

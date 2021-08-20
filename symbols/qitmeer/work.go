@@ -26,10 +26,10 @@ type getResponseJson struct {
 var ErrSameWork = fmt.Errorf("Same work, Had Submitted!")
 
 type getSubmitResponseJson struct {
-	Result  string `json:"result"`
-	Id      int    `json:"id"`
-	Error   string `json:"error"`
-	JsonRpc string `json:"jsonrpc"`
+	Result  string      `json:"result"`
+	Id      int         `json:"id"`
+	Error   interface{} `json:"error"`
+	JsonRpc string      `json:"jsonrpc"`
 }
 type QitmeerWork struct {
 	core.Work
@@ -164,7 +164,7 @@ func (this *QitmeerWork) Submit(subm string) error {
 			if time.Now().Unix()-startTime >= 120 {
 				break
 			}
-			common.MinerLoger.Error(fmt.Sprintf("[submit error]" + string(body) + err.Error()))
+			common.MinerLoger.Error(fmt.Sprintf("[network error]" + string(body) + err.Error()))
 			common.Usleep(1)
 			continue
 		}
@@ -174,6 +174,9 @@ func (this *QitmeerWork) Submit(subm string) error {
 	if !strings.Contains(res.Result, "Block submitted accepted") {
 		common.MinerLoger.Error("[submit error] " + string(body))
 		if strings.Contains(res.Result, "The tips of block is expired") {
+			return ErrSameWork
+		}
+		if strings.Contains(res.Result, "worthless") {
 			return ErrSameWork
 		}
 		return errors.New("[submit data failed]" + res.Result)
