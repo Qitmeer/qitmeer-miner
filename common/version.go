@@ -20,6 +20,8 @@ const (
 	// semanticBuildAlphabet defines the allowed characters for the build
 	// portion of a semantic version string.
 	semanticBuildAlphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-."
+
+	CoinBaseVersion = "0.10.4"
 )
 
 // These constants define the application version and follow the semantic
@@ -27,7 +29,7 @@ const (
 const (
 	Major uint = 1
 	Minor uint = 0
-	Patch uint = 0
+	Patch uint = 1
 )
 
 var (
@@ -48,7 +50,7 @@ var (
 // semantic versioning 2.0.0 spec (http://semver.org/).
 func String() string {
 	// Start with the major, minor, and patch versions.
-	version := fmt.Sprintf("%d.%d.%d", Major, Minor, Patch)
+	version := fmt.Sprintf("%d.%d.%d-%s", Major, Minor, Patch, CoinBaseVersion)
 
 	// Append pre-release version if there is one.  The hyphen called for
 	// by the semantic versioning spec is automatically appended and should

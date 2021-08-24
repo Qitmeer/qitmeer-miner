@@ -260,7 +260,7 @@ func Timeout(fun func(), t int64, callBack func()) {
 		return
 	case <-tim.C:
 		callBack()
-		MinerLoger.Warn("timeout!!!")
+		MinerLoger.Warn("ws timeout!!!")
 		return
 	}
 }
