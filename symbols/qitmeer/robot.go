@@ -258,9 +258,7 @@ func (this *QitmeerRobot) SubmitWork() {
 							CoinbaseHash: block.Block().Transactions[0].TxHash().String(),
 						}
 						this.PendingShares++
-						if this.WsClient == nil || this.WsClient.Disconnected() {
-							return
-						}
+
 						txes := make([]cmds.TxConfirm, 0)
 						txes = append(txes, cmds.TxConfirm{
 							Txid:          block.Block().Transactions[0].TxHash().String(),
@@ -273,6 +271,9 @@ func (this *QitmeerRobot) SubmitWork() {
 							})
 						}
 						common.Timeout(func() {
+							if this.WsClient == nil || this.WsClient.Disconnected() {
+								return
+							}
 							err = this.WsClient.NotifyTxsConfirmed(txes)
 							if err != nil {
 								common.MinerLoger.Error(err.Error())
