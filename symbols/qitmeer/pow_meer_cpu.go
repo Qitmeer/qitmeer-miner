@@ -209,7 +209,7 @@ func (this *MeerCrypto) Stats() {
 	if secondsElapsed < 10 {
 		return
 	}
-	if this.AllDiffOneShares <= 0 || float64(secondsElapsed)%10 != 0 {
+	if this.AllDiffOneShares <= 0 || secondsElapsed%10 != 0 {
 		return
 	}
 
