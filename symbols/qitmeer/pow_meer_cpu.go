@@ -68,6 +68,8 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 	this.Started = time.Now().Unix()
 	this.AllDiffOneShares = 0
 	for {
+		this.Started = time.Now().Unix()
+		this.AllDiffOneShares = 0
 		select {
 		case w = <-this.NewWork:
 			this.Work = w.(*QitmeerWork)
@@ -88,8 +90,6 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 		if len(this.Work.PoolWork.WorkData) <= 0 && this.Work.Block.Height <= 0 {
 			continue
 		}
-		this.Started = time.Now().Unix()
-		this.AllDiffOneShares = 0
 		this.HasNewWork = false
 		this.CurrentWorkID = 0
 		this.header = MinerBlockData{
@@ -148,7 +148,6 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 				this.SubmitData <- subm
 				hasSubmit = true
 			}
-			this.Stats()
 		}
 	}
 }
@@ -170,7 +169,6 @@ func (this *MeerCrypto) GetDiff() float64 {
 	return diff
 }
 func (this *MeerCrypto) Status(wg *sync.WaitGroup) {
-	return
 	common.MinerLoger.Info("start listen hashrate")
 	t := time.NewTicker(time.Second * 10)
 	defer t.Stop()
@@ -202,27 +200,4 @@ func (this *MeerCrypto) Status(wg *sync.WaitGroup) {
 				common.FormatHashRate(hashrate, unit), hour))
 		}
 	}
-}
-
-func (this *MeerCrypto) Stats() {
-	secondsElapsed := time.Now().Unix() - this.Started
-	if secondsElapsed < 10 {
-		return
-	}
-	if this.AllDiffOneShares <= 0 || secondsElapsed%10 != 0 {
-		return
-	}
-	fmt.Println("=========secondsElapsed", secondsElapsed, secondsElapsed%10)
-	diff := this.GetDiff()
-	hashrate := float64(this.AllDiffOneShares) / float64(secondsElapsed)
-	mayBlockTime := diff / hashrate // sec
-	hour := mayBlockTime / 3600     // hour
-	// diff
-	unit := "H/s"
-	start := time.Unix(this.Started, 0)
-	common.MinerLoger.Info(fmt.Sprintf("# %d Start time: %s  Diff: %s HashRate: %s may-block-out-per %.2f hour",
-		this.MinerId,
-		start.Format(time.RFC3339),
-		common.FormatHashRate(diff, unit),
-		common.FormatHashRate(hashrate, unit), hour))
 }
