@@ -212,7 +212,7 @@ func (this *MeerCrypto) Stats() {
 	if this.AllDiffOneShares <= 0 || secondsElapsed%10 != 0 {
 		return
 	}
-
+	fmt.Println("=========secondsElapsed", secondsElapsed, secondsElapsed%10)
 	diff := this.GetDiff()
 	hashrate := float64(this.AllDiffOneShares) / float64(secondsElapsed)
 	mayBlockTime := diff / hashrate // sec
