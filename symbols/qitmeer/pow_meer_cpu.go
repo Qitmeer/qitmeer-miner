@@ -206,9 +206,13 @@ func (this *MeerCrypto) Status(wg *sync.WaitGroup) {
 
 func (this *MeerCrypto) Stats() {
 	secondsElapsed := time.Now().Unix() - this.Started
-	if this.AllDiffOneShares <= 0 || float64(secondsElapsed)/10 != 0 {
+	if secondsElapsed < 10 {
 		return
 	}
+	if this.AllDiffOneShares <= 0 || float64(secondsElapsed)%10 != 0 {
+		return
+	}
+
 	diff := this.GetDiff()
 	hashrate := float64(this.AllDiffOneShares) / float64(secondsElapsed)
 	mayBlockTime := diff / hashrate // sec
