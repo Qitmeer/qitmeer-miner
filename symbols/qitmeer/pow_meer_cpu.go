@@ -206,7 +206,7 @@ func (this *MeerCrypto) Status(wg *sync.WaitGroup) {
 
 func (this *MeerCrypto) Stats() {
 	secondsElapsed := time.Now().Unix() - this.Started
-	if this.AllDiffOneShares <= 0 || secondsElapsed <= 1 {
+	if this.AllDiffOneShares <= 0 || secondsElapsed <= 10 {
 		return
 	}
 	diff := this.GetDiff()
