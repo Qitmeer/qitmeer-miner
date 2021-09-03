@@ -39,6 +39,7 @@ func main() {
 		<-c
 		cancel()
 		common.MinerLoger.Info("Got Control+C, exiting... wait 20 second")
+		os.Exit(0)
 	}()
 	if robotminer == nil {
 		common.MinerLoger.Error("[error] Please check the coin in the README.md! if this coin is supported, use -S to set")
