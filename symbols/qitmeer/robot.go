@@ -270,20 +270,18 @@ func (this *QitmeerRobot) SubmitWork() {
 								Confirmations: int32(this.Cfg.SoloConfig.ConfirmHeight),
 							})
 						}
-						go func() {
-							common.Timeout(func() {
-								if this.WsClient == nil || this.WsClient.Disconnected() {
-									return
-								}
-								err = this.WsClient.NotifyTxsConfirmed(txes)
-								if err != nil {
-									common.MinerLoger.Error(err.Error())
-								}
-								common.MinerLoger.Info("ws block success")
-							}, 1, func() {
+						common.Timeout(func() {
+							if this.WsClient == nil || this.WsClient.Disconnected() {
+								return
+							}
+							err = this.WsClient.NotifyTxsConfirmed(txes)
+							if err != nil {
+								common.MinerLoger.Error(err.Error())
+							}
+							common.MinerLoger.Info("ws block success")
+						}, 1, func() {
 
-							})
-						}()
+						})
 
 						this.PendingLock.Unlock()
 						count, _ = strconv.Atoi(txCount)
