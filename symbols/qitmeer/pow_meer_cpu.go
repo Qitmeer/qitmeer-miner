@@ -68,7 +68,6 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 	this.Started = time.Now().Unix()
 	this.AllDiffOneShares = 0
 	for {
-		this.Started = time.Now().Unix()
 		this.AllDiffOneShares = 0
 		select {
 		case w = <-this.NewWork:
@@ -100,6 +99,7 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 			JobID:        "",
 		}
 		nonce := uint64(0)
+		this.Started = time.Now().Unix()
 		hasSubmit := false
 		for {
 			select {
@@ -170,7 +170,7 @@ func (this *MeerCrypto) GetDiff() float64 {
 }
 func (this *MeerCrypto) Status(wg *sync.WaitGroup) {
 	common.MinerLoger.Info("start listen hashrate")
-	t := time.NewTicker(time.Second * 10)
+	t := time.NewTicker(time.Second * 20)
 	defer t.Stop()
 	defer wg.Done()
 	for {
