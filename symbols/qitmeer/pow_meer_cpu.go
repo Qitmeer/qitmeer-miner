@@ -101,6 +101,7 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 		nonce := uint64(0)
 		this.Started = time.Now().Unix()
 		hasSubmit := false
+		this.Update()
 		for {
 			select {
 			case <-this.Quit.Done():
@@ -112,7 +113,7 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 			if this.HasNewWork || this.ForceStop {
 				break
 			}
-			this.Update()
+
 			hData := make([]byte, 128)
 			copy(hData[0:types.MaxBlockHeaderPayload-pow.PROOFDATA_LENGTH], this.header.HeaderBlock.BlockData())
 			nonce++
