@@ -57,10 +57,10 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 	defer func() {
 		// recover from panic caused by writing to a closed channel
 		if r := recover(); r != nil {
-			common.MinerLoger.Debug(fmt.Sprintf("# %d miner service exit", this.MinerId))
+			common.MinerLoger.Error(fmt.Sprintf("# %d miner service exit", this.MinerId))
 			return
 		}
-		common.MinerLoger.Debug(fmt.Sprintf("# %d miner service exit", this.MinerId))
+		common.MinerLoger.Error(fmt.Sprintf("# %d miner service exit", this.MinerId))
 	}()
 	defer wg.Done()
 	defer this.Release()
@@ -68,6 +68,7 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 	this.Started = time.Now().Unix()
 	this.AllDiffOneShares = 0
 	for {
+		this.AllDiffOneShares = 0
 		select {
 		case w = <-this.NewWork:
 			this.Work = w.(*QitmeerWork)
@@ -88,8 +89,6 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 		if len(this.Work.PoolWork.WorkData) <= 0 && this.Work.Block.Height <= 0 {
 			continue
 		}
-		this.Started = time.Now().Unix()
-		this.AllDiffOneShares = 0
 		this.HasNewWork = false
 		this.CurrentWorkID = 0
 		this.header = MinerBlockData{
@@ -100,7 +99,9 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 			JobID:        "",
 		}
 		nonce := uint64(0)
+		this.Started = time.Now().Unix()
 		hasSubmit := false
+		this.Update()
 		for {
 			select {
 			case <-this.Quit.Done():
@@ -112,7 +113,7 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 			if this.HasNewWork || this.ForceStop {
 				break
 			}
-			this.Update()
+
 			hData := make([]byte, 128)
 			copy(hData[0:types.MaxBlockHeaderPayload-pow.PROOFDATA_LENGTH], this.header.HeaderBlock.BlockData())
 			nonce++
@@ -170,7 +171,7 @@ func (this *MeerCrypto) GetDiff() float64 {
 }
 func (this *MeerCrypto) Status(wg *sync.WaitGroup) {
 	common.MinerLoger.Info("start listen hashrate")
-	t := time.NewTicker(time.Second * 10)
+	t := time.NewTicker(time.Second * 20)
 	defer t.Stop()
 	defer wg.Done()
 	for {

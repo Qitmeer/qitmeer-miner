@@ -279,9 +279,10 @@ func (this *QitmeerRobot) SubmitWork() {
 								common.MinerLoger.Error(err.Error())
 							}
 							common.MinerLoger.Info("ws block success")
-						}, 2, func() {
+						}, 1, func() {
 
 						})
+
 						this.PendingLock.Unlock()
 						count, _ = strconv.Atoi(txCount)
 						this.AllTransactionsCount += int64(count)
