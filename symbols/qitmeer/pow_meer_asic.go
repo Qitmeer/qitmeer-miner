@@ -136,6 +136,7 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 			TargetDiff:   &big.Int{},
 			JobID:        "",
 		}
+	gotoWork:
 		for !this.HasNewWork && !this.ForceStop {
 			// if has new work ,current calc stop
 			select {
@@ -179,7 +180,9 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 				t1 := time.Now().Nanosecond()
 				this.Update()
 				if this.IsRunning && this.header.Height != common.CurrentHeight {
-					break
+					common.MinerLoger.Warn("current work is stale", "height",
+						this.header.Height, "cheight", common.CurrentHeight)
+					break gotoWork
 				}
 				for j := 1; j <= this.Cfg.OptionConfig.NumOfChips; j++ {
 					works[byte(j)] = Work{
