@@ -38,13 +38,14 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig, coinbaseStr string,
 		allSigCount := 0
 		//every time pack max 1000 transactions and max 5000 sign scripts
 		txCount := len(tmpTrx)
-		if txCount > (cfg.OptionConfig.MaxTxCount - 1) {
-			txCount = cfg.OptionConfig.MaxTxCount - 1
-		}
+		common.MinerLoger.Info("MaxTxCount", "count", cfg.OptionConfig.MaxTxCount, "txCount", txCount, "sigCount", cfg.OptionConfig.MaxSigCount)
+		// if txCount > (cfg.OptionConfig.MaxTxCount - 1) {
+		// 	txCount = cfg.OptionConfig.MaxTxCount - 1
+		// }
 		for i := 0; i < txCount; i++ {
-			if allSigCount > (cfg.OptionConfig.MaxSigCount - 1) {
-				break
-			}
+			// if allSigCount > (cfg.OptionConfig.MaxSigCount - 1) {
+			// 	break
+			// }
 			transactions = append(transactions, tmpTrx[i])
 			allSigCount += tmpTrx[i].GetSigCount()
 			h.transactions = append(h.transactions, tmpTrx[i].EncodeTx())

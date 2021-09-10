@@ -114,21 +114,21 @@ int main(int argc, char* argv[])
     uart_read_register(fd, 0x01, 0x59);
     printf("\n =======READ CHIP========\n");
     pinlv = 100;
-    meer_drv_set_freq(fd, 125);
-    usleep(1000000);
-    meer_drv_set_freq(fd, 150);
-    usleep(1000000);
-    meer_drv_set_freq(fd, 175);
-    usleep(1000000);
-    meer_drv_set_freq(fd, 200);
-    usleep(1000000);
-    pinlv = 200;
-    meer_drv_set_freq(fd, 225);
-    usleep(1000000);
-    meer_drv_set_freq(fd, 250);
-    usleep(1000000);
-    getX(fd);
-    pinlv = 250;
+//    meer_drv_set_freq(fd, 125);
+//    usleep(1000000);
+//    meer_drv_set_freq(fd, 150);
+//    usleep(1000000);
+//    meer_drv_set_freq(fd, 175);
+//    usleep(1000000);
+//    meer_drv_set_freq(fd, 200);
+//    usleep(1000000);
+//    pinlv = 200;
+//    meer_drv_set_freq(fd, 225);
+//    usleep(1000000);
+//    meer_drv_set_freq(fd, 250);
+//    usleep(1000000);
+//    getX(fd);
+//    pinlv = 250;
 //    meer_drv_set_freq(fd, 275);
 //    usleep(1000000);
 //    getX(fd);
@@ -174,7 +174,7 @@ int testwork(int fd,int sec)
     struct work work_temp;
     uint8_t header[117]= {0};
 
-    char * ptarget_str = "0000000000000000000000000000000000000000000000000000fff000000000"; //diff 1
+    char * ptarget_str = "0000000000000000000000000000000000000000000000000000ffff00000000"; //diff 1
     hex2bin(target, ptarget_str, sizeof(target));
     memcpy(work_temp.target, target, 32); //难度目标配置
 
@@ -252,7 +252,7 @@ printf("%02x", hash_out[i]);
     }
     struct timeval time_now;
     gettimeofday(&time_now, NULL);
-    int64_t diffone = 0x0000000000FFFFFF;
+    int64_t diffone = 0x00000000ffFFFFFF;
     float diffone_f = (float)diffone;
     int duration = time_now.tv_sec - time_prev.tv_sec;
     if(duration <= 0) {

@@ -87,7 +87,9 @@ func (this *Device) SetNewWork(work BaseWork) {
 		return
 	}
 	this.HasNewWork = true
-	this.NewWork <- work
+	go func() {
+		this.NewWork <- work
+	}()
 }
 
 func (this *Device) StopTask() {
