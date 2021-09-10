@@ -73,6 +73,7 @@ type MiningResultItem struct {
 
 type Work struct {
 	ChipId    byte
+	Height    uint64
 	Header    []byte
 	Target    *big.Int
 	SubmitStr string
@@ -171,13 +172,19 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 						time.Sleep(time.Duration(microTime) * time.Millisecond)
 					}
 					this.Started = time.Now().Unix()
+					this.IsRunning = true
 				}
 				nonces := MiningResult{}
 				works := map[byte]Work{}
+				t1 := time.Now().Nanosecond()
+				this.Update()
+				if this.IsRunning && this.header.Height != common.CurrentHeight {
+					break
+				}
 				for j := 1; j <= this.Cfg.OptionConfig.NumOfChips; j++ {
-					this.Update()
 					works[byte(j)] = Work{
 						ChipId:    byte(j),
+						Height:    this.header.Height,
 						Header:    make([]byte, 117),
 						Target:    this.header.TargetDiff,
 						SubmitStr: this.GetSubmitStr(),
@@ -190,8 +197,12 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 						(*C.uchar)(unsafe.Pointer(&this.header.Target2[0])),
 						(C.int)(j))
 				}
+				t2 := time.Now().Nanosecond()
+				common.MinerLoger.Debug("Notify New Task To Chips",
+					"spent nano seconds", float64(t2-t1)/1000000000.00, "work height", this.header.Height, "newest height", common.CurrentHeight)
 				// set work
 				start := time.Now().Unix()
+				hasSubmit := false
 				// 10 mill second next task
 				for time.Now().Unix()-start < int64(this.Cfg.OptionConfig.Timeout) && !this.HasNewWork && !this.ForceStop {
 					select {
@@ -200,7 +211,9 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 						return
 					default:
 					}
-
+					if !this.Pool && len(this.header.Transactions) <= 1 && hasSubmit { // empty block just can submit once
+						break
+					}
 					chipId := make([]byte, 1)
 					jobId := make([]byte, 1)
 					nonceBytes = make([]byte, 8)
@@ -223,9 +236,12 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 							}
 							copy(cwork.Header[NONCESTART:NONCEEND], nonceBytes)
 							h := hash.HashMeerXKeccakV1(cwork.Header[:117])
-							common.MinerLoger.Debug(fmt.Sprintf("[%s]ChipId #%d JobId #%d Found hash : %s nonce:%s target:%064x",
+							common.MinerLoger.Debug(fmt.Sprintf("[%s]ChipId #%d JobId #%d Height #%d Found hash : %s nonce:%s target:%064x",
 								this.UartPath,
-								chipId[0], jobId[0], h,
+								chipId[0],
+								jobId[0],
+								cwork.Height,
+								h,
 								hex.EncodeToString(nonceBytes), cwork.Target))
 							if HashToBig(&h).Cmp(cwork.Target) <= 0 {
 								this.AllDiffOneShares++
@@ -238,6 +254,7 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 								lastNonce,
 								nonces[lastNonce].ChipId, nonces[lastNonce].JobId))
 						}
+						hasSubmit = true
 						time.Sleep(10 * time.Millisecond)
 					}
 				}

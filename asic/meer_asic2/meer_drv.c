@@ -225,16 +225,16 @@ static inline int common_cmd(int cmd, char *node, char *value){
     return -1;
 }
 
-// #define RST0_VAL "/sys/class/gpio/gpio128/value"
+ #define RST0_VAL "/sys/class/gpio/gpio128/value"
 
-#define RST0_VAL   "/sys/devices/platform/leds/leds/fpga_rst1/brightness"
-#define RST1_VAL   "/sys/devices/platform/leds/leds/fpga_rst2/brightness"
-#define RST2_VAL   "/sys/devices/platform/leds/leds/fpga_rst3/brightness"
-#define RST3_VAL   "/sys/devices/platform/leds/leds/fpga_rst4/brightness"
+//#define RST0_VAL   "/sys/devices/platform/leds/leds/fpga_rst1/brightness"
+//#define RST1_VAL   "/sys/devices/platform/leds/leds/fpga_rst2/brightness"
+//#define RST2_VAL   "/sys/devices/platform/leds/leds/fpga_rst3/brightness"
+//#define RST3_VAL   "/sys/devices/platform/leds/leds/fpga_rst4/brightness"
 
 void meer_drv_reset_pin(uint8_t value, bool reset,char *gpio)
 {
-    char *rst_val[4] = {RST0_VAL, RST1_VAL, RST2_VAL, RST3_VAL};
+    char *rst_val[4] = {RST0_VAL};
 	
     if(reset) {
         //TODO:

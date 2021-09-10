@@ -122,7 +122,6 @@ func (this *QitmeerWork) Get() bool {
 		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
 		blockTemplate.Result.Target = target
 	}
-
 	blockTemplate.Result.HasCoinbasePack = false
 	_, _ = blockTemplate.Result.CalcCoinBase(this.Cfg, this.Cfg.SoloConfig.RandStr, uint64(0), this.Cfg.SoloConfig.MinerAddr)
 	blockTemplate.Result.BuildMerkleTreeStore(0)
@@ -145,32 +144,13 @@ func (this *QitmeerWork) Submit(subm string) error {
 	this.LastSub = subm
 	var body []byte
 	var res getSubmitResponseJson
-	startTime := time.Now().Unix()
-	for {
-		select {
-		case <-this.Quit.Done():
-			common.MinerLoger.Debug("exit submit")
-			return nil
-		default:
-
-		}
-		// if the reason of submit error is network failed
-		// to keep the work
-		// then retry submit
-		body = this.Rpc.RpcResult("submitBlock", []interface{}{subm})
-		err := json.Unmarshal(body, &res)
-		if err != nil {
-			// 2min timeout
-			if time.Now().Unix()-startTime >= 120 {
-				break
-			}
-			common.MinerLoger.Error(fmt.Sprintf("[network error]" + string(body) + err.Error()))
-			common.Usleep(1)
-			continue
-		}
-		break
+	body = this.Rpc.RpcResult("submitBlock", []interface{}{subm})
+	err := json.Unmarshal(body, &res)
+	if err != nil {
+		// 2min timeout
+		common.MinerLoger.Error(fmt.Sprintf("[network error]" + string(body) + err.Error()))
+		return nil
 	}
-
 	if !strings.Contains(res.Result, "Block submitted accepted") {
 		common.MinerLoger.Error("[submit error] " + string(body))
 		if strings.Contains(res.Result, "The tips of block is expired") {

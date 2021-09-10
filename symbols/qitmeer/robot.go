@@ -147,7 +147,7 @@ func (this *QitmeerRobot) Run(ctx context.Context) {
 // ListenWork
 func (this *QitmeerRobot) ListenWork() {
 	common.MinerLoger.Info("listen new work server")
-	t := time.NewTicker(time.Second * time.Duration(this.Cfg.OptionConfig.TaskInterval))
+	t := time.NewTicker(time.Millisecond * time.Duration(this.Cfg.OptionConfig.TaskInterval))
 	isFirst := true
 	defer t.Stop()
 	r := false
@@ -160,14 +160,20 @@ func (this *QitmeerRobot) ListenWork() {
 			r = false
 			if this.Pool {
 				r = this.Work.PoolGet() // get new work
+				if r && this.Work.stra != nil {
+					common.CurrentHeight = uint64(this.Work.stra.PoolWork.Height)
+				}
+
 			} else {
 				r = this.Work.Get() // get new work
+				if r && this.Work.Block != nil {
+					common.CurrentHeight = uint64(this.Work.Block.Height)
+				}
 			}
 			if r {
-				common.MinerLoger.Debug("New task coming")
 				validDeviceCount := 0
 				for _, dev := range this.Devices {
-					if !dev.GetIsValid() {
+					if !dev.GetIsValid() && !dev.GetIsRunning() {
 						continue
 					}
 					dev.SetForceUpdate(false)
@@ -175,6 +181,7 @@ func (this *QitmeerRobot) ListenWork() {
 					newWork := this.Work.CopyNew()
 					dev.SetNewWork(&newWork)
 				}
+				common.MinerLoger.Debug("New task coming")
 				if validDeviceCount <= 0 {
 					common.MinerLoger.Error("There is no valid device to mining,please check your config!")
 					os.Exit(1)

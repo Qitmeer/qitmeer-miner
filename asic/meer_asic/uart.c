@@ -109,7 +109,7 @@ bool uart_write(int fd,  const void *buf, size_t wsize)
 		{
 		    if(len > 0)
 			{
-				printf("%s, repeat\n", __func__);
+				printf("%s, repeat\n", __func__)
 			}
 		}
 		
