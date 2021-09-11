@@ -14,7 +14,6 @@ import (
 	"github.com/Qitmeer/qitmeer/core/types"
 	"io/ioutil"
 	"log"
-	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -182,10 +181,10 @@ func (this *QitmeerRobot) ListenWork() {
 					dev.SetNewWork(&newWork)
 				}
 				common.MinerLoger.Debug("New task coming")
-				if validDeviceCount <= 0 {
-					common.MinerLoger.Error("There is no valid device to mining,please check your config!")
-					os.Exit(1)
-				}
+				// if validDeviceCount <= 0 {
+				// 	common.MinerLoger.Error("There is no valid device to mining,please check your config!")
+				// 	os.Exit(1)
+				// }
 				if isFirst {
 					isFirst = false
 				}
