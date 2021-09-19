@@ -67,7 +67,7 @@ type OptionalConfig struct {
 	Stale         int    ` description:"Stale count" default-mask:"0"`
 	Target        string ` description:"Target"`
 	NumOfChips    int    `long:"num_of_chips" description:"num of chips" default-mask:"1"`
-	TaskInterval  int    `long:"task_interval" description:"get blocktemplate interval" default-mask:"2"`
+	TaskInterval  int    `long:"task_interval" description:"get blocktemplate interval" default-mask:"5000"`
 	TaskForceStop bool   `long:"task_force_stop" description:"force stop the current task when miner fail to get blocktemplate from the qitmeer full node." default-mask:"true"`
 	ForceSolo     bool   `long:"force_solo" description:"force solo mining" default-mask:"false"`
 	Freqs         string `long:"freqs" description:"freq settings" default-mask:"1000,200|"`
@@ -197,10 +197,10 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 		MaxTxCount:    defaultMaxTxCount,
 		MaxSigCount:   defaultMaxSigCount,
 		StatsServer:   defaultStatsServer,
-		TaskInterval:  2,
+		TaskInterval:  5000,
 		TaskForceStop: true,
 		ForceSolo:     false,
-		NumOfChips:    1,
+		NumOfChips:    14,
 	}
 
 	// Create the home directory if it doesn't already exist.

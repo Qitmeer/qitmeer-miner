@@ -13,21 +13,22 @@ import (
 	"github.com/Qitmeer/qitmeer/core/types/pow"
 	"math/big"
 	"strings"
+	"sync"
 	"time"
 )
 
 type getResponseJson struct {
 	Result  BlockHeader
-	Id      int    `json:"id"`
-	Error   string `json:"error"`
-	JsonRpc string `json:"jsonrpc"`
+	Id      interface{} `json:"id"`
+	Error   string      `json:"error"`
+	JsonRpc string      `json:"jsonrpc"`
 }
 
 var ErrSameWork = fmt.Errorf("Same work, Had Submitted!")
 
 type getSubmitResponseJson struct {
 	Result  string      `json:"result"`
-	Id      int         `json:"id"`
+	Id      string      `json:"id"`
 	Error   interface{} `json:"error"`
 	JsonRpc string      `json:"jsonrpc"`
 }
@@ -38,6 +39,8 @@ type QitmeerWork struct {
 	stra        *QitmeerStratum
 	StartWork   bool
 	ForceUpdate bool
+	Ing         bool
+	WorkLock    sync.Mutex
 }
 
 func (this *QitmeerWork) CopyNew() QitmeerWork {
@@ -67,6 +70,7 @@ func (this *QitmeerWork) CopyNew() QitmeerWork {
 		newWork.Block.StateRoot = this.Block.StateRoot
 		newWork.ForceUpdate = this.ForceUpdate
 		newWork.Block.Height = this.Block.Height
+		newWork.Block.GBTID = this.Block.GBTID
 	}
 
 	return newWork
@@ -83,68 +87,85 @@ func (this *QitmeerWork) GetPowType() pow.PowType {
 
 //GetBlockTemplate
 func (this *QitmeerWork) Get() bool {
-	this.ForceUpdate = false
-	body := this.Rpc.RpcResult("getBlockTemplate", []interface{}{[]string{}, this.GetPowType()})
-	if body == nil {
-		if this.Cfg.OptionConfig.TaskForceStop {
-			this.ForceUpdate = true
-		}
+	if this.Ing {
 		return false
 	}
-	var blockTemplate getResponseJson
-	err := json.Unmarshal(body, &blockTemplate)
-	if err != nil {
-		var r map[string]interface{}
-		_ = json.Unmarshal(body, &r)
-		if strings.Contains(string(body), "download") {
-			common.MinerLoger.Warn(fmt.Sprintf("[getBlockTemplate warn] wait for newest task"))
-		} else {
-			common.MinerLoger.Debug("[getBlockTemplate error]", "result", string(body))
+	defer func() {
+		this.Ing = false
+	}()
+	this.Ing = true
+	for {
+		time.Sleep(time.Duration(this.Cfg.OptionConfig.TaskInterval) * time.Millisecond)
+		this.ForceUpdate = false
+		this.Rpc.GbtID++
+		body := this.Rpc.RpcResult("getBlockTemplate", []interface{}{[]string{}, this.GetPowType()},
+			fmt.Sprintf("miner_gbt_%d", this.Rpc.GbtID))
+		if body == nil {
 			if this.Cfg.OptionConfig.TaskForceStop {
 				this.ForceUpdate = true
 			}
+			continue
 		}
-		return false
-	}
-	if this.Block != nil && this.Block.Height == blockTemplate.Result.Height &&
-		(time.Now().Unix()-this.GetWorkTime) < int64(this.Cfg.OptionConfig.Timeout)*10 {
-		//not has new work
-		return false
-	}
+		var blockTemplate getResponseJson
+		err := json.Unmarshal(body, &blockTemplate)
+		if err != nil {
+			var r map[string]interface{}
+			_ = json.Unmarshal(body, &r)
+			if strings.Contains(string(body), "download") {
+				common.MinerLoger.Warn(fmt.Sprintf("[getBlockTemplate warn] wait for newest task"))
+			} else {
+				common.MinerLoger.Debug("[getBlockTemplate error]", "result", string(body))
+				if this.Cfg.OptionConfig.TaskForceStop {
+					this.ForceUpdate = true
+				}
+			}
+			continue
+		}
+		if this.Block != nil && this.Block.Height == blockTemplate.Result.Height &&
+			(time.Now().Unix()-this.GetWorkTime) < int64(this.Cfg.OptionConfig.Timeout)*10 {
+			//not has new work
+			return false
+		}
 
-	target := ""
-	n := new(big.Int)
-	switch this.Cfg.NecessaryConfig.Pow {
-	case POW_MEER_CRYPTO:
-		blockTemplate.Result.Pow = pow.GetInstance(pow.MEERXKECCAKV1, 0, []byte{})
-		target = blockTemplate.Result.PowDiffReference.Target
-		n, _ = n.SetString(target, 16)
-		blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
-		blockTemplate.Result.Target = target
+		target := ""
+		n := new(big.Int)
+		switch this.Cfg.NecessaryConfig.Pow {
+		case POW_MEER_CRYPTO:
+			blockTemplate.Result.Pow = pow.GetInstance(pow.MEERXKECCAKV1, 0, []byte{})
+			target = blockTemplate.Result.PowDiffReference.Target
+			n, _ = n.SetString(target, 16)
+			blockTemplate.Result.Difficulty = uint64(pow.BigToCompact(n))
+			blockTemplate.Result.Target = target
+		}
+		blockTemplate.Result.HasCoinbasePack = false
+		_, _ = blockTemplate.Result.CalcCoinBase(this.Cfg, this.Cfg.SoloConfig.RandStr, uint64(0), this.Cfg.SoloConfig.MinerAddr)
+		blockTemplate.Result.BuildMerkleTreeStore(0)
+		this.Block = &blockTemplate.Result
+		this.Started = uint32(time.Now().Unix())
+		this.GetWorkTime = time.Now().Unix()
+		common.CurrentHeight = this.Block.Height
+		this.Cfg.OptionConfig.Target = this.Block.Target
+		this.Block.GBTID = this.Rpc.GbtID
+		common.MinerLoger.Info(fmt.Sprintf("getBlockTemplate height:%d , target :%s", this.Block.Height, target))
+		return true
 	}
-	blockTemplate.Result.HasCoinbasePack = false
-	_, _ = blockTemplate.Result.CalcCoinBase(this.Cfg, this.Cfg.SoloConfig.RandStr, uint64(0), this.Cfg.SoloConfig.MinerAddr)
-	blockTemplate.Result.BuildMerkleTreeStore(0)
-	this.Block = &blockTemplate.Result
-	this.Started = uint32(time.Now().Unix())
-	this.GetWorkTime = time.Now().Unix()
-	common.CurrentHeight = this.Block.Height
-	this.Cfg.OptionConfig.Target = this.Block.Target
-	common.MinerLoger.Info(fmt.Sprintf("getBlockTemplate height:%d , target :%s", this.Block.Height, target))
-	return true
+	return false
 }
 
 //Submit
-func (this *QitmeerWork) Submit(subm string) error {
+func (this *QitmeerWork) Submit(subm, height, gbtID string) error {
 	this.Lock()
 	defer this.Unlock()
+	this.Rpc.SubmitID++
 	if this.LastSub == subm {
 		return ErrSameWork
 	}
 	this.LastSub = subm
 	var body []byte
 	var res getSubmitResponseJson
-	body = this.Rpc.RpcResult("submitBlock", []interface{}{subm})
+	id := fmt.Sprintf("miner_submit_gbtID:%s_height:%s_id:%d", gbtID, height, this.Rpc.SubmitID)
+	body = this.Rpc.RpcResult("submitBlock", []interface{}{subm},
+		id)
 	err := json.Unmarshal(body, &res)
 	if err != nil {
 		// 2min timeout
@@ -152,7 +173,7 @@ func (this *QitmeerWork) Submit(subm string) error {
 		return nil
 	}
 	if !strings.Contains(res.Result, "Block submitted accepted") {
-		common.MinerLoger.Error("[submit error] " + string(body))
+		common.MinerLoger.Error("[submit error] " + id + " " + string(body))
 		if strings.Contains(res.Result, "The tips of block is expired") {
 			return ErrSameWork
 		}

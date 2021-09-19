@@ -56,6 +56,7 @@ func GetRobot(cfg *common.GlobalConfig) core.Robot {
 	case core.SYMBOL_PMEER:
 		r := &qitmeer.QitmeerRobot{}
 		r.Cfg = cfg
+		r.NeedGBT = make(chan struct{}, 1)
 		r.Started = uint32(time.Now().Unix())
 		r.Rpc = &common.RpcClient{Cfg: cfg}
 		r.SubmitStr = make(chan string)

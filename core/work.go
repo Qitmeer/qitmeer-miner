@@ -11,7 +11,7 @@ import (
 
 type BaseWork interface {
 	Get() bool
-	Submit(subm string) error
+	Submit(subm, height, gbtID string) error
 	PoolGet() bool
 	PoolSubmit(subm string) error
 }
