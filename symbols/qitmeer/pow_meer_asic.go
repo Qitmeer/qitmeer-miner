@@ -89,7 +89,6 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 	arr := strings.Split(this.UartPath, ":")
 	uartPath := C.CString(arr[0])
 	gpio := C.CString(arr[1])
-
 	defer func() {
 		// recover from panic caused by writing to a closed channel
 		if fd > 0 {
@@ -125,6 +124,7 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 		if len(this.Work.PoolWork.WorkData) <= 0 && this.Work.Block.Height <= 0 {
 			continue
 		}
+		reject := 0
 		this.HasNewWork = false
 		this.CurrentWorkID = 0
 		this.header = MinerBlockData{
@@ -135,7 +135,8 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 			JobID:        "",
 		}
 		t1 := time.Now().Nanosecond()
-		reject := 0
+		hasSubmit := false
+		t2 := time.Now().Nanosecond()
 	gotoWork:
 		for !this.HasNewWork && !this.ForceStop {
 			// if has new work ,current calc stop
@@ -205,12 +206,12 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 						(*C.uchar)(unsafe.Pointer(&this.header.Target2[0])),
 						(C.int)(j))
 				}
-				t2 := time.Now().Nanosecond()
+
 				common.MinerLoger.Debug("Notify New Task To Chips",
 					"spent seconds(s)", float64(t2-t1)/1000000000.00, "work height", this.header.Height, "newest height", common.CurrentHeight)
 				// set work
 				t1 := time.Now().Unix()
-				hasSubmit := false
+
 				// 10 mill second next task
 				for time.Now().Unix()-t1 < int64(this.Cfg.OptionConfig.Timeout) && !this.HasNewWork && !this.ForceStop {
 					select {
@@ -220,7 +221,7 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 					default:
 					}
 					if !this.Pool && len(this.header.Transactions) <= 1 && hasSubmit { // empty block just can submit once
-						break
+						break gotoWork
 					}
 					chipId := make([]byte, 1)
 					jobId := make([]byte, 1)
@@ -254,13 +255,19 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 							if HashToBig(&h).Cmp(cwork.Target) <= 0 {
 								this.AllDiffOneShares++
 								this.SubmitData <- cwork.ReplaceNonce(nonceBytes)
+								hasSubmit = true
 							} else {
-								reject++
-								if reject >= this.Cfg.OptionConfig.NumOfChips {
-									common.MinerLoger.Warn("chips exception return,wait init again")
-									C.meer_drv_deinit((C.int)(fd), gpio)
-									start = false
-									break gotoWork
+								// 1T
+								if this.GetDiff() > 1e12 {
+									reject++
+									if reject >= this.Cfg.OptionConfig.NumOfChips {
+										common.MinerLoger.Warn("chips exception return,wait init again")
+										C.meer_drv_deinit((C.int)(fd), gpio)
+										start = false
+										fd = 0
+										reject = 0
+										break gotoWork
+									}
 								}
 							}
 						} else {
@@ -270,7 +277,6 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 								lastNonce,
 								nonces[lastNonce].ChipId, nonces[lastNonce].JobId))
 						}
-						hasSubmit = true
 						time.Sleep(10 * time.Millisecond)
 					}
 				}

@@ -60,7 +60,7 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig, coinbaseStr string,
 	}
 	instance := coinbase.GetNewCoinbaseInstance(int(h.Version), cfg.NecessaryConfig.Param, payAddressS, coinbaseStr, extraNonce, h.Height, h.TotalFee, uint64(h.Coinbasevalue), totalTxFee)
 	// miner get tx tax
-	coinbaseTx := instance.GetCoinbaseTx()
+	coinbaseTx, opPkReturnScript := instance.GetCoinbaseTx()
 	if coinbaseTx == nil {
 		return nil, []Transactions{}
 	}
@@ -69,7 +69,7 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig, coinbaseStr string,
 	for cid, val := range h.BlockFeesMap {
 		blockFeesMap[types.CoinID(cid)] = val
 	}
-	err := fillOutputsToCoinBase(coinbaseTx, blockFeesMap, nil)
+	err := fillOutputsToCoinBase(coinbaseTx, blockFeesMap, nil, opPkReturnScript)
 	if err != nil {
 		context := "Failed to fillOutputsToCoinBase"
 		common.MinerLoger.Error(context)
@@ -117,7 +117,8 @@ func fillWitnessToCoinBase(blockTxns []*types.Tx) *types.Tx {
 	return blockTxns[0]
 }
 
-func fillOutputsToCoinBase(coinbaseTx *types.Tx, blockFeesMap types.AmountMap, taxOutput *types.TxOutput) error {
+func fillOutputsToCoinBase(coinbaseTx *types.Tx, blockFeesMap types.AmountMap,
+	taxOutput *types.TxOutput, oprOutput *types.TxOutput) error {
 	if len(coinbaseTx.Tx.TxOut) != blockchain.CoinbaseOutput_subsidy+1 {
 		return fmt.Errorf("coinbase output error")
 	}
@@ -132,6 +133,9 @@ func fillOutputsToCoinBase(coinbaseTx *types.Tx, blockFeesMap types.AmountMap, t
 	}
 	if taxOutput != nil {
 		coinbaseTx.Tx.AddTxOut(taxOutput)
+	}
+	if oprOutput != nil {
+		coinbaseTx.Tx.AddTxOut(oprOutput)
 	}
 	return nil
 }

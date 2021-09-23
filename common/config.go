@@ -10,7 +10,6 @@ import (
 	"github.com/Qitmeer/qitmeer/core/address"
 	l "github.com/Qitmeer/qitmeer/log"
 	"github.com/Qitmeer/qitmeer/params"
-	"github.com/Qitmeer/qitmeer/services/common"
 	"log"
 	"net"
 	"os"
@@ -276,9 +275,9 @@ func LoadConfig() (*GlobalConfig, []string, error) {
 		os.Exit(0)
 	}
 	if fileCfg.MinerLogFile != "" {
-		common.InitLogRotator(fileCfg.MinerLogFile)
+		l.InitLogRotator(fileCfg.MinerLogFile)
 	}
-	common.Glogger().Verbosity(ConvertLogLevel(optionalCfg.LogLevel))
+	l.Glogger().Verbosity(ConvertLogLevel(optionalCfg.LogLevel))
 	if poolCfg.Pool == "" && soloCfg.MinerAddr == "" {
 		MinerLoger.Error("Solo need address -M , pool need -o pool address")
 		preParser.WriteHelp(os.Stderr)

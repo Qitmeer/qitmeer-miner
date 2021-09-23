@@ -121,7 +121,7 @@ func (this *QitmeerWork) Get() bool {
 			}
 			continue
 		}
-		if this.Block != nil && this.Block.Height == blockTemplate.Result.Height &&
+		if this.Block != nil && this.Block.Height >= blockTemplate.Result.Height &&
 			(time.Now().Unix()-this.GetWorkTime) < int64(this.Cfg.OptionConfig.Timeout)*10 {
 			//not has new work
 			return false

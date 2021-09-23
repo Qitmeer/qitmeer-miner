@@ -160,10 +160,6 @@ func (this *QitmeerRobot) ListenWork() {
 			r = false
 			if this.Pool {
 				r = this.Work.PoolGet() // get new work
-				if r && this.Work.stra != nil {
-					common.CurrentHeight = uint64(this.Work.stra.PoolWork.Height)
-				}
-
 			} else if first { // solo
 				r = this.Work.Get() // get new work
 				if r && this.Work.Block != nil {
@@ -189,7 +185,7 @@ func (this *QitmeerRobot) NotifyWork(r bool) {
 			newWork := this.Work.CopyNew()
 			dev.SetNewWork(&newWork)
 		}
-		common.MinerLoger.Debug("New task coming")
+		common.MinerLoger.Debug("New task coming", "notify device count", validDeviceCount)
 	} else if this.Work.ForceUpdate {
 		for _, dev := range this.Devices {
 			common.MinerLoger.Debug("Task stopped by force")
@@ -417,10 +413,9 @@ func (this *QitmeerRobot) WsConnect() {
 			this.PendingLock.Unlock()
 		},
 		OnBlockConnected: func(hash *hash.Hash, height, order int64, t time.Time, txs []*types.Transaction) {
-			common.MinerLoger.Info("New Block Coming", "height", height)
 			r := this.Work.Get()
-			if r && this.Work.Block != nil {
-				common.CurrentHeight = uint64(this.Work.Block.Height)
+			if this.Work.Block != nil {
+				common.MinerLoger.Info("New Block Coming", "height", height, "gbt height", this.Work.Block.Height, "cur height", common.CurrentHeight)
 			}
 			this.NotifyWork(r)
 		},
@@ -462,9 +457,6 @@ func (this *QitmeerRobot) WsConnect() {
 	this.WsClient, err = client.New(connCfg, &ntfnHandlers)
 	if err != nil {
 		common.MinerLoger.Error(err.Error())
-		for _, dev := range this.Devices {
-			dev.SetIsValid(false)
-		}
 		return
 	}
 	// Register for block connect and disconnect notifications.
