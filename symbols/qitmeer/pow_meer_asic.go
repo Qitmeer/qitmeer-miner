@@ -46,7 +46,7 @@ func (this *MeerCrypto) InitDevice() {
 		"chips num", this.Cfg.OptionConfig.NumOfChips, "UART", this.UartPath)
 }
 
-func (this *MeerCrypto) Update() {
+func (this *MeerCrypto) UpdateWork() {
 	//update coinbase tx hash
 	this.Device.Update()
 	if this.Pool {
@@ -62,6 +62,8 @@ func (this *MeerCrypto) Update() {
 		randStr := fmt.Sprintf("%d%s%s", this.MinerId, this.Work.Block.CoinbaseVersion, arr[1])
 		txHash, txs := this.Work.Block.CalcCoinBase(this.Cfg, randStr, this.CurrentWorkID, this.Cfg.SoloConfig.MinerAddr)
 		this.header.PackageRpcHeader(this.Work, txs)
+		this.header.Transactions = make([]Transactions, 0)
+		this.header.Transactions = append(this.header.Transactions, txs...)
 		this.header.HeaderBlock.TxRoot = *txHash
 	}
 }
@@ -79,6 +81,8 @@ type Work struct {
 	Target    *big.Int
 	SubmitStr string
 	GBTID     int64
+	Pool      bool
+	Txs       []Transactions
 }
 
 type MiningResult map[uint64]MiningResultItem
@@ -136,7 +140,7 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 		}
 		t1 := time.Now().Nanosecond()
 		hasSubmit := false
-		t2 := time.Now().Nanosecond()
+		common.MinerLoger.Debug("receive new task")
 	gotoWork:
 		for !this.HasNewWork && !this.ForceStop {
 			// if has new work ,current calc stop
@@ -180,8 +184,8 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 				works := map[byte]Work{}
 
 				for j := 1; j <= this.Cfg.OptionConfig.NumOfChips; j++ {
-					this.Update()
-					if this.IsRunning && this.header.Height != common.CurrentHeight {
+					this.UpdateWork()
+					if this.IsRunning && common.CurrentHeight > 0 && this.header.Height > 0 && this.header.Height != common.CurrentHeight {
 						common.MinerLoger.Warn("current work is stale", "height",
 							this.header.Height, "cheight", common.CurrentHeight)
 						break gotoWork
@@ -197,6 +201,8 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 						Target:    this.header.TargetDiff,
 						SubmitStr: this.GetSubmitStr(),
 						GBTID:     jid,
+						Pool:      this.Pool,
+						Txs:       this.header.Transactions,
 					}
 					copy(works[byte(j)].Header[0:117], this.header.HeaderBlock.BlockData())
 					C.set_work(
@@ -206,7 +212,7 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 						(*C.uchar)(unsafe.Pointer(&this.header.Target2[0])),
 						(C.int)(j))
 				}
-
+				t2 := time.Now().Nanosecond()
 				common.MinerLoger.Debug("Notify New Task To Chips",
 					"spent seconds(s)", float64(t2-t1)/1000000000.00, "work height", this.header.Height, "newest height", common.CurrentHeight)
 				// set work
@@ -295,12 +301,6 @@ func (this *MeerCrypto) GetSubmitStr() string {
 		}
 		txCount := len(this.header.Transactions) //real transaction count except coinbase
 		subm += common.Int2varinthex(int64(txCount))
-
-		for j := 0; j < txCount; j++ {
-			subm += this.header.Transactions[j].Data
-		}
-		subm += "-" + fmt.Sprintf("%d", txCount) + "-" + fmt.Sprintf("%d", this.Work.Block.Height) + "-" +
-			fmt.Sprintf("%d", this.Work.Block.GBTID)
 	} else {
 		subm += "-" + this.header.JobID + "-" + this.header.Exnonce2
 	}
@@ -366,5 +366,14 @@ func (this *Work) ReplaceNonce(nonce []byte) string {
 	copy(b[0:117], this.Header)
 	copy(b[NONCESTART:NONCEEND], nonce)
 	arr[0] = hex.EncodeToString(b)
-	return strings.Join(arr, "-")
+	subm := strings.Join(arr, "-")
+	if !this.Pool {
+		txCount := len(this.Txs)
+		for j := 0; j < txCount; j++ {
+			subm += this.Txs[j].Data
+		}
+		subm += "-" + fmt.Sprintf("%d", txCount) + "-" + fmt.Sprintf("%d", this.Height) + "-" +
+			fmt.Sprintf("%d", this.GBTID)
+	}
+	return subm
 }
