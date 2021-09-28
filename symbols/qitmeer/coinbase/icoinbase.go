@@ -9,7 +9,7 @@ import (
 )
 
 type ICoinbase interface {
-	GetCoinbaseTx() *types.Tx
+	GetCoinbaseTx() (*types.Tx, *types.TxOutput)
 	SetRandStr(str string)
 	SetExtraNonce(extraNonce uint64)
 	SetPayAddr(payAddr string)
@@ -66,32 +66,28 @@ func (this *CoinbaseBase) SetCoinbaseVal(val uint64) {
 	this.CoinbaseValue = val
 }
 
-func (this *CoinbaseBase) CalcCoinbaseTx(subsidy uint64) *types.Tx {
+func (this *CoinbaseBase) CalcCoinbaseTx(subsidy uint64) (*types.Tx, *types.TxOutput) {
 	payToAddress, err := address.DecodeAddress(this.PayAddr)
 	if err != nil {
 		common.MinerLoger.Error("DecodeAddress", "error", err)
-		return nil
+		return nil, nil
 	}
 	coinbaseScript, err := standardCoinbaseScript(this.RandStr, this.Height, this.ExtraNonce)
 	if err != nil {
 		common.MinerLoger.Error("standardCoinbaseScript", "error", err)
-		return nil
+		return nil, nil
 	}
-	opReturnPkScript, err := standardCoinbaseOpReturn([]byte{})
-	if err != nil {
-		common.MinerLoger.Error("standardCoinbaseOpReturn", "error", err)
-		return nil
-	}
-	coinbaseTx, err := createCoinbaseTx(subsidy,
+
+	coinbaseTx, opPkScript, err := createCoinbaseTx(subsidy,
 		coinbaseScript,
-		opReturnPkScript,
+		nil,
 		payToAddress,
 		this.Param)
 	if err != nil {
 		common.MinerLoger.Error(err.Error())
-		return nil
+		return nil, nil
 	}
-	return coinbaseTx
+	return coinbaseTx, opPkScript
 }
 
 func GetNewCoinbaseInstance(blockVersion int, param *params.Params, payAddr string, randStr string, extraNonce uint64, height uint64, totalFee uint64, coinbaseVal uint64, packFee uint64) ICoinbase {

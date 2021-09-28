@@ -66,11 +66,6 @@ func (this *MinerBlockData) PackageRpcHeader(work *QitmeerWork, txs []Transactio
 	bitesBy = common.Reverse(bitesBy[:8])
 	this.Parents = work.Block.Parents
 	this.Transactions = make([]Transactions, 0)
-	for i := 0; i < len(txs); i++ {
-		this.Transactions = append(this.Transactions, Transactions{
-			txs[i].Hash, txs[i].Data, txs[i].Fee,
-		})
-	}
 	b1, _ := hex.DecodeString(work.Block.Target)
 	var r [32]byte
 	copy(r[:], common.Reverse(b1)[:])

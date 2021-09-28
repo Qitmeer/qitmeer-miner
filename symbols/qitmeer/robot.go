@@ -11,6 +11,7 @@ import (
 	"github.com/Qitmeer/qitmeer-miner/core"
 	"github.com/Qitmeer/qitmeer-miner/symbols/qitmeer/client"
 	"github.com/Qitmeer/qitmeer-miner/symbols/qitmeer/client/cmds"
+	"github.com/Qitmeer/qitmeer/common/hash"
 	"github.com/Qitmeer/qitmeer/core/types"
 	"io/ioutil"
 	"log"
@@ -33,6 +34,7 @@ type PendingBlock struct {
 type QitmeerRobot struct {
 	core.MinerRobot
 	Work                 QitmeerWork
+	NeedGBT              chan struct{}
 	Devices              []core.BaseDevice
 	Stratu               *QitmeerStratum
 	StratuFee            *QitmeerStratum
@@ -100,6 +102,7 @@ func (this *QitmeerRobot) Run(ctx context.Context) {
 	this.Work.Rpc = this.Rpc
 	this.Work.stra = this.Stratu
 	this.Work.Quit = this.Quit
+	this.Work.WorkLock = sync.Mutex{}
 	// Device Miner
 	for _, dev := range this.Devices {
 		dev.SetIsValid(true)
@@ -146,55 +149,48 @@ func (this *QitmeerRobot) Run(ctx context.Context) {
 // ListenWork
 func (this *QitmeerRobot) ListenWork() {
 	common.MinerLoger.Info("listen new work server")
-	t := time.NewTicker(time.Millisecond * time.Duration(this.Cfg.OptionConfig.TaskInterval))
-	isFirst := true
-	defer t.Stop()
 	r := false
+	first := true
 	for {
 		select {
 		case <-this.Quit.Done():
 			common.MinerLoger.Debug("listen new work service exit")
 			return
-		case <-t.C:
+		default:
 			r = false
 			if this.Pool {
 				r = this.Work.PoolGet() // get new work
-				if r && this.Work.stra != nil {
-					common.CurrentHeight = uint64(this.Work.stra.PoolWork.Height)
-				}
-
-			} else {
+			} else if first { // solo
 				r = this.Work.Get() // get new work
 				if r && this.Work.Block != nil {
+					first = false
 					common.CurrentHeight = uint64(this.Work.Block.Height)
 				}
 			}
-			if r {
-				validDeviceCount := 0
-				for _, dev := range this.Devices {
-					if !dev.GetIsValid() && !dev.GetIsRunning() {
-						continue
-					}
-					dev.SetForceUpdate(false)
-					validDeviceCount++
-					newWork := this.Work.CopyNew()
-					dev.SetNewWork(&newWork)
-				}
-				common.MinerLoger.Debug("New task coming")
-				// if validDeviceCount <= 0 {
-				// 	common.MinerLoger.Error("There is no valid device to mining,please check your config!")
-				// 	os.Exit(1)
-				// }
-				if isFirst {
-					isFirst = false
-				}
-			} else if this.Work.ForceUpdate {
-				for _, dev := range this.Devices {
-					common.MinerLoger.Debug("Task stopped by force")
-					dev.SetNewWork(&this.Work)
-					dev.SetForceUpdate(true)
-				}
+			this.NotifyWork(r)
+			time.Sleep(time.Millisecond * time.Duration(this.Cfg.OptionConfig.TaskInterval))
+		}
+	}
+}
+
+func (this *QitmeerRobot) NotifyWork(r bool) {
+	if r {
+		validDeviceCount := 0
+		for _, dev := range this.Devices {
+			if !dev.GetIsValid() && !dev.GetIsRunning() {
+				continue
 			}
+			dev.SetForceUpdate(false)
+			validDeviceCount++
+			newWork := this.Work.CopyNew()
+			dev.SetNewWork(&newWork)
+		}
+		common.MinerLoger.Debug("New task coming", "notify device count", validDeviceCount)
+	} else if this.Work.ForceUpdate {
+		for _, dev := range this.Devices {
+			common.MinerLoger.Debug("Task stopped by force")
+			dev.SetNewWork(&this.Work)
+			dev.SetForceUpdate(true)
 		}
 	}
 }
@@ -222,7 +218,7 @@ func (this *QitmeerRobot) SubmitWork() {
 					continue
 				}
 				var err error
-				var height, txCount, block string
+				var height, txCount, block, gbtID string
 				if this.Pool {
 					arr = strings.Split(str, "-")
 					block = arr[0]
@@ -233,7 +229,8 @@ func (this *QitmeerRobot) SubmitWork() {
 					txCount = arr[1]
 					height = arr[2]
 					block = arr[0]
-					err = this.Work.Submit(block)
+					gbtID = arr[3]
+					err = this.Work.Submit(block, height, gbtID)
 				}
 				if err != nil {
 					if err != ErrSameWork || err == ErrSameWork {
@@ -286,7 +283,6 @@ func (this *QitmeerRobot) SubmitWork() {
 							}
 							common.MinerLoger.Info("ws block success")
 						}, 1, func() {
-
 						})
 
 						this.PendingLock.Unlock()
@@ -332,6 +328,22 @@ func (this *QitmeerRobot) Status() {
 						this.InvalidShares++
 						this.PendingShares--
 						delete(this.PendingBlocks, i)
+						common.Timeout(func() {
+							if this.WsClient == nil || this.WsClient.Disconnected() {
+								return
+							}
+							txes := []cmds.TxConfirm{
+								{
+									Txid: v.CoinbaseHash,
+								},
+							}
+							err := this.WsClient.RemoveTxsConfirmed(txes)
+							if err != nil {
+								common.MinerLoger.Error(err.Error())
+							}
+							common.MinerLoger.Info("ws remove success")
+						}, 1, func() {
+						})
 					}
 				}
 				this.PendingLock.Unlock()
@@ -370,6 +382,10 @@ func (this *QitmeerRobot) HandlePendingBlocks() {
 				this.WsClient.Shutdown()
 			}
 			return
+		default:
+			if this.WsClient == nil || this.WsClient.Disconnected() {
+				this.WsConnect()
+			}
 		}
 	}
 }
@@ -382,11 +398,26 @@ func (this *QitmeerRobot) WsConnect() {
 			common.MinerLoger.Info("OnTxConfirm", "tx", txConfirm.Tx, "confirms", txConfirm.Confirms, "order", txConfirm.Order)
 			if _, ok := this.PendingBlocks[txConfirm.Tx]; ok && txConfirm.Confirms >= this.Cfg.SoloConfig.ConfirmHeight {
 				//
-				this.PendingShares--
-				this.ValidShares++
-				delete(this.PendingBlocks, txConfirm.Tx)
+				if _, ok := this.PendingBlocks[txConfirm.Tx]; ok {
+					this.PendingShares--
+					this.ValidShares++
+					delete(this.PendingBlocks, txConfirm.Tx)
+				}
+			} else {
+				if _, ok := this.PendingBlocks[txConfirm.Tx]; ok {
+					this.PendingShares--
+					this.InvalidShares++
+					delete(this.PendingBlocks, txConfirm.Tx)
+				}
 			}
 			this.PendingLock.Unlock()
+		},
+		OnBlockConnected: func(hash *hash.Hash, height, order int64, t time.Time, txs []*types.Transaction) {
+			r := this.Work.Get()
+			if this.Work.Block != nil {
+				common.MinerLoger.Info("New Block Coming", "height", height, "gbt height", this.Work.Block.Height, "cur height", common.CurrentHeight)
+			}
+			this.NotifyWork(r)
 		},
 		OnNodeExit: func(p *cmds.NodeExitNtfn) {
 			common.MinerLoger.Debug("OnNodeExit")
@@ -426,9 +457,6 @@ func (this *QitmeerRobot) WsConnect() {
 	this.WsClient, err = client.New(connCfg, &ntfnHandlers)
 	if err != nil {
 		common.MinerLoger.Error(err.Error())
-		for _, dev := range this.Devices {
-			dev.SetIsValid(false)
-		}
 		return
 	}
 	// Register for block connect and disconnect notifications.

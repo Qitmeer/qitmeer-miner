@@ -49,6 +49,7 @@ func (this *MeerCrypto) Update() {
 		randStr := fmt.Sprintf("%d%s%s", this.MinerId, common.CoinBaseVersion, arr[1])
 		txHash, txs := this.Work.Block.CalcCoinBase(this.Cfg, randStr, this.CurrentWorkID, this.Cfg.SoloConfig.MinerAddr)
 		this.header.PackageRpcHeader(this.Work, txs)
+		this.header.Transactions = append(this.header.Transactions, txs...)
 		this.header.HeaderBlock.TxRoot = *txHash
 	}
 }
@@ -67,6 +68,7 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 	var w core.BaseWork
 	this.Started = time.Now().Unix()
 	this.AllDiffOneShares = 0
+	this.IsRunning = true
 	for {
 		this.AllDiffOneShares = 0
 		select {
@@ -142,7 +144,7 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 					for j := 0; j < txCount; j++ {
 						subm += this.header.Transactions[j].Data
 					}
-					subm += "-" + fmt.Sprintf("%d", txCount) + "-" + fmt.Sprintf("%d", this.Work.Block.Height)
+					subm += "-" + fmt.Sprintf("%d", txCount) + "-" + fmt.Sprintf("%d", this.Work.Block.Height) + "-" + fmt.Sprintf("%d", this.Work.Block.GBTID)
 				} else {
 					subm += "-" + this.header.JobID + "-" + this.header.Exnonce2
 				}

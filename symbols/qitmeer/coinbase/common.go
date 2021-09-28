@@ -2,6 +2,7 @@ package coinbase
 
 import (
 	"github.com/Qitmeer/qitmeer/common/hash"
+	"github.com/Qitmeer/qitmeer/core/blockchain/opreturn"
 	"github.com/Qitmeer/qitmeer/core/types"
 	"github.com/Qitmeer/qitmeer/engine/txscript"
 	"github.com/Qitmeer/qitmeer/params"
@@ -57,7 +58,8 @@ func calcBlockProportion(coinbaseVal uint64, params *params.Params) (uint64, uin
 //
 // See the comment for NewBlockTemplate for more information about why the nil
 // address handling is useful.
-func createCoinbaseTx(subsidy uint64, coinbaseScript []byte, opReturnPkScript []byte, addr types.Address, params *params.Params) (*types.Tx, error) {
+func createCoinbaseTx(subsidy uint64, coinbaseScript []byte, opReturnPkScript []byte,
+	addr types.Address, params *params.Params) (*types.Tx, *types.TxOutput, error) {
 	tx := types.NewTransaction()
 	tx.AddTxIn(&types.TxInput{
 		// Coinbase085 transactions have no inputs, so previous outpoint is
@@ -84,13 +86,13 @@ func createCoinbaseTx(subsidy uint64, coinbaseScript []byte, opReturnPkScript []
 	if addr != nil {
 		pksSubsidy, err = txscript.PayToAddrScript(addr)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	} else {
 		scriptBuilder := txscript.NewScriptBuilder()
 		pksSubsidy, err = scriptBuilder.AddOp(txscript.OP_TRUE).Script()
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 	if !hasTax {
@@ -126,7 +128,16 @@ func createCoinbaseTx(subsidy uint64, coinbaseScript []byte, opReturnPkScript []
 			PkScript: opReturnPkScript,
 		})
 	}
+	// opReturnPkScript
+	var opReturnOutput *types.TxOutput
+	if len(opReturnPkScript) > 0 {
+		opReturnOutput = &types.TxOutput{
+			PkScript: opReturnPkScript,
+		}
+	} else {
+		opReturnOutput = opreturn.GetOPReturnTxOutput(opreturn.NewShowAmount(int64(subsidy)))
+	}
 	// AmountIn.
 	//tx.TxIn[0].AmountIn = subsidy + uint64(tax)  //TODO, remove type conversion
-	return types.NewTx(tx), nil
+	return types.NewTx(tx), opReturnOutput, nil
 }
