@@ -164,7 +164,6 @@ func (this *QitmeerRobot) ListenWork() {
 				r = this.Work.Get() // get new work
 				if r && this.Work.Block != nil {
 					first = false
-					common.CurrentHeight = uint64(this.Work.Block.Height)
 				}
 			}
 			this.NotifyWork(r)

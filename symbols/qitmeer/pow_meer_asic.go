@@ -213,7 +213,7 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 						(C.int)(j))
 				}
 				t2 := time.Now().Nanosecond()
-				common.MinerLoger.Debug("Notify New Task To Chips",
+				common.MinerLoger.Debug("Notify New Task To Chips", "tx count", len(this.header.Transactions),
 					"spent seconds(s)", float64(t2-t1)/1000000000.00, "work height", this.header.Height, "newest height", common.CurrentHeight)
 				// set work
 				t1 := time.Now().Unix()
@@ -251,14 +251,14 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 							}
 							copy(cwork.Header[NONCESTART:NONCEEND], nonceBytes)
 							h := hash.HashMeerXKeccakV1(cwork.Header[:117])
-							common.MinerLoger.Debug(fmt.Sprintf("[%s]ChipId #%d JobId #%d Height #%d Found hash : %s nonce:%s target:%064x",
-								this.UartPath,
-								chipId[0],
-								jobId[0],
-								cwork.Height,
-								h,
-								hex.EncodeToString(nonceBytes), cwork.Target))
 							if HashToBig(&h).Cmp(cwork.Target) <= 0 {
+								common.MinerLoger.Debug(fmt.Sprintf("[%s]ChipId #%d JobId #%d Height #%d Found hash : %s nonce:%s target:%064x",
+									this.UartPath,
+									chipId[0],
+									jobId[0],
+									cwork.Height,
+									h,
+									hex.EncodeToString(nonceBytes), cwork.Target))
 								this.AllDiffOneShares++
 								this.SubmitData <- cwork.ReplaceNonce(nonceBytes)
 								hasSubmit = true
@@ -266,8 +266,8 @@ func (this *MeerCrypto) Mine(wg *sync.WaitGroup) {
 								// 1T
 								if this.GetDiff() > 1e12 {
 									reject++
-									if reject >= this.Cfg.OptionConfig.NumOfChips {
-										common.MinerLoger.Warn("chips exception return,wait init again")
+									if reject >= this.Cfg.OptionConfig.NumOfChips*1000 {
+										common.MinerLoger.Warn("Chips return exception,wait init again", "ChipID", this.UartPath)
 										C.meer_drv_deinit((C.int)(fd), gpio)
 										start = false
 										fd = 0

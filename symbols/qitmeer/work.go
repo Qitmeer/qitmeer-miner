@@ -85,7 +85,7 @@ func (this *QitmeerWork) GetPowType() pow.PowType {
 	}
 }
 
-//GetBlockTemplate
+// GetBlockTemplate
 func (this *QitmeerWork) Get() bool {
 	if this.Ing {
 		return false
@@ -149,7 +149,6 @@ func (this *QitmeerWork) Get() bool {
 		common.MinerLoger.Info(fmt.Sprintf("getBlockTemplate height:%d , target :%s", this.Block.Height, target))
 		return true
 	}
-	return false
 }
 
 //Submit
