@@ -23,7 +23,10 @@ func (h *BlockHeader) CalcCoinBase(cfg *common.GlobalConfig, coinbaseStr string,
 			transactions = append(transactions, h.Transactions[i])
 			txs = append(txs, h.Transactions[i].EncodeTx())
 			h.transactions = append(h.transactions, h.Transactions[i].EncodeTx())
-			h.TotalFee += h.Transactions[i].Fee
+			if h.Transactions[i].Fee <= 0 {
+				h.Transactions[i].Fee = 0
+			}
+			h.TotalFee += uint64(h.Transactions[i].Fee)
 		}
 	}
 	instance := coinbase.GetNewCoinbaseInstance(int(h.Version), cfg.NecessaryConfig.Param, payAddressS,

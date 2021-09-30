@@ -246,10 +246,10 @@ func (s *QitmeerStratum) handleNotifyRes(resp interface{}) {
 	s.PoolWork.Version = nResp.BlockVersion
 	s.PoolWork.CuckooProof = [169]byte{}
 	s.PoolWork.PowType = s.PowType
-	stateRoot := make([]byte, 32)
-	s.PoolWork.StateRoot = hex.EncodeToString(stateRoot)
+	s.PoolWork.StateRoot = nResp.StateRoot
 	s.PoolWork.NewWork = true
-	s.PoolWork.Height = nResp.Height
+	hei, _ := strconv.Atoi(nResp.JobID)
+	s.PoolWork.Height = int64(hei)
 	parsedNtime, err := strconv.ParseInt(nResp.Ntime, 16, 64)
 	if err != nil {
 		common.MinerLoger.Error(err.Error())
@@ -425,12 +425,12 @@ func (s *QitmeerStratum) Unmarshal(blob []byte) (interface{}, error) {
 				return nil, core.ErrJsonType
 			}
 			nres.CleanJobs = cleanJobs
-		} else { //add mheight
-			mheight, ok := resi[10].(float64)
+		} else { //add stateroot
+			stateRoot, ok := resi[10].(string)
 			if !ok {
 				return nil, core.ErrJsonType
 			}
-			nres.Height = int64(mheight)
+			nres.StateRoot = stateRoot
 			cleanJobs, ok := resi[11].(bool)
 			if !ok {
 				return nil, core.ErrJsonType
@@ -498,13 +498,15 @@ func (s *NotifyWork) PrepQitmeerWork() []byte {
 	merkleRootStr2 := hex.EncodeToString(ddd)
 	nonceStr := fmt.Sprintf("%016x", 0)
 	//pool tx hash has converse every 4 bit
-	tmpHash := s.Hash
-	tmpBytes, _ := hex.DecodeString(tmpHash)
+	// prevHash :=s.Hash
+	tmpBytes, _ := hex.DecodeString(s.Hash)
 	normalBytes := common.ReverseByWidth(tmpBytes, 1)
 	prevHash := hex.EncodeToString(normalBytes)
-	//prevHash :=s.Hash
+	stateBytes, _ := hex.DecodeString(s.StateRoot)
+	stateBytes = common.ReverseByWidth(stateBytes, 1)
+	stateRoot := hex.EncodeToString(stateBytes)
 	ntime, _ := hex.DecodeString(s.Ntime)
-	blockheader := s.Version + prevHash + merkleRootStr2 + s.StateRoot + s.Nbits + hex.EncodeToString(ntime) +
+	blockheader := s.Version + prevHash + merkleRootStr2 + stateRoot + s.Nbits + hex.EncodeToString(ntime) +
 		hex.EncodeToString([]byte{uint8(s.PowType)}) + nonceStr + hex.EncodeToString(s.CuckooProof[:])
 	workData, _ := hex.DecodeString(blockheader)
 
