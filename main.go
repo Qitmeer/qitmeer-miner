@@ -30,6 +30,7 @@ func init() {
 }
 
 func main() {
+	common.UpdateSysTime()
 	// Use all processor cores.
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	c := make(chan os.Signal, 1)

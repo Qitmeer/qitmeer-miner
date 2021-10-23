@@ -239,6 +239,8 @@ func (this *QitmeerRobot) SubmitWork() {
 							this.InvalidShares++
 						}
 					}
+					r := this.Work.Get()
+					this.NotifyWork(r)
 				} else {
 					if !this.Pool { // solo
 						lock.Lock()
@@ -412,11 +414,13 @@ func (this *QitmeerRobot) WsConnect() {
 			this.PendingLock.Unlock()
 		},
 		OnBlockConnected: func(hash *hash.Hash, height, order int64, t time.Time, txs []*types.Transaction) {
-			r := this.Work.Get()
-			if this.Work.Block != nil {
-				common.MinerLoger.Info("New Block Coming", "height", height, "gbt height", this.Work.Block.Height, "cur height", common.CurrentHeight)
-			}
-			this.NotifyWork(r)
+			go func() {
+				r := this.Work.Get()
+				if this.Work.Block != nil {
+					common.MinerLoger.Info("New Block Coming", "height", height, "gbt height", this.Work.Block.Height, "cur height", common.CurrentHeight)
+				}
+				this.NotifyWork(r)
+			}()
 		},
 		OnNodeExit: func(p *cmds.NodeExitNtfn) {
 			common.MinerLoger.Debug("OnNodeExit")

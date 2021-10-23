@@ -3,6 +3,7 @@ package core
 import (
 	"bufio"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"github.com/Qitmeer/qitmeer-miner/common"
@@ -139,6 +140,9 @@ func (this *Stratum) Listen(handle func(data string)) {
 func (s *Stratum) Reconnect() error {
 	var conn net.Conn
 	var err error
+	conf := &tls.Config{
+		InsecureSkipVerify: true,
+	}
 	if s.Cfg.OptionConfig.Proxy != "" {
 		proxy := &socks.Proxy{
 			Addr:     s.Cfg.OptionConfig.Proxy,
@@ -147,7 +151,7 @@ func (s *Stratum) Reconnect() error {
 		}
 		conn, err = proxy.Dial("tcp", s.Cfg.PoolConfig.Pool)
 	} else {
-		conn, err = net.Dial("tcp", s.Cfg.PoolConfig.Pool)
+		conn, err = tls.Dial("tcp", s.Cfg.PoolConfig.Pool, conf)
 	}
 	if err != nil {
 		common.MinerLoger.Debug("[init reconnect error]", "error", err)

@@ -546,7 +546,7 @@ func (s *QitmeerStratum) PrepSubmit(data []byte, jobID string, ExtraNonce2 strin
 		workId = workArr[1]
 	}
 	// every 100 shares 1 author  1% fee
-	sub.Params = []string{workId, jobID, ExtraNonce2, timestampStr, nonceStr, hex.EncodeToString(data[117:282])}
+	sub.Params = []string{workId, jobID, ExtraNonce2, timestampStr, nonceStr}
 	common.MinerLoger.Debug("[submit]:", "{PoolUser, jobID, ExtraNonce2, timestampStr,nonceStr}",
 		[]string{workId, jobID, ExtraNonce2, timestampStr, nonceStr})
 	return sub, nil
