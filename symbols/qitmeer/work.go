@@ -86,7 +86,7 @@ func (this *QitmeerWork) GetPowType() pow.PowType {
 }
 
 // GetBlockTemplate
-func (this *QitmeerWork) Get() bool {
+func (this *QitmeerWork) Get(force bool) bool {
 	if this.Ing {
 		return false
 	}
@@ -95,7 +95,6 @@ func (this *QitmeerWork) Get() bool {
 	}()
 	this.Ing = true
 	for {
-		time.Sleep(time.Duration(this.Cfg.OptionConfig.TaskInterval) * time.Millisecond)
 		this.ForceUpdate = false
 		this.Rpc.GbtID++
 		body := this.Rpc.RpcResult("getBlockTemplate", []interface{}{[]string{}, this.GetPowType()},
@@ -104,6 +103,7 @@ func (this *QitmeerWork) Get() bool {
 			if this.Cfg.OptionConfig.TaskForceStop {
 				this.ForceUpdate = true
 			}
+			time.Sleep(time.Duration(this.Cfg.OptionConfig.TaskInterval) * time.Millisecond)
 			continue
 		}
 		var blockTemplate getResponseJson
@@ -119,9 +119,10 @@ func (this *QitmeerWork) Get() bool {
 					this.ForceUpdate = true
 				}
 			}
+			time.Sleep(time.Duration(this.Cfg.OptionConfig.TaskInterval) * time.Millisecond)
 			continue
 		}
-		if this.Block != nil && this.Block.Height >= blockTemplate.Result.Height &&
+		if !force && this.Block != nil && this.Block.Height >= blockTemplate.Result.Height &&
 			(time.Now().Unix()-this.GetWorkTime) < int64(this.Cfg.OptionConfig.Timeout)*10 {
 			//not has new work
 			return false
@@ -147,6 +148,7 @@ func (this *QitmeerWork) Get() bool {
 		this.Cfg.OptionConfig.Target = this.Block.Target
 		this.Block.GBTID = this.Rpc.GbtID
 		common.MinerLoger.Info(fmt.Sprintf("getBlockTemplate height:%d , target :%s", this.Block.Height, target))
+		time.Sleep(time.Duration(this.Cfg.OptionConfig.TaskInterval) * time.Millisecond)
 		return true
 	}
 }

@@ -516,7 +516,8 @@ func (s *NotifyWork) PrepQitmeerWork() []byte {
 // PrepWork converts the stratum notify to getwork style data for mining.
 func (s *NotifyWork) PrepWork() error {
 	var givenTs uint32
-	s.ExtraNonce2 = fmt.Sprintf("%08x", 0)
+	s.ExtraNonce2 = "00000000"
+	common.MinerLoger.Debug("init extranonce2", "nonce2", s.ExtraNonce2)
 	s.WorkData = s.PrepQitmeerWork()
 	if s.WorkData == nil {
 		return errors.New("Not Have New Work")
