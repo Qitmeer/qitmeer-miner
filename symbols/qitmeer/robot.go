@@ -455,7 +455,8 @@ func (this *QitmeerRobot) WsConnect() {
 	if !connCfg.DisableTLS {
 		certs, err := ioutil.ReadFile(this.Cfg.SoloConfig.RPCCert)
 		if err != nil {
-			common.MinerLoger.Error(err.Error())
+			common.MinerLoger.Error("rpccert= need config", err.Error())
+			time.Sleep(10 * time.Second)
 			return
 		}
 		connCfg.Certificates = certs
