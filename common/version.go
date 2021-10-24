@@ -21,7 +21,7 @@ const (
 	// portion of a semantic version string.
 	semanticBuildAlphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-."
 
-	CoinBaseVersion = "0.10.3"
+	CoinBaseVersion = "0.10.2"
 )
 
 // These constants define the application version and follow the semantic

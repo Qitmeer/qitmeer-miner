@@ -41,6 +41,7 @@ type QitmeerRobot struct {
 	AllTransactionsCount int64
 	PendingBlocks        map[string]PendingBlock
 	PendingLock          sync.Mutex
+	SubmitLock           sync.Mutex
 	WsClient             *client.Client
 }
 
@@ -161,7 +162,7 @@ func (this *QitmeerRobot) ListenWork() {
 			if this.Pool {
 				r = this.Work.PoolGet() // get new work
 			} else if first { // solo
-				r = this.Work.Get() // get new work
+				r = this.Work.Get(false) // get new work
 				if r && this.Work.Block != nil {
 					first = false
 				}
@@ -198,7 +199,6 @@ func (this *QitmeerRobot) NotifyWork(r bool) {
 func (this *QitmeerRobot) SubmitWork() {
 	common.MinerLoger.Info("listen submit block server")
 	this.Wg.Add(1)
-	lock := sync.Mutex{}
 	go func() {
 		defer this.Wg.Done()
 		str := ""
@@ -217,6 +217,7 @@ func (this *QitmeerRobot) SubmitWork() {
 					continue
 				}
 				var err error
+				this.SubmitLock.Lock()
 				var height, txCount, block, gbtID string
 				if this.Pool {
 					arr = strings.Split(str, "-")
@@ -239,11 +240,13 @@ func (this *QitmeerRobot) SubmitWork() {
 							this.InvalidShares++
 						}
 					}
-					r := this.Work.Get()
-					this.NotifyWork(r)
+					if !this.Pool {
+						r := this.Work.Get(true)
+						this.NotifyWork(r)
+					}
+					this.SubmitLock.Unlock()
 				} else {
 					if !this.Pool { // solo
-						lock.Lock()
 						serializedBlock, err := hex.DecodeString(block)
 						if err != nil {
 							common.MinerLoger.Error(err.Error())
@@ -285,7 +288,6 @@ func (this *QitmeerRobot) SubmitWork() {
 							common.MinerLoger.Info("ws block success")
 						}, 1, func() {
 						})
-
 						this.PendingLock.Unlock()
 						count, _ = strconv.Atoi(txCount)
 						this.AllTransactionsCount += int64(count)
@@ -293,10 +295,10 @@ func (this *QitmeerRobot) SubmitWork() {
 							block.Block().BlockHash().String(),
 							height, txCount, this.AllTransactionsCount)
 						common.MinerLoger.Info(logContent)
-						lock.Unlock()
 					} else {
 						this.ValidShares++
 					}
+					this.SubmitLock.Unlock()
 				}
 			}
 		}
@@ -415,11 +417,13 @@ func (this *QitmeerRobot) WsConnect() {
 		},
 		OnBlockConnected: func(hash *hash.Hash, height, order int64, t time.Time, txs []*types.Transaction) {
 			go func() {
-				r := this.Work.Get()
+				this.SubmitLock.Lock()
+				r := this.Work.Get(false)
 				if this.Work.Block != nil {
 					common.MinerLoger.Info("New Block Coming", "height", height, "gbt height", this.Work.Block.Height, "cur height", common.CurrentHeight)
 				}
 				this.NotifyWork(r)
+				this.SubmitLock.Unlock()
 			}()
 		},
 		OnNodeExit: func(p *cmds.NodeExitNtfn) {
